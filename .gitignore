@@ -9,6 +9,8 @@
 /GQN_Experimentation_unity-environment/Assets/Plugins*
 /GQN_Experimentation_unity-environment/Assets/Gizmos*
 
+/trainingData
+
 # Tensorflow Model Info
 /models
 /summaries
