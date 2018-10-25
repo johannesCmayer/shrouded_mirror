@@ -17,6 +17,9 @@
 python/models
 python/summaries
 
+# Models
+*.hdf5
+
 # Environemnt logfile
 *GQN_Experimentation_unity-environment.log
 

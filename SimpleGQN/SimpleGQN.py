@@ -1,53 +1,133 @@
-import numpy as np
-import tensorflow as tf
+import os
+
+USE_GPU = True
+if not USE_GPU:
+    os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 from tensorflow import keras
+import tensorflow as tf
+import numpy as np
 from scipy import misc
 import glob
 import matplotlib.pyplot as plt
+import  re
+import ntpath
 
 
-def get_data(num_data_points=None, data_dir='../trainingData/GQN_SimpleRoom'):
-    data_paths = glob.glob(data_dir)
-    data = []
+def rename_data(data_dir='../trainingData/GQN_SimpleRoom/*'):
+    data_paths = glob.iglob(data_dir)
     for i, dp in enumerate(data_paths):
-        data.append(misc.imread(dp))
+        os.rename(dp, dp.replace('GQN_SimpleRoom_', ''))
+
+
+def get_coordinates_from_path(string):
+    name_data_list = ntpath.basename(string)\
+        .replace('(', '').replace(')', '')\
+        .split('_')
+    coordinates = []
+    for num in name_data_list[0].split(','):
+        coordinates.append(float(num))
+    rotations = []
+    for num in name_data_list[1].split(','):
+        rotations.append(float(num))
+    return coordinates, rotations
+
+def get_data(num_data_points=None, data_dir='../trainingData/GQN_SimpleRoom/*'):
+    data_paths = glob.iglob(data_dir)
+    images = []
+    coordinates = []
+    rotations = []
+    for i, dp in enumerate(data_paths):
+        coordinate, rotation = get_coordinates_from_path(dp)
+        coordinates.append(coordinate)
+        rotations.append(rotation)
+        images.append(misc.imread(dp))
         if num_data_points and i+1 >= num_data_points:
             break
-    return data
+    return images, coordinates, rotations
 
 
+def product(iterable):
+    r = 1
+    for num in iterable:
+        r *= num
+    return r
 
-def autoencoder(number_of_pixels):
+
+def autoencoder(picture_input_shape):
+    number_of_pixels = product(picture_input_shape)
     model = keras.Sequential([
-        #keras.layers.1D
-        keras.layers.Dense(100, 'relu', True),
-        keras.layers.Dense(20, 'relu', True),
-        keras.layers.Dense(100, 'relu', True),
-        keras.layers.Dense(number_of_pixels, 'relu', True)
+        keras.layers.Conv3D(28, (3,3), input_shape=picture_input_shape),
+        keras.layers.Dense(100, 'relu'),
+        keras.layers.Dense(20, 'relu'),
+        keras.layers.Dense(100, 'relu'),
+        keras.layers.Conv3D(28,(3, 3)),
+        keras.layers.Dense(number_of_pixels, 'relu')
     ])
     model.compile(keras.optimizers.Adam, 'mse', ['mse'])
     return model
 
 
-def gqn(picture_input, position_querry_input, number_of_pixels):
-    x = keras.layers.Dense(100, 'relu', True)(picture_input)
-    x = keras.layers.Dense(20, 'relu', True)(x + position_querry_input)
-    x = keras.layers.Dense(100, 'relu', True)(x)
+def get_gqn_model(picture_input_shape, coordinates_input_shape):
+    number_of_pixels = product(picture_input_shape)
+
+    picture_input = keras.Input(picture_input_shape, name='picture_input')
+    coordinates_input = keras.Input(coordinates_input_shape, name='coordinates_input')
+
+    #x = keras.layers.Dense(1000, 'relu', True)(picture_input)
+    x = keras.layers.Dense(500, 'relu', True)(picture_input)
+
+    x = keras.layers.concatenate([x, coordinates_input])
+    #x = keras.layers.Dense(1000, 'relu', True)(x)
     predictions = keras.layers.Dense(number_of_pixels, 'relu', True)(x)
 
-
-def run():
-    # image_shape = (100, 100)
-    # number_of_pixels = sum(image_shape)
-    #
-    # picture_input = keras.Input(shape=image_shape)
-    # position_querry_input = keras.Input(shape=(6,))
+    model = keras.Model(inputs=[picture_input, coordinates_input], outputs=predictions)
+    model.compile('rmsprop', 'mse')
+    return model
 
 
-    data = get_data(1)
-    plt.imshow(data[0])
+def network_inputs_from_coordinates(position_datas, rotation_datas):
+    coordinates = []
+    for p, r in zip(position_datas, rotation_datas):
+        coordinates_vec = []
+        coordinates_vec.extend(p)
+        coordinates_vec.extend(r)
+        coordinates_vec = np.reshape(coordinates_vec, -1)
+        coordinates.append(coordinates_vec)
+    return np.array(coordinates)
+
+
+def run(load_model=False, model_save_file='./latest_model.hdf5'):
+    image_data, position_data, rotation_data = get_data(6)
+    coordinate_inputs = network_inputs_from_coordinates(position_data, rotation_data)
+    flat_image_inputs = np.reshape(image_data, (-1, 40000))
+
+    model = None
+    if load_model:
+        model = keras.models.load_model(model_save_file)
+    else:
+        gqn_model = get_gqn_model(np.shape(flat_image_inputs[0]), np.shape(coordinate_inputs[0]))
+        gqn_model.fit([flat_image_inputs, coordinate_inputs], flat_image_inputs, batch_size=None, epochs=10000)
+        model = gqn_model
+        gqn_model.save(model_save_file)
+
+    output = model.predict([flat_image_inputs, coordinate_inputs])
+
+
+    num_comparisons = 6
+    for i in range(1, num_comparisons + 1):
+        plt.subplot(num_comparisons/2,4,i*2-1)
+        plt.imshow(np.reshape(output[i-1], np.shape(image_data[0])))
+        plt.yticks([])
+        plt.xticks([])
+
+        plt.subplot(num_comparisons/2,4,i*2)
+        plt.imshow(image_data[i-1])
+        plt.yticks([])
+        plt.xticks([])
     plt.show()
 
 
 if __name__ == '__main__':
-    run()
+    run(False)
