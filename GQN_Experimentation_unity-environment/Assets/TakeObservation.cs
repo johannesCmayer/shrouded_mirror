@@ -12,7 +12,7 @@ public class TakeObservation : MonoBehaviour {
     public int renderHeight = 100;
     public string overrideSavePath;
 
-    private string DefaultSavePath(string sceneName) { return $@"{Application.dataPath}\..\..\trainingData\{sceneName}"; } 
+    private string DefaultSavePath(string sceneName) { return $@"{Application.dataPath}\..\..\trainingData\{sceneName}_{renderWidth}x{renderHeight}"; } 
 
     int imageCounter;
     float currentTime;

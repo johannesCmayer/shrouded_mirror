@@ -131,5 +131,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   camera: {fileID: 20159692649184960}
   observeVolume: {fileID: 0}
-  renderWidth: 100
-  renderHeight: 100
+  renderWidth: 32
+  renderHeight: 32
+  overrideSavePath: 
