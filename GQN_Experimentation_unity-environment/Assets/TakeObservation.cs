@@ -12,7 +12,7 @@ public class TakeObservation : MonoBehaviour {
     public int renderHeight = 100;
     public string overrideSavePath;
 
-    string defaultSavePath { get { return $@"{Application.dataPath}\..\..\trainingData\{sceneName}"; } }
+    private string DefaultSavePath(string sceneName) { return $@"{Application.dataPath}\..\..\trainingData\{sceneName}"; } 
 
     int imageCounter;
     float currentTime;
@@ -30,7 +30,8 @@ public class TakeObservation : MonoBehaviour {
 	void Update ()
     {        
         var sceneName = SceneManager.GetActiveScene().name;
-        var savePath = CreateDirectoryIfNotExists(savePath != string.Empty ? savePath : defaultSavePath);
+        string savePath = "";
+        savePath = CreateDirectoryIfNotExists(savePath != string.Empty ? savePath : DefaultSavePath(sceneName));
         SaveImage(TakeObservationFromVolume(observeVolume, camera), savePath);
         imageCounter++;
 
@@ -68,7 +69,7 @@ public class TakeObservation : MonoBehaviour {
     public void SaveImage(CaptureData obs, string saveDir)
     {
         var currentUTCTime = System.DateTime.UtcNow.ToString("yyyy-MM-dd-hh-mm-ss-fffffff-(zz)");
-        File.WriteAllBytes($@"{saveDir}\{obs.position}_{obs.rotation}_{currentUTCTime}.png", obs.png);
+        File.WriteAllBytes($@"{saveDir}\{obs.position.ToPreciseString()}_{obs.rotation.ToPreciseString()}_{currentUTCTime}.png", obs.png);
     }
 
     public CaptureData AdvancedCameraObservation(Camera camera)

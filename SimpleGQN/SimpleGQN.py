@@ -1,9 +1,9 @@
 import os
 
-USE_GPU = True
-if not USE_GPU:
-    os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
-    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+# USE_GPU = True
+# if not USE_GPU:
+#     os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
+#     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 from tensorflow import keras
 import tensorflow as tf
@@ -11,7 +11,7 @@ import numpy as np
 from scipy import misc
 import glob
 import matplotlib.pyplot as plt
-import  re
+from .util import ImgDrawer
 import ntpath
 
 
@@ -21,7 +21,7 @@ def rename_data(data_dir='../trainingData/GQN_SimpleRoom/*'):
         os.rename(dp, dp.replace('GQN_SimpleRoom_', ''))
 
 
-def get_coordinates_from_path(string):
+def get_coordinates_from_filename(string):
     name_data_list = ntpath.basename(string)\
         .replace('(', '').replace(')', '')\
         .split('_')
@@ -39,13 +39,15 @@ def get_data(num_data_points=None, data_dir='../trainingData/GQN_SimpleRoom/*'):
     coordinates = []
     rotations = []
     for i, dp in enumerate(data_paths):
-        coordinate, rotation = get_coordinates_from_path(dp)
+        coordinate, rotation = get_coordinates_from_filename(dp)
         coordinates.append(coordinate)
         rotations.append(rotation)
         images.append(misc.imread(dp))
         if num_data_points and i+1 >= num_data_points:
             break
-    return images, coordinates, rotations
+    return np.array(images) / 255, \
+           np.array(coordinates) / np.argmax(coordinates), \
+           np.array(rotations) / np.argmax(rotations)
 
 
 def product(iterable):
@@ -100,33 +102,40 @@ def network_inputs_from_coordinates(position_datas, rotation_datas):
 
 def run(load_model=False, model_save_file='./latest_model.hdf5'):
     image_data, position_data, rotation_data = get_data(6)
+    image_data = np.sum(image_data, -1) / 4
+
     coordinate_inputs = network_inputs_from_coordinates(position_data, rotation_data)
-    flat_image_inputs = np.reshape(image_data, (-1, 40000))
+    flat_image_inputs = np.reshape(image_data, (-1, 10000))
 
     model = None
     if load_model:
         model = keras.models.load_model(model_save_file)
     else:
         gqn_model = get_gqn_model(np.shape(flat_image_inputs[0]), np.shape(coordinate_inputs[0]))
-        gqn_model.fit([flat_image_inputs, coordinate_inputs], flat_image_inputs, batch_size=None, epochs=10000)
+        gqn_model.fit([flat_image_inputs, coordinate_inputs], flat_image_inputs, batch_size=None, epochs=100)
         model = gqn_model
+        print('saving model')
         gqn_model.save(model_save_file)
 
     output = model.predict([flat_image_inputs, coordinate_inputs])
 
 
-    num_comparisons = 6
-    for i in range(1, num_comparisons + 1):
-        plt.subplot(num_comparisons/2,4,i*2-1)
-        plt.imshow(np.reshape(output[i-1], np.shape(image_data[0])))
-        plt.yticks([])
-        plt.xticks([])
+    # num_comparisons = 6
+    # for i in range(1, num_comparisons + 1):
+    #     plt.subplot(num_comparisons/2,4,i*2-1)
+    #     plt.imshow(np.reshape(output[i-1], np.shape(image_data[0])), cmap='gray')
+    #     plt.yticks([])
+    #     plt.xticks([])
+    #
+    #     plt.subplot(num_comparisons/2,4,i*2)
+    #     plt.imshow(image_data[i-1], cmap='gray')
+    #     plt.yticks([])
+    #     plt.xticks([])
+    # plt.show()
 
-        plt.subplot(num_comparisons/2,4,i*2)
-        plt.imshow(image_data[i-1])
-        plt.yticks([])
-        plt.xticks([])
-    plt.show()
+    current_position
+    current_rotation
+    while True:
 
 
 if __name__ == '__main__':
