@@ -72,6 +72,7 @@ def autoencoder(picture_input_shape):
 
 
 def get_gqn_model(picture_input_shape, coordinates_input_shape):
+    # TODO Add ability to add up multiple observations to the latent representation
     number_of_pixels = product(picture_input_shape)
 
     picture_input = keras.Input(picture_input_shape, name='picture_input')
@@ -112,6 +113,7 @@ def run(load_model=False, model_save_file='./latest_model.hdf5'):
         model = keras.models.load_model(model_save_file)
     else:
         gqn_model = get_gqn_model(np.shape(flat_image_inputs[0]), np.shape(coordinate_inputs[0]))
+        # TODO Make it so that coordinate input and label are not the same as input image
         gqn_model.fit([flat_image_inputs, coordinate_inputs], flat_image_inputs, batch_size=None, epochs=100)
         model = gqn_model
         print('saving model')
@@ -133,6 +135,7 @@ def run(load_model=False, model_save_file='./latest_model.hdf5'):
     #     plt.xticks([])
     # plt.show()
 
+    # TODO implement movement in gqn and rendering
     current_position
     current_rotation
     while True:
