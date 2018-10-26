@@ -169,12 +169,18 @@ def run(data_dir, model_save_file_path, image_dim, load_model_name=None):
         model = keras.models.load_model(load_model_name)
     else:
         gqn_model = get_gqn_model(np.shape(flat_image_inputs[0]), np.shape(coordinate_inputs[0]))
-        epochs = 200
+        epochs = 200000
+        comp_times = 0
         for i in range(int(epochs/10)):
+            start_time = time.time()
             scrampled_flat_image_inputs = np.random.permutation(flat_image_inputs)
             gqn_model.fit([scrampled_flat_image_inputs, coordinate_inputs], flat_image_inputs, batch_size=None,
                           epochs=10, callbacks=[keras.callbacks.EarlyStopping(monitor='loss', patience=4),
                           keras.callbacks.LambdaCallback(on_epoch_end=lambda _, _b: print(f'TrueEpoch {i*10}/{epochs}'))])
+            comp_times = (comp_times + time.time() - start_time) / 2
+            eta = comp_times * (epochs - i * 10)
+            # TODO fix eta measure (complete wrong time currently)
+            print(f'ETA: {eta}')
         model = gqn_model
         print('saving model')
         if model_save_file_path.split('.')[-1] == 'hdf5':
