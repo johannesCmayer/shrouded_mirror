@@ -28,15 +28,22 @@ class ImgDrawer:
         self.screen_size = screen_size
         self.screen = pygame.display.set_mode(self.screen_size)
 
-    def draw_image(self, image, display_duration=0):
-        pygame.event.pump()
+    def draw_image(self, image, display_duration=0, size=None, position=(0,0)):
         surf = pygame.surfarray.make_surface(image)
         surf = surf.convert()
         surf = pygame.transform.rotate(surf, -90)
-        surf = pygame.transform.smoothscale(surf, self.screen_size)
-        self.screen.blit(surf, (0, 0))
-        pygame.display.flip()
+        surf = pygame.transform.smoothscale(surf, size if size else self.screen_size)
+        self.screen.blit(surf, position)
         pygame.time.wait(int(display_duration * 1000))
+
+    def draw_text(self, text, position=(0, 0), color=(255,0,0)):
+        myfont = pygame.font.SysFont('Comic Sans MS', 10)
+        textsurface = myfont.render(text, False, color)
+        self.screen.blit(textsurface, position)
+
+    def execute(self):
+        pygame.event.pump()
+        pygame.display.flip()
 
 
 def get_non_repeating_random_elements(num_of_elements, target):
