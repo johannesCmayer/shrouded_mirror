@@ -53,17 +53,29 @@ def get_coordinates_from_filename(string):
     return coordinates, rotations
 
 def get_data(data_dir, num_data_points=None):
-    data_paths = glob.iglob(data_dir + '/*')
+    data_paths = glob.glob(data_dir + '/*')
+    print(f'loading {num_data_points if num_data_points else len(data_paths)} data points.')
     images = []
     coordinates = []
     rotations = []
+    corrupt_files = []
     for i, dp in enumerate(data_paths):
         coordinate, rotation = get_coordinates_from_filename(dp)
+        try:
+            images.append(misc.imread(dp))
+        except OSError:
+            corrupt_files.append(dp)
+            continue
         coordinates.append(coordinate)
         rotations.append(rotation)
-        images.append(misc.imread(dp))
         if num_data_points and i+1 >= num_data_points:
             break
+    if len(corrupt_files) > 0:
+        if input(f'{len(corrupt_files)} out of {len(data_paths)} files could not be opened. '
+                 f'The files might be corrup. Delete them? y/n\n') == 'y':
+            for file in corrupt_files:
+                os.remove(file)
+            print(f'{len(corrupt_files)} files deleted.')
     return images, coordinates, rotations
 
 
@@ -102,15 +114,19 @@ def get_gqn_model(picture_input_shape, coordinates_input_shape):
     coordinates_input = keras.Input(coordinates_input_shape, name='coordinates_input')
 
     #x = keras.layers.Dense(1000, 'relu', True)(picture_input)
-    x = keras.layers.Dense(600, 'relu', True)(picture_input)
-    x = keras.layers.Dense(600, 'relu', True)(x)
-    x = keras.layers.Dense(600, 'relu', True)(x)
-    x = keras.layers.Dense(500, 'relu', True)(x)
+    x = keras.layers.Dense(1024, 'relu', True)(picture_input)
+    x = keras.layers.Dense(1024, 'relu', True)(x)
+    x = keras.layers.Dense(1024, 'relu', True)(x)
+    x = keras.layers.Dense(1024, 'relu', True)(x)
+    x = keras.layers.Dense(1024, 'relu', True)(x)
+    x = keras.layers.Dense(512, 'relu', True)(x)
 
     x = keras.layers.concatenate([x, coordinates_input])
-    x = keras.layers.Dense(600, 'relu', True)(x)
-    x = keras.layers.Dense(600, 'relu', True)(x)
-    x = keras.layers.Dense(600, 'relu', True)(x)
+    x = keras.layers.Dense(1024, 'relu', True)(x)
+    x = keras.layers.Dense(1024, 'relu', True)(x)
+    x = keras.layers.Dense(1024, 'relu', True)(x)
+    x = keras.layers.Dense(1024, 'relu', True)(x)
+    x = keras.layers.Dense(1024, 'relu', True)(x)
     predictions = keras.layers.Dense(number_of_pixels, 'relu', True)(x)
 
     model = keras.Model(inputs=[picture_input, coordinates_input], outputs=predictions)
@@ -131,8 +147,8 @@ def network_inputs_from_coordinates(position_datas, rotation_datas):
 
 def wrap_around_quaternion_rotation(normal_quaternion_iterable):
     if normal_quaternion_iterable[3] > 0.99:
-        normal_quaternion_iterable = np.array([0, 0.98, 0, 0.011])
-    if normal_quaternion_iterable[3] < 0.01:
+        normal_quaternion_iterable = np.array([0, -0.98, 0, 0.011])
+    if normal_quaternion_iterable[3] < -0.99:
         normal_quaternion_iterable = np.array([0, 0.011, 0, 0.98])
     return normal_quaternion_iterable
 
@@ -148,13 +164,30 @@ def normalize_quarternion(quaternion_iterable):
     return wrap_around_quaternion_rotation(np.array(normalized_quat))
 
 
+def y_rot_to_quaternion(rot):
+    if rot > np.pi:
+        rot -= np.pi * (int(rot / np.pi))
+    if rot < 0:
+        rot += np.pi * (1 + int(rot / np.pi))
+    return np.array([0, np.sin(rot), 0, np.cos(rot)])
+
+
 def get_unique_model_save_name(img_shape, name=''):
     return f'{datetime.datetime.now()}_{name}_{img_shape}.hdf5'.replace(':', '-')
 
 
 # TODO clean up and split up run method
-def run(data_dir, model_save_file_path, image_dim, load_model_name=None):
-    num_samples = 5500
+def run(data_dir, model_save_file_path, image_dim, load_model_name=None, num_samples=None):
+    '''
+    Run the main Programm
+    :param data_dir: the directory containing the training data.
+    :param model_save_file_path: the path where to save a model.
+    :param image_dim: the dimensions of the images in the data path.
+    :param load_model_name: the name of the model to load. None = train new model.
+    :param num_samples: number of samples to load from the data dir. None = all.
+    :return:
+    '''
+    num_samples = None
     image_data_un, position_data_un, rotation_data_un = get_data(data_dir, num_samples)
     image_data, position_data, rotation_data = normalize_data(image_data_un, position_data_un, rotation_data_un)
     image_data = np.sum(image_data, -1) / 4
@@ -169,14 +202,16 @@ def run(data_dir, model_save_file_path, image_dim, load_model_name=None):
         model = keras.models.load_model(load_model_name)
     else:
         gqn_model = get_gqn_model(np.shape(flat_image_inputs[0]), np.shape(coordinate_inputs[0]))
-        epochs = 200000
+        epochs = 200
         comp_times = 0
         for i in range(int(epochs/10)):
             start_time = time.time()
             scrampled_flat_image_inputs = np.random.permutation(flat_image_inputs)
             gqn_model.fit([scrampled_flat_image_inputs, coordinate_inputs], flat_image_inputs, batch_size=None,
-                          epochs=10, callbacks=[keras.callbacks.EarlyStopping(monitor='loss', patience=4),
-                          keras.callbacks.LambdaCallback(on_epoch_end=lambda _, _b: print(f'TrueEpoch {i*10}/{epochs}'))])
+                          epochs=10, callbacks=[
+                            keras.callbacks.EarlyStopping(monitor='loss', patience=4),
+                            keras.callbacks.LambdaCallback(on_epoch_end=lambda _, _b: print(f'TrueEpoch {i*10}/{epochs}'))
+                            ])
             comp_times = (comp_times + time.time() - start_time) / 2
             eta = comp_times * (epochs - i * 10)
             # TODO fix eta measure (complete wrong time currently)
@@ -218,8 +253,8 @@ def run(data_dir, model_save_file_path, image_dim, load_model_name=None):
          return flat_image_inputs[random.randint(0, num_samples - 1)]
 
     current_position = np.array([0, 1.5, 0]) / np.argmax(position_data_un)
-    current_rotation = normalize_quarternion(np.array([0, 0.5, 0, 0.5]))
-    img_drawer = ImgDrawer((1200*2, 1200))
+    current_y_rotation = 0
+    img_drawer = ImgDrawer((600*2, 600))
     prev_time = 0
 
     observation_input = get_random_observation_input()
@@ -227,19 +262,19 @@ def run(data_dir, model_save_file_path, image_dim, load_model_name=None):
         delta_time = time.time() - prev_time
         prev_time = time.time()
 
-
-        output = model.predict([[observation_input], network_inputs_from_coordinates([current_position], [current_rotation])])
+        current_rotation_quaternion = y_rot_to_quaternion(current_y_rotation)
+        output = model.predict([[observation_input], network_inputs_from_coordinates([current_position], [current_rotation_quaternion])])
         output = np.reshape(output[0], np.shape((image_data[0])))
 
         stacked_output = black_n_white_to_rgb255(output)
 
-        img_drawer.draw_image(stacked_output, display_duration=0, size=(1200, 1200))
-        closesed_image = get_closesd_image_to_coordinates(current_position, current_rotation)
-        img_drawer.draw_image(black_n_white_to_rgb255(closesed_image), display_duration=0, size=(600, 600), position=(1200, 0))
-        img_drawer.draw_image(black_n_white_to_rgb255(np.reshape(observation_input, np.shape(image_data[0]))), size=(600,600), position=(1200,600))
+        img_drawer.draw_image(stacked_output, display_duration=0, size=(600, 600))
+        closesed_image = get_closesd_image_to_coordinates(current_position, current_rotation_quaternion)
+        img_drawer.draw_image(black_n_white_to_rgb255(closesed_image), display_duration=0, size=(300,300), position=(600, 0))
+        img_drawer.draw_image(black_n_white_to_rgb255(np.reshape(observation_input, np.shape(image_data[0]))), size=(300,300), position=(600,300))
 
         img_drawer.draw_text(f'{str(current_position * np.argmax(position_data_un))} max position {np.max(position_data_un, 0)}', (10, 10))
-        img_drawer.draw_text(str(current_rotation), (10, 50))
+        img_drawer.draw_text(str(current_rotation_quaternion), (10, 50))
 
         img_drawer.execute()
 
@@ -247,16 +282,14 @@ def run(data_dir, model_save_file_path, image_dim, load_model_name=None):
         normal_speed = 0.2
         ludacris_speed = 20
         move_speed = ludacris_speed * delta_time
-        rotate_speed = 15 * delta_time
-
-        # TODO Make it that you can properly rotate the camera; Implement unity quaternion cube
+        rotate_speed = 0.5 * delta_time
 
         pygame.event.pump()
         keys = pygame.key.get_pressed()
         if keys[pygame.K_a]:
-            current_rotation = normalize_quarternion(current_rotation + rotate_speed * np.array([0., 0.05, 0, 0]))
+            current_y_rotation += rotate_speed
         if keys[pygame.K_s]:
-            current_rotation = normalize_quarternion(current_rotation + rotate_speed * np.array([0., 0, 0, 0.05]))
+            current_y_rotation -= rotate_speed
 
         if keys[pygame.K_UP]:
             current_position += move_speed * np.array([0.05, 0., 0.])
@@ -274,15 +307,21 @@ if __name__ == '__main__':
     model_names = {
         0: None,
         1: 'first_large.hdf5',
-        2: '2018-10-26.15-41-54.307222_super-long-run'
+        2: '2018-10-26.15-41-54.307222_super-long-run',
+        3: '2018-11-01 21-15-16_(32, 32)'
     }
 
-    data_dir_base = r'D:\JohannesCMayer\GQN_Experimentation\trainingData/'
+    data_base_dirs = ['D:\\Projects\\Unity_Projects\\GQN_Experimentation\\trainingData',
+                      'D:/Projects/JohannenCMayer/GQN_Experimentation/trainingData']
     data_dirs = {
         1: 'GQN_SimpleRoom_32x32'
     }
     def get_data_dir(key):
-        return data_dir_base + data_dirs.get(key)
+        for base_dir in data_base_dirs:
+            dir = (base_dir + '/' + data_dirs.get(key))
+            if os.path.isdir(dir):
+                return dir
+        raise OSError('None of specified data base dirs exist.')
 
     def get_img_dim_form_data_dir(dir):
         dims = dir.split('_')[-1].split('x')
@@ -291,4 +330,4 @@ if __name__ == '__main__':
     data_dir = get_data_dir(1)
     img_dims = get_img_dim_form_data_dir(data_dir)
     run(data_dir=data_dir, load_model_name=model_names.get(0), image_dim=img_dims,
-        model_save_file_path=get_unique_model_save_name('weekend-run'))
+        model_save_file_path=get_unique_model_save_name('normal-run'))

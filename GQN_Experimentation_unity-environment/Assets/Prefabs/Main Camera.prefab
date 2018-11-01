@@ -21,6 +21,7 @@ GameObject:
   - component: {fileID: 4895464165362986}
   - component: {fileID: 20668321217585790}
   - component: {fileID: 81661847136264416}
+  - component: {fileID: 114125604320330844}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -39,7 +40,8 @@ GameObject:
   - component: {fileID: 33130312309415126}
   - component: {fileID: 23544890975782162}
   - component: {fileID: 64188858710944054}
-  m_Layer: 0
+  - component: {fileID: 114486050720502352}
+  m_Layer: 14
   m_Name: DQN-Screen
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -66,7 +68,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1096503955065230}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -1.9270034}
+  m_LocalPosition: {x: 0, y: 1.55, z: -1.9270034}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 4557499399704230}
@@ -82,7 +84,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.4745098, g: 0.19215688, b: 0.2100067, a: 0}
+  m_BackGroundColor: {r: 1, g: 1, b: 1, a: 0}
   m_projectionMatrixMode: 1
   m_SensorSize: {x: 36, y: 24}
   m_LensShift: {x: 0, y: 0}
@@ -128,7 +130,7 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RenderingLayerMask: 4294967295
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: d1cf884c59cf7af4989a12fc3cc77af6, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -176,3 +178,26 @@ AudioListener:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1096503955065230}
   m_Enabled: 1
+--- !u!114 &114125604320330844
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1096503955065230}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ca4f73a1be58a747af48937d91b168f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &114486050720502352
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1694053523669010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b545e4dddaadd5044b7ef149c6e8f9e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  testTex: {fileID: 2800000, guid: 41770f865701741419f43d4ae5ac4c21, type: 3}
