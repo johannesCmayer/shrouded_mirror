@@ -32,12 +32,12 @@ class ImgDrawer:
         surf = pygame.surfarray.make_surface(image)
         surf = surf.convert()
         surf = pygame.transform.rotate(surf, -90)
-        surf = pygame.transform.smoothscale(surf, size if size else self.screen_size)
+        surf = pygame.transform.scale(surf, size if size else self.screen_size)
         self.screen.blit(surf, position)
         pygame.time.wait(int(display_duration * 1000))
 
-    def draw_text(self, text, position=(0, 0), color=(255,0,0)):
-        myfont = pygame.font.SysFont('Comic Sans MS', 10)
+    def draw_text(self, text, position=(0, 0), color=(255,0,0), size=14):
+        myfont = pygame.font.SysFont('Comic Sans MS', size)
         textsurface = myfont.render(text, False, color)
         self.screen.blit(textsurface, position)
 

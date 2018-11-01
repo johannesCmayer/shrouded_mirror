@@ -20,7 +20,8 @@ import time
 import random
 import re
 from typing import Dict
-
+import collections
+import math
 
 # TODO refactor everything
 
@@ -115,18 +116,13 @@ def get_gqn_model(picture_input_shape, coordinates_input_shape):
 
     #x = keras.layers.Dense(1000, 'relu', True)(picture_input)
     x = keras.layers.Dense(1024, 'relu', True)(picture_input)
-    x = keras.layers.Dense(1024, 'relu', True)(x)
-    x = keras.layers.Dense(1024, 'relu', True)(x)
-    x = keras.layers.Dense(1024, 'relu', True)(x)
-    x = keras.layers.Dense(1024, 'relu', True)(x)
+    for _ in range(9):
+        x = keras.layers.Dense(1024, 'relu', True)(x)
     x = keras.layers.Dense(512, 'relu', True)(x)
 
     x = keras.layers.concatenate([x, coordinates_input])
-    x = keras.layers.Dense(1024, 'relu', True)(x)
-    x = keras.layers.Dense(1024, 'relu', True)(x)
-    x = keras.layers.Dense(1024, 'relu', True)(x)
-    x = keras.layers.Dense(1024, 'relu', True)(x)
-    x = keras.layers.Dense(1024, 'relu', True)(x)
+    for _ in range(10):
+        x = keras.layers.Dense(1024, 'relu', True)(x)
     predictions = keras.layers.Dense(number_of_pixels, 'relu', True)(x)
 
     model = keras.Model(inputs=[picture_input, coordinates_input], outputs=predictions)
@@ -187,7 +183,6 @@ def run(data_dir, model_save_file_path, image_dim, load_model_name=None, num_sam
     :param num_samples: number of samples to load from the data dir. None = all.
     :return:
     '''
-    num_samples = None
     image_data_un, position_data_un, rotation_data_un = get_data(data_dir, num_samples)
     image_data, position_data, rotation_data = normalize_data(image_data_un, position_data_un, rotation_data_un)
     image_data = np.sum(image_data, -1) / 4
@@ -195,33 +190,41 @@ def run(data_dir, model_save_file_path, image_dim, load_model_name=None, num_sam
     coordinate_inputs = network_inputs_from_coordinates(position_data, rotation_data)
     flat_image_inputs = np.reshape(image_data, (-1, product(image_dim)))
 
-    model = None
-    if load_model_name:
-        if load_model_name.split('.')[-1] != 'hdf5':
-            load_model_name += '.hdf5'
-        model = keras.models.load_model(load_model_name)
-    else:
+    def remove_extension(path, extension='hdf5'):
+        if path.split('.')[-1] == extension:
+            return ''.join(path.split('.')[0:-2])
+        return path
+
+    def train_model(model_save_file_path):
+        model_save_file_path = remove_extension(model_save_file_path)
+        checkpoint_save_path = f'{model_save_file_path}_{image_dim}.checkpoint'
+        model_final_save = f'{model_save_file_path}_{image_dim}.hdf5'
+
         gqn_model = get_gqn_model(np.shape(flat_image_inputs[0]), np.shape(coordinate_inputs[0]))
-        epochs = 200
-        comp_times = 0
-        for i in range(int(epochs/10)):
+        epochs = 1000
+        sub_epochs = 20
+        for i in range(int(epochs / sub_epochs)):
             start_time = time.time()
             scrampled_flat_image_inputs = np.random.permutation(flat_image_inputs)
             gqn_model.fit([scrampled_flat_image_inputs, coordinate_inputs], flat_image_inputs, batch_size=None,
-                          epochs=10, callbacks=[
-                            keras.callbacks.EarlyStopping(monitor='loss', patience=4),
-                            keras.callbacks.LambdaCallback(on_epoch_end=lambda _, _b: print(f'TrueEpoch {i*10}/{epochs}'))
-                            ])
-            comp_times = (comp_times + time.time() - start_time) / 2
-            eta = comp_times * (epochs - i * 10)
-            # TODO fix eta measure (complete wrong time currently)
-            print(f'ETA: {eta}')
-        model = gqn_model
-        print('saving model')
-        if model_save_file_path.split('.')[-1] == 'hdf5':
-            model_save_file_path = ''.join(model_save_file_path.split('.')[0:-2])
-        gqn_model.save(model_save_file_path + '_' + str(image_dim) + '.hdf5')
+                          epochs=sub_epochs, callbacks=[
+                    keras.callbacks.EarlyStopping(monitor='loss', patience=4),
+                    keras.callbacks.LambdaCallback(on_epoch_end=lambda _, _b: print(f'\n\nTrueEpoch {i*10}/{epochs}')),
+                    keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=sub_epochs)
+                ])
 
+        print('saving model')
+        gqn_model.save(model_final_save)
+        print('removing checkpoint save')
+        os.remove(checkpoint_save_path)
+        return gqn_model
+
+    model = None
+    if load_model_name:
+        load_model_path = remove_extension(load_model_name) + '.hdf5'
+        model = keras.models.load_model(load_model_path)
+    else:
+        model = train_model(model_save_file_path)
 
     def draw_autoencoding_evaluation():
         num_comparisons = 6
@@ -243,18 +246,20 @@ def run(data_dir, model_save_file_path, image_dim, load_model_name=None, num_sam
             similarity_at_idx.append((np.sum(np.abs(pos - im_pos)) + np.sum(np.abs(rot - im_rot)) * 10))
         return image_data[np.argmax(similarity_at_idx)]
 
-
     def black_n_white_to_rgb255(img):
         img = np.stack([img] * 3, -1)
         return img / np.max(img) * 255
 
-
     def get_random_observation_input():
-         return flat_image_inputs[random.randint(0, num_samples - 1)]
+        num_s = num_samples if num_samples else len(data_dirs)
+        return flat_image_inputs[random.randint(0, num_s - 1)]
 
-    current_position = np.array([0, 1.5, 0]) / np.argmax(position_data_un)
+    window_size = collections.namedtuple('Rect', 'x y')(x=1200, y=600)
+
+    center_pos = np.array([0, 1.5, 0]) / np.argmax(position_data_un)
+    current_position = center_pos
     current_y_rotation = 0
-    img_drawer = ImgDrawer((600*2, 600))
+    img_drawer = ImgDrawer(window_size)
     prev_time = 0
 
     observation_input = get_random_observation_input()
@@ -268,10 +273,12 @@ def run(data_dir, model_save_file_path, image_dim, load_model_name=None, num_sam
 
         stacked_output = black_n_white_to_rgb255(output)
 
-        img_drawer.draw_image(stacked_output, display_duration=0, size=(600, 600))
+        img_drawer.draw_image(stacked_output, display_duration=0, size=(window_size.x // 2, window_size.y))
         closesed_image = get_closesd_image_to_coordinates(current_position, current_rotation_quaternion)
-        img_drawer.draw_image(black_n_white_to_rgb255(closesed_image), display_duration=0, size=(300,300), position=(600, 0))
-        img_drawer.draw_image(black_n_white_to_rgb255(np.reshape(observation_input, np.shape(image_data[0]))), size=(300,300), position=(600,300))
+        img_drawer.draw_image(black_n_white_to_rgb255(closesed_image), display_duration=0,
+                              size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, 0))
+        img_drawer.draw_image(black_n_white_to_rgb255(np.reshape(observation_input, np.shape(image_data[0]))),
+                              size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, window_size.y // 2))
 
         img_drawer.draw_text(f'{str(current_position * np.argmax(position_data_un))} max position {np.max(position_data_un, 0)}', (10, 10))
         img_drawer.draw_text(str(current_rotation_quaternion), (10, 50))
@@ -279,36 +286,46 @@ def run(data_dir, model_save_file_path, image_dim, load_model_name=None, num_sam
         img_drawer.execute()
 
 
-        normal_speed = 0.2
+        normal_speed = 1
         ludacris_speed = 20
-        move_speed = ludacris_speed * delta_time
-        rotate_speed = 0.5 * delta_time
+        move_speed = normal_speed * delta_time
+        rotate_speed = 0.8 * delta_time
+
+        current_rot = y_rot_to_quaternion(current_y_rotation * 2)
+        forward_vec = np.array([np.sin(current_rot[1]), 0., np.sin(current_rot[3])])
+        current_rot_90_deg_offset = y_rot_to_quaternion(current_y_rotation * 2 + np.pi / 2)
+        right_vec = -1 * np.array([np.sin(current_rot_90_deg_offset[1]), 0., np.sin(current_rot_90_deg_offset[3])])
 
         pygame.event.pump()
         keys = pygame.key.get_pressed()
+
         if keys[pygame.K_a]:
             current_y_rotation += rotate_speed
         if keys[pygame.K_s]:
             current_y_rotation -= rotate_speed
 
         if keys[pygame.K_UP]:
-            current_position += move_speed * np.array([0.05, 0., 0.])
+            current_position += move_speed * forward_vec
         if keys[pygame.K_DOWN]:
-            current_position += move_speed * np.array([-0.05, 0., 0.])
+            current_position += move_speed * -forward_vec
         if keys[pygame.K_LEFT]:
-            current_position += move_speed * np.array([0., 0., 0.05])
+            current_position += move_speed * -right_vec
         if keys[pygame.K_RIGHT]:
-            current_position += move_speed * np.array([0., 0., -0.05])
+            current_position += move_speed * right_vec
 
         if keys[pygame.K_KP1]:
             observation_input = get_random_observation_input()
+        if keys[pygame.K_KP2]:
+            current_position = center_pos
 
 if __name__ == '__main__':
     model_names = {
+        'train': None,
         0: None,
         1: 'first_large.hdf5',
         2: '2018-10-26.15-41-54.307222_super-long-run',
-        3: '2018-11-01 21-15-16_(32, 32)'
+        3: '2018-11-01 21-15-16_(32, 32)',
+        4: '2018-11-01 22-18-28_(32, 32)',
     }
 
     data_base_dirs = ['D:\\Projects\\Unity_Projects\\GQN_Experimentation\\trainingData',
@@ -329,5 +346,5 @@ if __name__ == '__main__':
 
     data_dir = get_data_dir(1)
     img_dims = get_img_dim_form_data_dir(data_dir)
-    run(data_dir=data_dir, load_model_name=model_names.get(0), image_dim=img_dims,
-        model_save_file_path=get_unique_model_save_name('normal-run'))
+    run(data_dir=data_dir, load_model_name=model_names.get('train'), image_dim=img_dims,
+        model_save_file_path=get_unique_model_save_name('normal-run'), num_samples=2e4)
