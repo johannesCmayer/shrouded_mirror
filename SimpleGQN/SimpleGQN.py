@@ -225,7 +225,7 @@ def train_model(flat_image_inputs, coordinate_inputs, model_save_file_path, mode
 
     if not model_to_train:
         model_to_train = get_gqn_model(np.shape(flat_image_inputs[0]), np.shape(coordinate_inputs[0]))
-    epochs = 20
+    epochs = 500
     sub_epochs = 2
     training_aborted = False
     for i in range(int(epochs / sub_epochs)):
@@ -286,13 +286,13 @@ def run(data_dir, model_save_file_path, image_dim, load_model_path=None, train=T
     model = None
     if load_model_path:
         model = keras.models.load_model(load_model_path)
-    if train:
+    if train or not load_model_path:
         model = train_model(flat_image_inputs, coordinate_inputs, model_save_file_path, model, batch_size=batch_size)
 
     if not run_environment:
         return
 
-    window_size = collections.namedtuple('Rect', field_names='x y')(x=1200, y=600)
+    window_size = collections.namedtuple('Rect', field_names='x y')(x=1200*2, y=600*2)
 
     character_controller = CharacterController(position_data_un)
     img_drawer = ImgDrawer(window_size)
@@ -324,21 +324,29 @@ def run(data_dir, model_save_file_path, image_dim, load_model_path=None, train=T
 
 
 if __name__ == '__main__':
-    model_names = {
-        'train': None,
-        0: None,
+    model_names_home = {
         1: 'first_large.hdf5',
         2: '2018-10-26.15-41-54.307222_super-long-run',
         3: '2018-11-01 21-15-16_(32, 32).hdf5',
         4: '2018-11-01 22-18-28_(32, 32).hdf5',
         5: '2018-11-02 01-19-11_(32, 32).checkpoint',
     }
+    model_names_uni = {
+        -1: '2018-11-02 13-47-15.hdf5'
+    }
+    model_names = {'train': None, 0: None, **model_names_home, **model_names_uni}
 
     data_base_dirs = ['D:\\Projects\\Unity_Projects\\GQN_Experimentation\\trainingData',
-                      'D:/Projects/JohannenCMayer/GQN_Experimentation/trainingData']
+                      r'D:\JohannesCMayer\GQN_Experimentation\trainingData']
     data_dirs = {
-        1: 'GQN_SimpleRoom_32x32'
+        1: 'GQN_SimpleRoom_32x32',
+        2: 'GQN_SimpleRoom_withobj_32x32',
     }
+    resolutions = {
+        'uhd': (2400, 1200),
+        'hd': (1200, 600),
+    }
+
     def get_data_dir(key):
         for base_dir in data_base_dirs:
             dir = (base_dir + '/' + data_dirs.get(key))
@@ -350,8 +358,8 @@ if __name__ == '__main__':
         dims = dir.split('_')[-1].split('x')
         return int(dims[0]), int(dims[1])
 
-    data_dir = get_data_dir(1)
+    data_dir = get_data_dir(2)
     img_dims = get_img_dim_form_data_dir(data_dir)
-    run(data_dir=data_dir, load_model_path=model_names.get(4), image_dim=img_dims,
-        model_save_file_path=get_unique_model_save_name(img_dims, name='normal-run'), num_samples_to_load=100,
-        batch_size=4000, run_environment=True, train=False)
+    run(data_dir=data_dir, load_model_path=model_names.get(0), image_dim=img_dims,
+        model_save_file_path=get_unique_model_save_name(img_dims, name='normal-run'), num_samples_to_load=None,
+        batch_size=None, run_environment=True, train=True)
