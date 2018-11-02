@@ -27,6 +27,7 @@ class ImgDrawer:
         pygame.init()
         self.screen_size = screen_size
         self.screen = pygame.display.set_mode(self.screen_size)
+        pygame.display.set_mode(screen_size, pygame.RESIZABLE)
 
     def draw_image(self, image, display_duration=0, size=None, position=(0,0)):
         surf = pygame.surfarray.make_surface(image)

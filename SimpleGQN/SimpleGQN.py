@@ -22,6 +22,7 @@ import re
 from typing import Dict
 import collections
 import math
+import keyboard
 
 # TODO refactor everything
 
@@ -141,104 +142,132 @@ def network_inputs_from_coordinates(position_datas, rotation_datas):
     return np.array(coordinates)
 
 
-def wrap_around_quaternion_rotation(normal_quaternion_iterable):
-    if normal_quaternion_iterable[3] > 0.99:
-        normal_quaternion_iterable = np.array([0, -0.98, 0, 0.011])
-    if normal_quaternion_iterable[3] < -0.99:
-        normal_quaternion_iterable = np.array([0, 0.011, 0, 0.98])
-    return normal_quaternion_iterable
-
-def normalize_quarternion(quaternion_iterable):
-    quat_mag = 0
-    for e in quaternion_iterable:
-        quat_mag += np.power(e, 2)
-    quat_mag = np.sqrt(quat_mag)
-    normalized_quat = []
-    for e in quaternion_iterable:
-        normalized_quat.append(e / quat_mag)
-    # TODO extract the wraparound behaviour to somewhere else
-    return wrap_around_quaternion_rotation(np.array(normalized_quat))
-
-
-def y_rot_to_quaternion(rot):
-    if rot > np.pi:
-        rot -= np.pi * (int(rot / np.pi))
-    if rot < 0:
-        rot += np.pi * (1 + int(rot / np.pi))
-    return np.array([0, np.sin(rot), 0, np.cos(rot)])
-
-
 def get_unique_model_save_name(img_shape, name=''):
-    return f'{datetime.datetime.now()}_{name}_{img_shape}.hdf5'.replace(':', '-')
+    return f'{datetime.datetime.now()}_{img_shape[0]}x{img_shape[1]}_{name}.hdf5'.replace(':', '-')
+
+
+def remove_extension(path, extension='hdf5'):
+    if path.split('.')[-1] == extension:
+        return ''.join(path.split('.')[0:-2])
+    return path
+
+
+def draw_autoencoding_evaluation():
+    num_comparisons = 6
+    for i in range(1, num_comparisons + 1):
+        plt.subplot(num_comparisons/2,4,i*2-1)
+        plt.imshow(np.reshape(output[i-1], np.shape(image_data[0])), cmap='gray')
+        plt.yticks([])
+        plt.xticks([])
+
+        plt.subplot(num_comparisons/2,4,i*2)
+        plt.imshow(image_data[i-1], cmap='gray')
+        plt.yticks([])
+        plt.xticks([])
+    plt.show()
+
+
+class CharacterController:
+    def __init__(self, position_data_un):
+        self.center_pos = np.array([0, 1.5, 0]) / np.argmax(position_data_un)
+        self.current_position = self.center_pos
+        self.current_y_rotation = 0
+        self.prev_time = 0
+        self.move_speed = 0.8
+        self.rotate_speed = 0.8
+
+    @staticmethod
+    def y_rot_to_quaternion(rot):
+        if rot > np.pi:
+            rot -= np.pi * (int(rot / np.pi))
+        if rot < 0:
+            rot += np.pi * (1 + int(rot / np.pi))
+        return np.array([0, np.sin(rot), 0, np.cos(rot)])
+
+    @property
+    def current_rotation_quaternion(self):
+        return self.y_rot_to_quaternion(self.current_y_rotation)
+
+    def movement_update(self):
+        delta_time = time.time() - self.prev_time
+        self.prev_time = time.time()
+
+        current_rot_x2 = self.y_rot_to_quaternion(self.current_y_rotation * 2)
+        forward_vec = np.array([np.sin(current_rot_x2[1]), 0., np.sin(current_rot_x2[3])])
+        current_rot_x2_90_deg_offset = self.y_rot_to_quaternion(self.current_y_rotation * 2 + np.pi / 2)
+        right_vec = -1 * np.array([np.sin(current_rot_x2_90_deg_offset[1]), 0., np.sin(current_rot_x2_90_deg_offset[3])])
+
+        pygame.event.pump()
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_a]:
+            self.current_y_rotation += self.rotate_speed * delta_time
+        if keys[pygame.K_s]:
+            self.current_y_rotation -= self.rotate_speed * delta_time
+
+        if keys[pygame.K_UP]:
+            self.current_position += self.move_speed * delta_time * forward_vec
+        if keys[pygame.K_DOWN]:
+            self.current_position += self.move_speed * delta_time * -forward_vec
+        if keys[pygame.K_LEFT]:
+            self.current_position += self.move_speed * delta_time * -right_vec
+        if keys[pygame.K_RIGHT]:
+            self.current_position += self.move_speed * delta_time * right_vec
+
+        if keys[pygame.K_KP2]:
+            self.current_position = self.center_pos
+
+
+def train_model(flat_image_inputs, coordinate_inputs, model_save_file_path, model_to_train=None, batch_size=None):
+    model_save_file_path = remove_extension(model_save_file_path)
+    checkpoint_save_path = f'{model_save_file_path}.checkpoint'
+    model_final_save = f'{model_save_file_path}.hdf5'
+
+    if not model_to_train:
+        model_to_train = get_gqn_model(np.shape(flat_image_inputs[0]), np.shape(coordinate_inputs[0]))
+    epochs = 20
+    sub_epochs = 2
+    training_aborted = False
+    for i in range(int(epochs / sub_epochs)):
+        start_time = time.time()
+        scrampled_flat_image_inputs = np.random.permutation(flat_image_inputs)
+        model_to_train.fit([scrampled_flat_image_inputs, coordinate_inputs], flat_image_inputs, batch_size=batch_size,
+                      epochs=sub_epochs, callbacks=[
+                keras.callbacks.EarlyStopping(monitor='loss', patience=4),
+                keras.callbacks.LambdaCallback(on_epoch_end=lambda _, _b: print(f'\n\nTrueEpoch {i*sub_epochs}/{epochs}')),
+                keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=sub_epochs)
+            ])
+        if keyboard.is_pressed('q'):
+            print('learning aborted by user')
+            training_aborted = True
+            break
+
+    print('saving model')
+    model_to_train.save(model_final_save)
+    if not training_aborted:
+        print('removing checkpoint save')
+        os.remove(checkpoint_save_path)
+    return model_to_train
 
 
 # TODO clean up and split up run method
-def run(data_dir, model_save_file_path, image_dim, load_model_name=None, num_samples=None):
+def run(data_dir, model_save_file_path, image_dim, load_model_path=None, train=True,
+        num_samples_to_load=None, batch_size=None, run_environment=True):
     '''
     Run the main Programm
     :param data_dir: the directory containing the training data.
     :param model_save_file_path: the path where to save a model.
     :param image_dim: the dimensions of the images in the data path.
-    :param load_model_name: the name of the model to load. None = train new model.
-    :param num_samples: number of samples to load from the data dir. None = all.
-    :return:
+    :param load_model_path: the name of the model to load. None = train new model.
+    :param num_samples_to_load: number of samples to load from the data dir. None = all.
+    :return: None
     '''
-    image_data_un, position_data_un, rotation_data_un = get_data(data_dir, num_samples)
+    image_data_un, position_data_un, rotation_data_un = get_data(data_dir, num_samples_to_load)
     image_data, position_data, rotation_data = normalize_data(image_data_un, position_data_un, rotation_data_un)
     image_data = np.sum(image_data, -1) / 4
 
     coordinate_inputs = network_inputs_from_coordinates(position_data, rotation_data)
     flat_image_inputs = np.reshape(image_data, (-1, product(image_dim)))
-
-    def remove_extension(path, extension='hdf5'):
-        if path.split('.')[-1] == extension:
-            return ''.join(path.split('.')[0:-2])
-        return path
-
-    def train_model(model_save_file_path):
-        model_save_file_path = remove_extension(model_save_file_path)
-        checkpoint_save_path = f'{model_save_file_path}_{image_dim}.checkpoint'
-        model_final_save = f'{model_save_file_path}_{image_dim}.hdf5'
-
-        gqn_model = get_gqn_model(np.shape(flat_image_inputs[0]), np.shape(coordinate_inputs[0]))
-        epochs = 1000
-        sub_epochs = 20
-        for i in range(int(epochs / sub_epochs)):
-            start_time = time.time()
-            scrampled_flat_image_inputs = np.random.permutation(flat_image_inputs)
-            gqn_model.fit([scrampled_flat_image_inputs, coordinate_inputs], flat_image_inputs, batch_size=None,
-                          epochs=sub_epochs, callbacks=[
-                    keras.callbacks.EarlyStopping(monitor='loss', patience=4),
-                    keras.callbacks.LambdaCallback(on_epoch_end=lambda _, _b: print(f'\n\nTrueEpoch {i*10}/{epochs}')),
-                    keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=sub_epochs)
-                ])
-
-        print('saving model')
-        gqn_model.save(model_final_save)
-        print('removing checkpoint save')
-        os.remove(checkpoint_save_path)
-        return gqn_model
-
-    model = None
-    if load_model_name:
-        load_model_path = remove_extension(load_model_name) + '.hdf5'
-        model = keras.models.load_model(load_model_path)
-    else:
-        model = train_model(model_save_file_path)
-
-    def draw_autoencoding_evaluation():
-        num_comparisons = 6
-        for i in range(1, num_comparisons + 1):
-            plt.subplot(num_comparisons/2,4,i*2-1)
-            plt.imshow(np.reshape(output[i-1], np.shape(image_data[0])), cmap='gray')
-            plt.yticks([])
-            plt.xticks([])
-
-            plt.subplot(num_comparisons/2,4,i*2)
-            plt.imshow(image_data[i-1], cmap='gray')
-            plt.yticks([])
-            plt.xticks([])
-        plt.show()
 
     def get_closesd_image_to_coordinates(pos, rot):
         similarity_at_idx = []
@@ -251,72 +280,48 @@ def run(data_dir, model_save_file_path, image_dim, load_model_name=None, num_sam
         return img / np.max(img) * 255
 
     def get_random_observation_input():
-        num_s = num_samples if num_samples else len(data_dirs)
+        num_s = num_samples_to_load if num_samples_to_load else len(data_dirs)
         return flat_image_inputs[random.randint(0, num_s - 1)]
 
-    window_size = collections.namedtuple('Rect', 'x y')(x=1200, y=600)
+    model = None
+    if load_model_path:
+        model = keras.models.load_model(load_model_path)
+    if train:
+        model = train_model(flat_image_inputs, coordinate_inputs, model_save_file_path, model, batch_size=batch_size)
 
-    center_pos = np.array([0, 1.5, 0]) / np.argmax(position_data_un)
-    current_position = center_pos
-    current_y_rotation = 0
+    if not run_environment:
+        return
+
+    window_size = collections.namedtuple('Rect', field_names='x y')(x=1200, y=600)
+
+    character_controller = CharacterController(position_data_un)
     img_drawer = ImgDrawer(window_size)
     prev_time = 0
 
     observation_input = get_random_observation_input()
     while True:
-        delta_time = time.time() - prev_time
-        prev_time = time.time()
-
-        current_rotation_quaternion = y_rot_to_quaternion(current_y_rotation)
-        output = model.predict([[observation_input], network_inputs_from_coordinates([current_position], [current_rotation_quaternion])])
+        output = model.predict([[observation_input], network_inputs_from_coordinates([character_controller.current_position], [character_controller.current_rotation_quaternion])])
         output = np.reshape(output[0], np.shape((image_data[0])))
 
         stacked_output = black_n_white_to_rgb255(output)
 
         img_drawer.draw_image(stacked_output, display_duration=0, size=(window_size.x // 2, window_size.y))
-        closesed_image = get_closesd_image_to_coordinates(current_position, current_rotation_quaternion)
+        closesed_image = get_closesd_image_to_coordinates(character_controller.current_position, character_controller.current_rotation_quaternion)
         img_drawer.draw_image(black_n_white_to_rgb255(closesed_image), display_duration=0,
                               size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, 0))
         img_drawer.draw_image(black_n_white_to_rgb255(np.reshape(observation_input, np.shape(image_data[0]))),
                               size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, window_size.y // 2))
 
-        img_drawer.draw_text(f'{str(current_position * np.argmax(position_data_un))} max position {np.max(position_data_un, 0)}', (10, 10))
-        img_drawer.draw_text(str(current_rotation_quaternion), (10, 50))
+        img_drawer.draw_text(f'{str(character_controller.current_position * np.argmax(position_data_un))} max position {np.max(position_data_un, 0)}', (10, 10))
+        img_drawer.draw_text(str(character_controller.current_rotation_quaternion), (10, 50))
 
         img_drawer.execute()
+        character_controller.movement_update()
 
-
-        normal_speed = 1
-        ludacris_speed = 20
-        move_speed = normal_speed * delta_time
-        rotate_speed = 0.8 * delta_time
-
-        current_rot = y_rot_to_quaternion(current_y_rotation * 2)
-        forward_vec = np.array([np.sin(current_rot[1]), 0., np.sin(current_rot[3])])
-        current_rot_90_deg_offset = y_rot_to_quaternion(current_y_rotation * 2 + np.pi / 2)
-        right_vec = -1 * np.array([np.sin(current_rot_90_deg_offset[1]), 0., np.sin(current_rot_90_deg_offset[3])])
-
-        pygame.event.pump()
         keys = pygame.key.get_pressed()
-
-        if keys[pygame.K_a]:
-            current_y_rotation += rotate_speed
-        if keys[pygame.K_s]:
-            current_y_rotation -= rotate_speed
-
-        if keys[pygame.K_UP]:
-            current_position += move_speed * forward_vec
-        if keys[pygame.K_DOWN]:
-            current_position += move_speed * -forward_vec
-        if keys[pygame.K_LEFT]:
-            current_position += move_speed * -right_vec
-        if keys[pygame.K_RIGHT]:
-            current_position += move_speed * right_vec
-
         if keys[pygame.K_KP1]:
             observation_input = get_random_observation_input()
-        if keys[pygame.K_KP2]:
-            current_position = center_pos
+
 
 if __name__ == '__main__':
     model_names = {
@@ -324,8 +329,9 @@ if __name__ == '__main__':
         0: None,
         1: 'first_large.hdf5',
         2: '2018-10-26.15-41-54.307222_super-long-run',
-        3: '2018-11-01 21-15-16_(32, 32)',
-        4: '2018-11-01 22-18-28_(32, 32)',
+        3: '2018-11-01 21-15-16_(32, 32).hdf5',
+        4: '2018-11-01 22-18-28_(32, 32).hdf5',
+        5: '2018-11-02 01-19-11_(32, 32).checkpoint',
     }
 
     data_base_dirs = ['D:\\Projects\\Unity_Projects\\GQN_Experimentation\\trainingData',
@@ -346,5 +352,6 @@ if __name__ == '__main__':
 
     data_dir = get_data_dir(1)
     img_dims = get_img_dim_form_data_dir(data_dir)
-    run(data_dir=data_dir, load_model_name=model_names.get('train'), image_dim=img_dims,
-        model_save_file_path=get_unique_model_save_name('normal-run'), num_samples=2e4)
+    run(data_dir=data_dir, load_model_path=model_names.get(4), image_dim=img_dims,
+        model_save_file_path=get_unique_model_save_name(img_dims, name='normal-run'), num_samples_to_load=100,
+        batch_size=4000, run_environment=True, train=False)

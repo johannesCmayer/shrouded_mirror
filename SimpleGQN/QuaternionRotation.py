@@ -6,6 +6,14 @@ def y_rotation(quaternion, rot):
     return np.array(normalize_quarternion(l))
 
 
+def wrap_around_quaternion_rotation(normal_quaternion_iterable):
+    if normal_quaternion_iterable[3] > 0.99:
+        normal_quaternion_iterable = np.array([0, -0.98, 0, 0.011])
+    if normal_quaternion_iterable[3] < -0.99:
+        normal_quaternion_iterable = np.array([0, 0.011, 0, 0.98])
+    return normal_quaternion_iterable
+
+
 def normalize_quarternion(quaternion_iterable):
     quat_mag = 0
     for e in quaternion_iterable:
@@ -15,7 +23,7 @@ def normalize_quarternion(quaternion_iterable):
     for e in quaternion_iterable:
         normalized_quat.append(e / quat_mag)
     # TODO extract the wraparound behaviour to somewhere else
-    return np.array(normalized_quat)
+    return wrap_around_quaternion_rotation(np.array(normalized_quat))
 
 
 if __name__ == '__main__':

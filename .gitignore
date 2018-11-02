@@ -19,6 +19,7 @@ python/summaries
 
 # Models
 *.hdf5
+*.checkpoint
 
 # Environemnt logfile
 *GQN_Experimentation_unity-environment.log
