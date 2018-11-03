@@ -27,7 +27,7 @@ public class CaptureSettings
 public class TakeObservation : MonoBehaviour {
 
     public event System.Action TookObservation = delegate { };
-    public Camera camera;
+    public Camera cam;
     public Transform observeVolume;
 
     public int captureBatchSize = 32;
@@ -41,7 +41,7 @@ public class TakeObservation : MonoBehaviour {
 
     private string DefaultSavePath(string sceneName, CaptureSettings cs)
     {
-        return $@"{Application.dataPath}\..\..\trainingData\{sceneName}_{cs.renderWidth}x{cs.renderHeight}";
+        return $@"{Application.dataPath}\..\..\trainingData\{sceneName}\{cs.renderWidth}x{cs.renderHeight}";
     } 
     
     void Start()
@@ -62,13 +62,13 @@ public class TakeObservation : MonoBehaviour {
         {
             if (cs.execute)
             {                
-                camera.targetTexture = new RenderTexture(cs.renderWidth, cs.renderHeight, 1);
+                cam.targetTexture = new RenderTexture(cs.renderWidth, cs.renderHeight, 1);
 
                 for (int i = 0; i < cs.numImagesToMake; i++)
                 {
                     var sceneName = SceneManager.GetActiveScene().name;
                     var savePath = CreateDirectoryIfNotExists(DefaultSavePath(sceneName, cs));
-                    SaveImage(TakeObservationFromVolume(observeVolume, camera), savePath);
+                    SaveImage(TakeObservationFromVolume(observeVolume, cam), savePath);
                     TookObservation();
                     totalImages++;
                     if (i % captureBatchSize == 0)
@@ -94,19 +94,10 @@ public class TakeObservation : MonoBehaviour {
 
     public CaptureData TakeObservationFromVolume(Transform transformVolume, Camera camera)
     {
-        camera.transform.position = GetRandomPointInAxisAlignedCube(transformVolume);
+        camera.transform.position = new Util().GetRandomPointInAxisAlignedCube(transformVolume);
         camera.transform.rotation = Quaternion.Euler(0, Random.Range(0, 360), 0);
         return AdvancedCameraObservation(camera);
-    }
-
-    public Vector3 GetRandomPointInAxisAlignedCube(Transform cubeTransform)
-    {
-        var cs = cubeTransform.localScale;
-        return cubeTransform.transform.position + new Vector3(
-            Random.Range(-cs.x / 2, cs.x / 2), 
-            Random.Range(-cs.y / 2, cs.y / 2), 
-            Random.Range(-cs.z / 2, cs.z / 2));        
-    }
+    }    
 
     public void SaveImage(CaptureData obs, string saveDir)
     {
