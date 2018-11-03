@@ -459,6 +459,7 @@ GameObject:
   - component: {fileID: 764832885}
   - component: {fileID: 764832884}
   - component: {fileID: 764832883}
+  - component: {fileID: 764832887}
   m_Layer: 0
   m_Name: Sphere
   m_TagString: Untagged
@@ -533,6 +534,17 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &764832887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 764832882}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c53bb5a44c3dba042bf3e368bc6dae3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &834198814
 GameObject:
   m_ObjectHideFlags: 0
@@ -660,8 +672,8 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 926588135}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -2.0874152, y: 0.5824528, z: -6.434968}
-  m_LocalScale: {x: 10, y: 5, z: 1}
+  m_LocalPosition: {x: -2.0874152, y: -1.8899999, z: -6.434968}
+  m_LocalScale: {x: 10, y: 10, z: 1}
   m_Children: []
   m_Father: {fileID: 193701526}
   m_RootOrder: 4
@@ -745,8 +757,8 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 969883002}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -2.0874152, y: 0.5824528, z: -17.434967}
-  m_LocalScale: {x: 10, y: 5, z: 1}
+  m_LocalPosition: {x: -2.0874152, y: -1.8899999, z: -17.434967}
+  m_LocalScale: {x: 10, y: 10, z: 1}
   m_Children: []
   m_Father: {fileID: 193701526}
   m_RootOrder: 5
@@ -960,8 +972,8 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1128368176}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 3.4125848, y: 0.5824528, z: -11.934968}
-  m_LocalScale: {x: 1, y: 5, z: 10}
+  m_LocalPosition: {x: 3.4125848, y: -1.89, z: -11.934968}
+  m_LocalScale: {x: 1, y: 10, z: 10}
   m_Children: []
   m_Father: {fileID: 193701526}
   m_RootOrder: 2
@@ -1118,8 +1130,8 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1273916279}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -7.587415, y: 0.5824528, z: -11.934968}
-  m_LocalScale: {x: 1, y: 5, z: 10}
+  m_LocalPosition: {x: -7.587415, y: -1.8899999, z: -11.934968}
+  m_LocalScale: {x: 1, y: 10, z: 10}
   m_Children: []
   m_Father: {fileID: 193701526}
   m_RootOrder: 3
@@ -1260,6 +1272,21 @@ Prefab:
       objectReference: {fileID: 213615900}
     - target: {fileID: 1213990375562744, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 2}
       propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 20159692649184960, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 2}
+      propertyPath: m_BackGroundColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 20159692649184960, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 2}
+      propertyPath: m_BackGroundColor.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 20159692649184960, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 2}
+      propertyPath: m_BackGroundColor.b
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
