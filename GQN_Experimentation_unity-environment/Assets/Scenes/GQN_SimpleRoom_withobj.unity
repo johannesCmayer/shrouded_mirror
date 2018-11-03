@@ -431,7 +431,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 1560330053569254, guid: e2f1d4726ea4cb6419ee1edb358d4f7b, type: 2}
       propertyPath: m_Name
-      value: ObserveArea (1)
+      value: ObserveArea
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e2f1d4726ea4cb6419ee1edb358d4f7b, type: 2}
@@ -458,7 +458,6 @@ GameObject:
   - component: {fileID: 764832886}
   - component: {fileID: 764832885}
   - component: {fileID: 764832884}
-  - component: {fileID: 764832883}
   - component: {fileID: 764832887}
   m_Layer: 0
   m_Name: Sphere
@@ -467,18 +466,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!135 &764832883
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 764832882}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &764832884
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1270,24 +1257,10 @@ Prefab:
       propertyPath: observeVolume
       value: 
       objectReference: {fileID: 213615900}
-    - target: {fileID: 1213990375562744, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 2}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 20159692649184960, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+    - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
         type: 2}
-      propertyPath: m_BackGroundColor.r
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 20159692649184960, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
-        type: 2}
-      propertyPath: m_BackGroundColor.g
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 20159692649184960, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
-        type: 2}
-      propertyPath: m_BackGroundColor.b
-      value: 0
+      propertyPath: captureBatchSize
+      value: 100
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 2}

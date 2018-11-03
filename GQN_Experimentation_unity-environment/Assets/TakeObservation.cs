@@ -4,43 +4,82 @@ using UnityEngine;
 using System.IO;
 using UnityEngine.SceneManagement;
 
+[System.Serializable]
+public class CaptureSettings
+{
+    public bool execute = true;
+    public int renderWidth = 128;
+    public int renderHeight = 128;
+    public int numImagesToMake = 20000;
+
+    public CaptureSettings()
+    {
+    }
+
+    public CaptureSettings(int renderWidth, int renderHeight, int number_of_img)
+    {
+        this.renderWidth = renderWidth;
+        this.renderHeight = renderHeight;
+        this.numImagesToMake = number_of_img;
+    }
+}
+
 public class TakeObservation : MonoBehaviour {
 
     public Camera camera;
     public Transform observeVolume;
-    public int renderWidth = 100;
-    public int renderHeight = 100;
-    public string overrideSavePath;
 
-    private string DefaultSavePath(string sceneName) { return $@"{Application.dataPath}\..\..\trainingData\{sceneName}_{renderWidth}x{renderHeight}"; } 
+    public int captureBatchSize = 32;
+    public int statusPrintFreqCoef = 1;
 
-    int imageCounter;
-    float currentTime;
+    public CaptureSettings[] captureSettings = new CaptureSettings[] {
+        new CaptureSettings(32,32,20000),
+        new CaptureSettings(64,64,20000),
+        new CaptureSettings(128,128,20000),
+        new CaptureSettings(256,256,20000)
+    };
 
+    private string DefaultSavePath(string sceneName, CaptureSettings cs)
+    {
+        return $@"{Application.dataPath}\..\..\trainingData\{sceneName}_{cs.renderWidth}x{cs.renderHeight}";
+    } 
+    
     void Start()
     {
-        if (camera.targetTexture == null)
-        {
-            camera.targetTexture = new RenderTexture(renderWidth, renderHeight, 1);
-        }
-        print(Application.dataPath);
-        
+        StartCoroutine(Capture());
 	}
-	
-	void Update ()
+
+    IEnumerator Capture()
     {        
-        var sceneName = SceneManager.GetActiveScene().name;
-        string savePath = "";
-        savePath = CreateDirectoryIfNotExists(savePath != string.Empty ? savePath : DefaultSavePath(sceneName));
-        SaveImage(TakeObservationFromVolume(observeVolume, camera), savePath);
-        imageCounter++;
+        int totalImages = 0;
+        int totalImagesToMake = 0;
+        foreach (var cs in captureSettings)
+        {
+            totalImagesToMake += cs.numImagesToMake;
+        }
+        var startTime = Time.time;
+        foreach (var cs in captureSettings)
+        {
+            if (cs.execute)
+            {                
+                camera.targetTexture = new RenderTexture(cs.renderWidth, cs.renderHeight, 1);
 
-        currentTime = Time.time;
-    }
-
-    private void OnDestroy()
-    {
-        print($"{imageCounter} images produced in {currentTime}s.");
+                for (int i = 0; i < cs.numImagesToMake; i++)
+                {
+                    var sceneName = SceneManager.GetActiveScene().name;
+                    var savePath = CreateDirectoryIfNotExists(DefaultSavePath(sceneName, cs));
+                    SaveImage(TakeObservationFromVolume(observeVolume, camera), savePath);
+                    totalImages++;
+                    if (i % captureBatchSize == 0)
+                    {
+                        print($"{(int)(((float)totalImages / totalImagesToMake) * 100)}% - " +
+                            $"{(int)(totalImages / (Time.time - startTime))} images per second - " +
+                            $"{totalImages}/{totalImagesToMake} are captured");
+                        yield return null;
+                    }
+                }
+            }
+        }
     }
 
     public string CreateDirectoryIfNotExists(string path)

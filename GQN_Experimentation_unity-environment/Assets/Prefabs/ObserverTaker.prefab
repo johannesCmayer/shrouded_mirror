@@ -80,7 +80,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 1, g: 1, b: 1, a: 1}
+  m_BackGroundColor: {r: 1, g: 0, b: 0, a: 1}
   m_projectionMatrixMode: 1
   m_SensorSize: {x: 36, y: 24}
   m_LensShift: {x: 0, y: 0}
@@ -131,6 +131,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   camera: {fileID: 20159692649184960}
   observeVolume: {fileID: 0}
-  renderWidth: 32
-  renderHeight: 32
-  overrideSavePath: 
+  captureBatchSize: 32
+  captureSettings:
+  - execute: 1
+    renderWidth: 32
+    renderHeight: 32
+    number_of_img: 20000
+  - execute: 1
+    renderWidth: 64
+    renderHeight: 64
+    number_of_img: 20000
+  - execute: 1
+    renderWidth: 128
+    renderHeight: 128
+    number_of_img: 20000
+  - execute: 1
+    renderWidth: 256
+    renderHeight: 256
+    number_of_img: 20000
