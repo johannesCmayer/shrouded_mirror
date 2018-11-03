@@ -26,11 +26,11 @@ public class CaptureSettings
 
 public class TakeObservation : MonoBehaviour {
 
+    public event System.Action TookObservation = delegate { };
     public Camera camera;
     public Transform observeVolume;
 
     public int captureBatchSize = 32;
-    public int statusPrintFreqCoef = 1;
 
     public CaptureSettings[] captureSettings = new CaptureSettings[] {
         new CaptureSettings(32,32,20000),
@@ -69,17 +69,20 @@ public class TakeObservation : MonoBehaviour {
                     var sceneName = SceneManager.GetActiveScene().name;
                     var savePath = CreateDirectoryIfNotExists(DefaultSavePath(sceneName, cs));
                     SaveImage(TakeObservationFromVolume(observeVolume, camera), savePath);
+                    TookObservation();
                     totalImages++;
                     if (i % captureBatchSize == 0)
                     {
                         print($"{(int)(((float)totalImages / totalImagesToMake) * 100)}% - " +
                             $"{(int)(totalImages / (Time.time - startTime))} images per second - " +
-                            $"{totalImages}/{totalImagesToMake} are captured");
+                            $"{totalImages}/{totalImagesToMake} are captured - " +
+                            $"capturing now {cs.renderWidth}x{cs.renderHeight} images");
                         yield return null;
                     }
                 }
             }
         }
+        print($"Captured {totalImages} images in {Time.time - startTime}s");
     }
 
     public string CreateDirectoryIfNotExists(string path)
