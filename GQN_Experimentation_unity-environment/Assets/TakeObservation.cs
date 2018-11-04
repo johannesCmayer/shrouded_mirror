@@ -4,31 +4,13 @@ using UnityEngine;
 using System.IO;
 using UnityEngine.SceneManagement;
 
-[System.Serializable]
-public class CaptureSettings
-{
-    public bool execute = true;
-    public int renderWidth = 128;
-    public int renderHeight = 128;
-    public int numImagesToMake = 20000;
-
-    public CaptureSettings()
-    {
-    }
-
-    public CaptureSettings(int renderWidth, int renderHeight, int number_of_img)
-    {
-        this.renderWidth = renderWidth;
-        this.renderHeight = renderHeight;
-        this.numImagesToMake = number_of_img;
-    }
-}
-
 public class TakeObservation : MonoBehaviour {
 
     public event System.Action TookObservation = delegate { };
+
     public Camera cam;
     public Transform observeVolume;
+    public EnvironmentGenerator environmentGenerator;
 
     public int captureBatchSize = 32;
 
@@ -41,7 +23,8 @@ public class TakeObservation : MonoBehaviour {
 
     private string DefaultSavePath(string sceneName, CaptureSettings cs)
     {
-        return $@"{Application.dataPath}\..\..\trainingData\{sceneName}\{cs.renderWidth}x{cs.renderHeight}";
+        return CreateDirectoryIfNotExists($@"{Application.dataPath}\..\..\trainingData\{sceneName}\" +
+                                          $@"{cs.renderWidth}x{cs.renderHeight}\{environmentGenerator.EnvironmentID}");
     } 
     
     void Start()
@@ -67,8 +50,9 @@ public class TakeObservation : MonoBehaviour {
                 for (int i = 0; i < cs.numImagesToMake; i++)
                 {
                     var sceneName = SceneManager.GetActiveScene().name;
-                    var savePath = CreateDirectoryIfNotExists(DefaultSavePath(sceneName, cs));
-                    SaveImage(TakeObservationFromVolume(observeVolume, cam), savePath);
+                    var savePath = DefaultSavePath(sceneName, cs);
+                    var capture = TakeObservationFromVolume(observeVolume, cam);
+                    SaveImage(capture, savePath, GetFileName(capture));
                     TookObservation();
                     totalImages++;
                     if (i % captureBatchSize == 0)
@@ -99,10 +83,15 @@ public class TakeObservation : MonoBehaviour {
         return AdvancedCameraObservation(camera);
     }    
 
-    public void SaveImage(CaptureData obs, string saveDir)
+    public string GetFileName(CaptureData obs)
     {
         var currentUTCTime = System.DateTime.UtcNow.ToString("yyyy-MM-dd-hh-mm-ss-fffffff-(zz)");
-        File.WriteAllBytes($@"{saveDir}\{obs.position.ToPreciseString()}_{obs.rotation.ToPreciseString()}_{currentUTCTime}.png", obs.png);
+        return $@"{ obs.position.ToPreciseString()}_{ obs.rotation.ToPreciseString()}_{ currentUTCTime}.png";
+    }
+
+    public void SaveImage(CaptureData obs, string saveDir, string fileName)
+    {
+        File.WriteAllBytes($@"{saveDir}\{fileName}", obs.png);
     }
 
     public CaptureData AdvancedCameraObservation(Camera camera)
@@ -138,5 +127,33 @@ public struct CaptureData
         this.texture = texture;
         this.position = position;
         this.rotation = rotation;
+    }
+}
+
+[System.Serializable]
+public class CaptureSettings
+{
+    public bool execute = true;
+    public int renderWidth = 128;
+    public int renderHeight = 128;
+    public int numImagesToMake = 20000;
+
+    public CaptureSettings()
+    {
+    }
+
+    public CaptureSettings(int renderWidth, int renderHeight, int number_of_img)
+    {
+        this.renderWidth = renderWidth;
+        this.renderHeight = renderHeight;
+        this.numImagesToMake = number_of_img;
+    }
+
+    public CaptureSettings(bool execute, int renderWidth, int renderHeight, int numImagesToMake)
+    {
+        this.execute = execute;
+        this.renderWidth = renderWidth;
+        this.renderHeight = renderHeight;
+        this.numImagesToMake = numImagesToMake;
     }
 }
