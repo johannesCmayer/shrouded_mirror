@@ -54,31 +54,35 @@ def get_coordinates_from_filename(string):
         rotations.append(float(num.replace(',', '.')))
     return coordinates, rotations
 
-def get_data(data_dir, num_data_points=None):
-    data_paths = glob.glob(data_dir + '/*')
-    print(f'loading {num_data_points if num_data_points else len(data_paths)} data points.')
-    images = []
-    coordinates = []
-    rotations = []
-    corrupt_files = []
-    for i, dp in enumerate(data_paths):
-        coordinate, rotation = get_coordinates_from_filename(dp)
-        try:
-            images.append(misc.imread(dp))
-        except OSError:
-            corrupt_files.append(dp)
-            continue
-        coordinates.append(coordinate)
-        rotations.append(rotation)
-        if num_data_points and i+1 >= num_data_points:
-            break
+def get_data(data_dirs, num_data_points=None):
+    data_dirs = [data_dirs + '\\' + x for x in os.listdir(data_dirs)]
+    env_data = []
+    for data_paths in data_dirs:
+        data_paths = glob.glob(data_paths + '/*')
+        print(f'loading {num_data_points if num_data_points else len(data_paths)} data points.')
+        images = []
+        coordinates = []
+        rotations = []
+        corrupt_files = []
+        for i, dp in enumerate(data_paths):
+            coordinate, rotation = get_coordinates_from_filename(dp)
+            try:
+                images.append(misc.imread(dp))
+            except OSError:
+                corrupt_files.append(dp)
+                continue
+            coordinates.append(coordinate)
+            rotations.append(rotation)
+            if num_data_points and i+1 >= num_data_points:
+                break
+        env_data.append((images, coordinates, rotations))
     if len(corrupt_files) > 0:
         if input(f'{len(corrupt_files)} out of {len(data_paths)} files could not be opened. '
                  f'The files might be corrup. Delete them? y/n\n') == 'y':
             for file in corrupt_files:
                 os.remove(file)
             print(f'{len(corrupt_files)} files deleted.')
-    return images, coordinates, rotations
+    return env_data
 
 
 def normalize_data(images, coordinates, rotations):
@@ -251,21 +255,24 @@ def train_model(flat_image_inputs, coordinate_inputs, model_save_file_path, mode
 
 
 # TODO clean up and split up run method
-def run(data_dir, model_save_file_path, image_dim, load_model_path=None, train=True,
-        num_samples_to_load=None, batch_size=None, run_environment=True):
+def run(data_dirs, model_save_file_path, image_dim, load_model_path=None, train=True,
+        num_samples_to_load=None, batch_size=None, run_environment=True, black_n_white=True):
     '''
     Run the main Programm
-    :param data_dir: the directory containing the training data.
+    :param data_dirs: the directory containing the training data.
     :param model_save_file_path: the path where to save a model.
     :param image_dim: the dimensions of the images in the data path.
     :param load_model_path: the name of the model to load. None = train new model.
     :param num_samples_to_load: number of samples to load from the data dir. None = all.
     :return: None
     '''
-    image_data_un, position_data_un, rotation_data_un = get_data(data_dir, num_samples_to_load)
-    image_data, position_data, rotation_data = normalize_data(image_data_un, position_data_un, rotation_data_un)
-    image_data = np.sum(image_data, -1) / 4
+    unnormalized_data = get_data(data_dirs, num_samples_to_load)
+    normalized_data = [normalize_data(image_data_un, position_data_un, rotation_data_un)
+                       for image_data_un, position_data_un, rotation_data_un in unnormalized_data ]
+    if black_n_white:
+        image_data = np.sum(image_data, -1) / 4
 
+    # TODO continue to implement new data structure
     coordinate_inputs = network_inputs_from_coordinates(position_data, rotation_data)
     flat_image_inputs = np.reshape(image_data, (-1, product(image_dim)))
 
@@ -339,17 +346,24 @@ if __name__ == '__main__':
     data_base_dirs = ['D:\\Projects\\Unity_Projects\\GQN_Experimentation\\trainingData',
                       r'D:\JohannesCMayer\GQN_Experimentation\trainingData']
     data_dirs = {
-        1: 'GQN_SimpleRoom_32x32',
-        2: 'GQN_SimpleRoom_withobj_32x32',
+        1: 'GQN_SimpleRoom',
+        2: 'GQN_SimpleRoom_withobj',
+        3: 'GQN_SimpleRoom_RandomizedObjects_2',
+    }
+    resolutions = {
+        32: '32x32',
+        64: '64x64',
+        128: '128x128',
+        256: '256x256',
     }
     resolutions = {
         'uhd': (2400, 1200),
         'hd': (1200, 600),
     }
 
-    def get_data_dir(key):
+    def get_data_dir(key, resolution_key):
         for base_dir in data_base_dirs:
-            dir = (base_dir + '/' + data_dirs.get(key))
+            dir = (f'{base_dir}/{data_dirs.get(key)}_{resolutions.get(resolution_key)}')
             if os.path.isdir(dir):
                 return dir
         raise OSError('None of specified data base dirs exist.')
@@ -358,8 +372,8 @@ if __name__ == '__main__':
         dims = dir.split('_')[-1].split('x')
         return int(dims[0]), int(dims[1])
 
-    data_dir = get_data_dir(2)
+    data_dir = get_data_dir(2, 32)
     img_dims = get_img_dim_form_data_dir(data_dir)
-    run(data_dir=data_dir, load_model_path=model_names.get(0), image_dim=img_dims,
+    run(data_dirs=data_dir, load_model_path=model_names.get(0), image_dim=img_dims,
         model_save_file_path=get_unique_model_save_name(img_dims, name='normal-run'), num_samples_to_load=None,
         batch_size=None, run_environment=True, train=True)
