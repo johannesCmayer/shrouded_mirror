@@ -393,9 +393,9 @@ def run(unnormalized_environment_data, model_save_file_path, image_dim, load_mod
                 return
 
 
-relative_model_dir = '.\\models\\'
-if os.listdir(relative_model_dir):
-    os.mkdir(relative_model_dir)
+models_dir = os.path.dirname(__file__) + '\\models\\'
+if not os.path.isdir(models_dir):
+    os.mkdir(models_dir)
 model_names_home = {
     1: 'first_large.hdf5',
     2: '2018-10-26.15-41-54.307222_super-long-run',
@@ -408,7 +408,7 @@ model_names_uni = {
     -2: '2018-11-06 21-24-21.hdf5',
 }
 model_names = {**model_names_home, **model_names_uni}
-model_names = {id: relative_model_dir + model_name for id, model_name in zip(model_names.keys(), model_names.values())}
+model_names = {id: models_dir + model_name for id, model_name in zip(model_names.keys(), model_names.values())}
 model_names = {'train': None, 0: None, **model_names}
 
 data_base_dirs = ['D:\\Projects\\Unity_Projects\\GQN_Experimentation\\trainingData',
@@ -455,7 +455,7 @@ if __name__ == '__main__':
         run(unnormalized_environment_data=unnormalized_environment_data,
             load_model_path=model_names.get('train'),
             image_dim=img_dims,
-            model_save_file_path=relative_model_dir + get_unique_model_save_name(img_dims, name='normal-run'),
+            model_save_file_path=models_dir + get_unique_model_save_name(img_dims, name='normal-run'),
             epochs=100,
             sub_epochs=10,
             batch_size=None,
