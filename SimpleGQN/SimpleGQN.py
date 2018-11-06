@@ -234,14 +234,13 @@ class CharacterController:
             self.current_position = np.array(self.center_pos)
 
 
-def train_model(network_inputs, model_save_file_path, model_to_train, environment_batch_size=None, batch_size=None):
+def train_model(network_inputs, model_save_file_path, model_to_train, epochs=100, sub_epochs=10, environment_batch_size=None, batch_size=None):
     model_save_file_path = remove_extension(model_save_file_path)
     checkpoint_save_path = f'{model_save_file_path}.checkpoint'
     model_final_save = f'{model_save_file_path}.hdf5'
 
-    epochs = 20
-    sub_epochs = 2
     training_aborted = False
+    environment_batch_size = environment_batch_size if environment_batch_size else len(network_inputs)
     for i in range(int(epochs / sub_epochs)):
         random.shuffle(network_inputs)
         for i, (flat_image_inputs, coordinate_inputs) in enumerate(network_inputs):
@@ -251,13 +250,15 @@ def train_model(network_inputs, model_save_file_path, model_to_train, environmen
             coordinate_inputs = np.asarray(coordinate_inputs)
             scrambled_flat_image_inputs_2 = np.random.permutation(flat_image_inputs)
 
-            model_to_train.fit([scrambled_flat_image_inputs_2, coordinate_inputs], flat_image_inputs, batch_size=batch_size,
-                                epochs=sub_epochs,
-                                callbacks=[
-                                    keras.callbacks.EarlyStopping(monitor='loss', patience=4),
-                                    keras.callbacks.LambdaCallback(on_epoch_end=lambda _, _b: print(f'\n\nTrueEpoch {i*sub_epochs}/{epochs} - Environment epoch {i}')),
-                                    keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=sub_epochs)
-                                ]
+            model_to_train.fit([
+                scrambled_flat_image_inputs_2, coordinate_inputs], flat_image_inputs, batch_size=batch_size, epochs=sub_epochs, verbose=2,
+                callbacks=[
+                    keras.callbacks.EarlyStopping(monitor='loss', patience=4),
+                    keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=sub_epochs),
+                    keras.callbacks.LambdaCallback(on_epoch_end=
+                        lambda _, _b: print(f'\n\nTrueEpoch {i*sub_epochs}/{epochs}\n '
+                                            f'Environment epoch {i}/{environment_batch_size}')),
+                ]
             )
         if keyboard.is_pressed('q'):
             print('learning aborted by user')
@@ -273,7 +274,7 @@ def train_model(network_inputs, model_save_file_path, model_to_train, environmen
 
 # TODO clean up and split up run method
 def run(data_dirs, model_save_file_path, image_dim, load_model_path=None, train=True,
-        num_envs_to_load=None, num_data_from_env=None, batch_size=None, run_environment=True, black_n_white=True, window_size=(1200, 600),
+        num_envs_to_load=None, num_data_from_env=None, epochs=100, sub_epochs=10, batch_size=None, run_environment=True, black_n_white=True, window_size=(1200, 600),
         window_size_coef=1):
     '''
     Run the main Programm
@@ -341,7 +342,7 @@ def run(data_dirs, model_save_file_path, image_dim, load_model_path=None, train=
     else:
         model = get_gqn_model(np.shape(network_inputs[0][0][0]), np.shape(network_inputs[0][1][0]))
     if train:
-        model = train_model(network_inputs, model_save_file_path, model, batch_size=batch_size)
+        model = train_model(network_inputs, model_save_file_path, model, epochs=epochs, sub_epochs=sub_epochs, batch_size=batch_size)
 
     if not run_environment:
         return
@@ -382,21 +383,6 @@ def run(data_dirs, model_save_file_path, image_dim, load_model_path=None, train=
                 return
 
 
-def get_data_dir(key, resolution_key):
-    for base_dir in data_base_dirs:
-        dir = (f'{base_dir}\\{data_dirs.get(key)}\\{image_resolutions[resolution_key]}')
-        if os.path.isdir(dir):
-            print(f'Found data in: {dir}')
-            return dir
-        else:
-            print(f'Data not found in: {dir}')
-    raise OSError('None of specified data base dirs exist.')
-
-def get_img_dim_form_data_dir(dir):
-    dims = dir.split('\\')[-1].split('x')
-    return int(dims[0]), int(dims[1])
-
-
 model_names_home = {
         1: 'first_large.hdf5',
         2: '2018-10-26.15-41-54.307222_super-long-run',
@@ -428,6 +414,22 @@ window_resolutions = {
 }
 
 
+def get_data_dir(key, resolution_key):
+    for base_dir in data_base_dirs:
+        dir = (f'{base_dir}\\{data_dirs.get(key)}\\{image_resolutions[resolution_key]}')
+        if os.path.isdir(dir):
+            print(f'Found data in: {dir}')
+            return dir
+        else:
+            print(f'Data not found in: {dir}')
+    raise OSError('None of specified data base dirs exist.')
+
+
+def get_img_dim_form_data_dir(dir):
+    dims = dir.split('\\')[-1].split('x')
+    return int(dims[0]), int(dims[1])
+
+
 if __name__ == '__main__':
     data_dir = get_data_dir(3, 32)
     img_dims = get_img_dim_form_data_dir(data_dir)
@@ -435,8 +437,10 @@ if __name__ == '__main__':
         load_model_path=model_names.get(0),
         image_dim=img_dims,
         model_save_file_path=get_unique_model_save_name(img_dims, name='normal-run'),
-        num_envs_to_load=2,
-        num_data_from_env=2,
+        num_envs_to_load=None,
+        num_data_from_env=None,
+        epochs=100,
+        sub_epochs=10,
         batch_size=None,
         run_environment=True,
         train=True,

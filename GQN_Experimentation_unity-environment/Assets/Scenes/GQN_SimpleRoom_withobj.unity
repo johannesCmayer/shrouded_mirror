@@ -406,9 +406,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   takeObservation: {fileID: 1310930891}
   environmentalObjectsSpawnVolume: {fileID: 213615900}
-  capturesBevoreRandomization: 100
-  maxNumEnvObjects: 3
-  minNumEnvObjects: 0
   environmentBaseObjects:
   - {fileID: 52779471}
   - {fileID: 1128368176}
@@ -418,6 +415,18 @@ MonoBehaviour:
   environmentalObjectsPrefabs:
   - {fileID: 1769217494984562, guid: b19bd10088402f045a1a38ff76d31407, type: 2}
   - {fileID: 1808093993082840, guid: e0ba5c3d4c4c66848ae9c4c5197a8bb3, type: 2}
+  capturesBevoreRandomization: 100
+  maxNumEnvObjects: 3
+  minNumEnvObjects: 0
+  environmentObjectsMinScale: 0.4
+  environmentObjectsMaxScale: 2
+  randCamBackgroundColor: 1
+  randEnvColor: 1
+  randEnvObjColor: 1
+  randEnvObjPosition: 1
+  randEnvObjRotation: 1
+  randEnvObjScale: 1
+  randEnvObjectNumber: 1
 --- !u!4 &314459913
 Transform:
   m_ObjectHideFlags: 0
@@ -1150,14 +1159,9 @@ Prefab:
       objectReference: {fileID: 213615900}
     - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
         type: 2}
-      propertyPath: captureBatchSize
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
-        type: 2}
-      propertyPath: cam
+      propertyPath: environmentGenerator
       value: 
-      objectReference: {fileID: 1786628536}
+      objectReference: {fileID: 314459912}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 2}
   m_IsPrefabAsset: 0

@@ -132,7 +132,7 @@ MonoBehaviour:
   cam: {fileID: 20159692649184960}
   observeVolume: {fileID: 0}
   environmentGenerator: {fileID: 0}
-  captureBatchSize: 1
+  captureBatchSize: 2000
   captureSettings:
   - execute: 1
     renderWidth: 32
