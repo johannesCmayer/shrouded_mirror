@@ -184,9 +184,9 @@ def draw_autoencoding_evaluation():
 
 
 class CharacterController:
-    def __init__(self, position_data_un):
-        self.center_pos = np.asarray([0, 1.5, 0]) / np.argmax(position_data_un)
-        self.current_position = self.center_pos
+    def __init__(self, center_pos=(0, 1.5, 0)):
+        self.center_pos = np.asarray(center_pos)
+        self.current_position = np.array(self.center_pos)
         self.current_y_rotation = 0
         self.prev_time = 0
         self.move_speed = 0.8
@@ -213,7 +213,6 @@ class CharacterController:
         current_rot_x2_90_deg_offset = self.y_rot_to_quaternion(self.current_y_rotation * 2 + np.pi / 2)
         right_vec = -1 * np.asarray([np.sin(current_rot_x2_90_deg_offset[1]), 0., np.sin(current_rot_x2_90_deg_offset[3])])
 
-        pygame.event.pump()
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_a]:
@@ -231,7 +230,8 @@ class CharacterController:
             self.current_position += self.move_speed * delta_time * right_vec
 
         if keys[pygame.K_KP2]:
-            self.current_position = self.center_pos
+            print('reset to center')
+            self.current_position = np.array(self.center_pos)
 
 
 def train_model(network_inputs, model_save_file_path, model_to_train, environment_batch_size=None, batch_size=None):
@@ -239,7 +239,7 @@ def train_model(network_inputs, model_save_file_path, model_to_train, environmen
     checkpoint_save_path = f'{model_save_file_path}.checkpoint'
     model_final_save = f'{model_save_file_path}.hdf5'
 
-    epochs = 500
+    epochs = 20
     sub_epochs = 2
     training_aborted = False
     for i in range(int(epochs / sub_epochs)):
@@ -249,18 +249,15 @@ def train_model(network_inputs, model_save_file_path, model_to_train, environmen
                 break
             flat_image_inputs = np.asarray(flat_image_inputs)
             coordinate_inputs = np.asarray(coordinate_inputs)
-            # idxs = np.random.permutation((np.indices(flat_image_inputs)[0],))
-            # scrambled_flat_image_inputs = np.select(flat_image_inputs, idxs)
-            # scrambled_coordinate_inputs = np.select(coordinate_inputs, idxs)
             scrambled_flat_image_inputs_2 = np.random.permutation(flat_image_inputs)
 
             model_to_train.fit([scrambled_flat_image_inputs_2, coordinate_inputs], flat_image_inputs, batch_size=batch_size,
-                                epochs=sub_epochs
-                #                 callbacks=[
-                #                     keras.callbacks.EarlyStopping(monitor='loss', patience=4),
-                #                     keras.callbacks.LambdaCallback(on_epoch_end=lambda _, _b: print(f'\n\nTrueEpoch {i*sub_epochs}/{epochs}')),
-                #                     keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=sub_epochs)
-                # ]
+                                epochs=sub_epochs,
+                                callbacks=[
+                                    keras.callbacks.EarlyStopping(monitor='loss', patience=4),
+                                    keras.callbacks.LambdaCallback(on_epoch_end=lambda _, _b: print(f'\n\nTrueEpoch {i*sub_epochs}/{epochs} - Environment epoch {i}')),
+                                    keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=sub_epochs)
+                                ]
             )
         if keyboard.is_pressed('q'):
             print('learning aborted by user')
@@ -288,10 +285,11 @@ def run(data_dirs, model_save_file_path, image_dim, load_model_path=None, train=
     :return: None
     '''
     def get_closesd_image_to_coordinates(pos, rot):
-        similarity_at_idx = []
-        for im_pos, im_rot in zip(position_data, rotation_data):
-            similarity_at_idx.append((np.sum(np.abs(pos - im_pos)) + np.sum(np.abs(rot - im_rot)) * 10))
-        return env[np.argmax(similarity_at_idx)]
+        return np.zeros((32,32)) + 255
+        # similarity_at_idx = []
+        # for im_pos, im_rot in zip(position_data, rotation_data):
+        #     similarity_at_idx.append((np.sum(np.abs(pos - im_pos)) + np.sum(np.abs(rot - im_rot)) * 10))
+        # return env[np.argmax(similarity_at_idx)]
 
     def black_n_white_to_rgb255(img):
         img = np.stack([img] * 3, -1)
@@ -303,19 +301,28 @@ def run(data_dirs, model_save_file_path, image_dim, load_model_path=None, train=
     def get_random_observation_inputs(network_inputs, number_of_observations=1):
         return random.choices(random.choice(network_inputs)[0], k=number_of_observations)
 
+    def get_max_env_data_values(environment_data):
+        max_img, max_pos, max_rot = 0, 0, 0
+        for e in environment_data:
+            im, pos, rot = e
+            max_img = max(np.max(im), max_img)
+            max_pos = max(np.max(pos), max_pos)
+            max_rot = max(np.max(rot), max_rot)
+        return max_img, max_pos, max_rot
+
+    def normalize_environment_data(environment_data):
+        max_img, max_pos, max_rot = get_max_env_data_values(environment_data)
+        return [(img / max_img, pos / max_pos, rot / max_rot) for img, pos, rot in environment_data]
+
     def unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=False):
         envs_data = []
-        for env in unnormalized_environment_data:
-            images = []
-            coordinates = []
-            for un_img, un_pos, un_rot in zip(env.images, env.coordinates, env.rotations):
-                img, pos, rot = normalize_data((un_img, un_pos, un_rot))
-                if black_n_white:
-                    img = rgba_to_black_n_white(img)
-                img = np.reshape(img, product(image_dim))
-                images.append(np.asarray(img))
-                coordinates.append(network_inputs_from_coordinates_single(pos, rot))
-            envs_data.append((images, coordinates))
+        for env in normalize_environment_data(unnormalized_environment_data):
+            images, poss, rots = env
+            if black_n_white:
+                images = [rgba_to_black_n_white(img) for img in images]
+            images = [np.reshape(img, product(image_dim)) for img in images]
+            coordinates = [network_inputs_from_coordinates_single(pos, rot) for pos, rot in zip(poss, rots)]
+            envs_data.append((np.asarray(images), np.asarray(coordinates)))
         return envs_data
 
     window_size = collections.namedtuple('Rect', field_names='x y')(
@@ -323,6 +330,9 @@ def run(data_dirs, model_save_file_path, image_dim, load_model_path=None, train=
         y=int(window_size[1] * window_size_coef))
 
     unnormalized_environment_data = get_data_for_environments(data_dirs, num_envs_to_load, num_data_from_env)
+    _, max_pos_val, max_rot_val = get_max_env_data_values(unnormalized_environment_data)
+    img_data_shape_rgb = np.shape(unnormalized_environment_data[0][0][0])
+    img_data_shape_bw = img_data_shape_rgb[:-1]
     network_inputs = unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=True)
 
     model = None
@@ -336,14 +346,16 @@ def run(data_dirs, model_save_file_path, image_dim, load_model_path=None, train=
     if not run_environment:
         return
 
-    character_controller = CharacterController(position_data_un)
+
+    character_controller = CharacterController(center_pos=(0,1.5,0) / max_pos_val)
     img_drawer = ImgDrawer(window_size)
 
     # TODO make it work with network input strukture
     observation_input = get_random_observation_inputs(network_inputs, 1)
+    coordinate_input = [network_inputs_from_coordinates_single(character_controller.current_position, character_controller.current_rotation_quaternion)]
     while True:
-        output = model.predict([[observation_input], network_inputs_from_coordinates([character_controller.current_position], [character_controller.current_rotation_quaternion])])
-        output = np.reshape(output[0], np.shape((image_data[0])))
+        output = model.predict([observation_input, coordinate_input])
+        output = np.reshape(output[0], img_data_shape_bw)
 
         stacked_output = black_n_white_to_rgb255(output)
 
@@ -351,10 +363,10 @@ def run(data_dirs, model_save_file_path, image_dim, load_model_path=None, train=
         closesed_image = get_closesd_image_to_coordinates(character_controller.current_position, character_controller.current_rotation_quaternion)
         img_drawer.draw_image(black_n_white_to_rgb255(closesed_image), display_duration=0,
                               size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, 0))
-        img_drawer.draw_image(black_n_white_to_rgb255(np.reshape(observation_input, np.shape(image_data[0]))),
+        img_drawer.draw_image(black_n_white_to_rgb255(np.reshape(observation_input, img_data_shape_bw)),
                               size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, window_size.y // 2))
 
-        img_drawer.draw_text(f'{str(character_controller.current_position * np.argmax(position_data_un))} max position {np.max(position_data_un, 0)}', (10, 10))
+        img_drawer.draw_text(f'{str(character_controller.current_position * max_pos_val)} max position {max_pos_val}', (10, 10))
         img_drawer.draw_text(str(character_controller.current_rotation_quaternion), (10, 50))
 
         img_drawer.execute()
@@ -362,57 +374,61 @@ def run(data_dirs, model_save_file_path, image_dim, load_model_path=None, train=
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_KP1]:
-            observation_input = get_random_observation_inputs()
+            observation_input = get_random_observation_inputs(network_inputs)
 
-        #TODO test if this is nessesary
-        pygame.event.pump()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
 
 
-if __name__ == '__main__':
-    model_names_home = {
+def get_data_dir(key, resolution_key):
+    for base_dir in data_base_dirs:
+        dir = (f'{base_dir}\\{data_dirs.get(key)}\\{image_resolutions[resolution_key]}')
+        if os.path.isdir(dir):
+            print(f'Found data in: {dir}')
+            return dir
+        else:
+            print(f'Data not found in: {dir}')
+    raise OSError('None of specified data base dirs exist.')
+
+def get_img_dim_form_data_dir(dir):
+    dims = dir.split('\\')[-1].split('x')
+    return int(dims[0]), int(dims[1])
+
+
+model_names_home = {
         1: 'first_large.hdf5',
         2: '2018-10-26.15-41-54.307222_super-long-run',
         3: '2018-11-01 21-15-16_(32, 32).hdf5',
         4: '2018-11-01 22-18-28_(32, 32).hdf5',
         5: '2018-11-02 01-19-11_(32, 32).checkpoint',
     }
-    model_names_uni = {
-        -1: '2018-11-02 13-47-15.hdf5'
-    }
-    model_names = {'train': None, 0: None, **model_names_home, **model_names_uni}
+model_names_uni = {
+    -1: '2018-11-02 13-47-15.hdf5'
+}
+model_names = {'train': None, 0: None, **model_names_home, **model_names_uni}
 
-    data_base_dirs = ['D:\\Projects\\Unity_Projects\\GQN_Experimentation\\trainingData',
-                      r'D:\JohannesCMayer\GQN_Experimentation\trainingData']
-    data_dirs = {
-        1: 'GQN_SimpleRoom',
-        2: 'GQN_SimpleRoom_withobj',
-        3: 'GQN_SimpleRoom_RandomizedObjects_2',
-    }
-    image_resolutions = {
-        32: '32x32',
-        64: '64x64',
-        128: '128x128',
-        256: '256x256',
-    }
-    window_resolutions = {
-        'uhd': (2400, 1200),
-        'hd': (1200, 600),
-    }
+data_base_dirs = ['D:\\Projects\\Unity_Projects\\GQN_Experimentation\\trainingData',
+                  r'D:\JohannesCMayer\GQN_Experimentation\trainingData']
+data_dirs = {
+    1: 'GQN_SimpleRoom',
+    2: 'GQN_SimpleRoom_withobj',
+    3: 'GQN_SimpleRoom_RandomizedObjects_2',
+}
+image_resolutions = {
+    32: '32x32',
+    64: '64x64',
+    128: '128x128',
+    256: '256x256',
+}
+window_resolutions = {
+    'uhd': (2400, 1200),
+    'hd': (1200, 600),
+}
 
-    def get_data_dir(key, resolution_key):
-        for base_dir in data_base_dirs:
-            dir = (f'{base_dir}\\{data_dirs.get(key)}\\{image_resolutions[resolution_key]}')
-            if os.path.isdir(dir):
-                print(f'Found data in: {dir}')
-                return dir
-            else:
-                print(f'Data not found in: {dir}')
-        raise OSError('None of specified data base dirs exist.')
 
-    def get_img_dim_form_data_dir(dir):
-        dims = dir.split('\\')[-1].split('x')
-        return int(dims[0]), int(dims[1])
-
+if __name__ == '__main__':
     data_dir = get_data_dir(3, 32)
     img_dims = get_img_dim_form_data_dir(data_dir)
     run(data_dirs=data_dir,
