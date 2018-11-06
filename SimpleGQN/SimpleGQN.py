@@ -18,21 +18,24 @@ import pygame
 import datetime
 import time
 import random
-import re
 from typing import Dict
 import collections
-import math
 import keyboard
+import threading
+import winsound
 
-# TODO refactor everything
 
-# TODO Implement this and understand re
-def delete_data(data_dir, regex: str):
-    data_paths = glob.iglob(data_dir)
-    for i, dp in enumerate(data_paths):
-        #if re.
-        #os.remove(dp)
-        pass
+def pause_and_notify(msg='programm suspendet'):
+    while True:
+        for i in range(40):
+            time.sleep(0.1)
+            if keyboard.is_pressed('q'):
+                return
+        try:
+            winsound.MessageBeep(2)
+        except Exception as e:
+            print(f'winsound cant play: {e}')
+        print(msg + ' - press q to continue')
 
 
 def rename_data(data_dir, dict_str_to_replace: Dict):
@@ -150,7 +153,7 @@ def get_gqn_model(picture_input_shape, coordinates_input_shape):
 def network_inputs_from_coordinates_vect(position_datas, rotation_datas):
     coordinates = []
     for p, r in zip(position_datas, rotation_datas):
-        network_inputs_from_coordinates_single(p, r)
+        coordinates_vec = network_inputs_from_coordinates_single(p, r)
         coordinates.append(coordinates_vec)
     return np.asarray(coordinates)
 
@@ -354,7 +357,7 @@ def run(unnormalized_environment_data, model_save_file_path, image_dim, load_mod
     if not run_environment:
         return
 
-
+    pause_and_notify('training completed')
     character_controller = CharacterController(center_pos=(0,1.5,0) / max_pos_val)
     img_drawer = ImgDrawer(window_size)
 
@@ -390,18 +393,23 @@ def run(unnormalized_environment_data, model_save_file_path, image_dim, load_mod
                 return
 
 
+relative_model_dir = '.\\models\\'
+if os.listdir(relative_model_dir):
+    os.mkdir(relative_model_dir)
 model_names_home = {
-        1: 'first_large.hdf5',
-        2: '2018-10-26.15-41-54.307222_super-long-run',
-        3: '2018-11-01 21-15-16_(32, 32).hdf5',
-        4: '2018-11-01 22-18-28_(32, 32).hdf5',
-        5: '2018-11-02 01-19-11_(32, 32).checkpoint',
+    1: 'first_large.hdf5',
+    2: '2018-10-26.15-41-54.307222_super-long-run',
+    3: '2018-11-01 21-15-16_(32, 32).hdf5',
+    4: '2018-11-01 22-18-28_(32, 32).hdf5',
+    5: '2018-11-02 01-19-11_(32, 32).checkpoint',
     }
 model_names_uni = {
     -1: '2018-11-02 13-47-15.hdf5',
     -2: '2018-11-06 21-24-21.hdf5',
 }
-model_names = {'train': None, 0: None, **model_names_home, **model_names_uni}
+model_names = {**model_names_home, **model_names_uni}
+model_names = {id: relative_model_dir + model_name for id, model_name in zip(model_names.keys(), model_names.values())}
+model_names = {'train': None, 0: None, **model_names}
 
 data_base_dirs = ['D:\\Projects\\Unity_Projects\\GQN_Experimentation\\trainingData',
                   r'D:\JohannesCMayer\GQN_Experimentation\trainingData']
@@ -439,18 +447,19 @@ def get_img_dim_form_data_dir(dir):
 
 
 if __name__ == '__main__':
-    data_dir = get_data_dir(3, 32)
-    img_dims = get_img_dim_form_data_dir(data_dir)
-    unnormalized_environment_data = get_data_for_environments(data_dirs, num_envs_to_load=None, num_data_from_env=None)
+    data_dirs_path = get_data_dir(3, 32)
+    img_dims = get_img_dim_form_data_dir(data_dirs_path)
+    unnormalized_environment_data = \
+        get_data_for_environments(data_dirs_path, num_envs_to_load=None, num_data_from_env=None)
     while True:
         run(unnormalized_environment_data=unnormalized_environment_data,
             load_model_path=model_names.get('train'),
             image_dim=img_dims,
-            model_save_file_path=get_unique_model_save_name(img_dims, name='normal-run'),
+            model_save_file_path=relative_model_dir + get_unique_model_save_name(img_dims, name='normal-run'),
             epochs=100,
             sub_epochs=10,
             batch_size=None,
             run_environment=True,
             train=True,
-            black_n_white=False,
+            black_n_white=True,
             window_size=window_resolutions['hd'])
