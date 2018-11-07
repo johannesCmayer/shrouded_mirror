@@ -26,17 +26,39 @@ import winsound
 import names
 
 
-def pause_and_notify(msg='programm suspendet'):
+class Spinner:
+    spin_chars = ['|','/','-','\\']
+    def __init__(self, num_to_switch_state=2):
+        self.state = 0
+        self.num_to_switch_state = num_to_switch_state
+
+    def get_current_spin_char(self):
+        if self.state >= len(Spinner.spin_chars) * self.num_to_switch_state:
+            self.state = 0
+        return Spinner.spin_chars[self.state // self.num_to_switch_state]
+
+    def get_spin_char(self):
+        self.state += 1
+        if self.state >= len(Spinner.spin_chars) * self.num_to_switch_state:
+            self.state = 0
+        return Spinner.spin_chars[self.state // self.num_to_switch_state]
+
+    def print_spinner(self):
+        print(get_spin_char())
+
+
+def pause_and_notify(msg='programm suspendet', timeout=None):
+    start_time = time.time()
     while True:
         for i in range(40):
             time.sleep(0.1)
-            if keyboard.is_pressed('q') or keyboard.is_pressed(' '):
+            if keyboard.is_pressed('q') or keyboard.is_pressed(' ') or timeout and time.time() - start_time > timeout:
                 return
         try:
             winsound.MessageBeep(2)
         except Exception as e:
             print(f'winsound cant play: {e}')
-        print(msg + ' - press q or space  to continue')
+        print(msg + ' - press q or SPACE to continue')
 
 
 def rename_data(data_dir, dict_str_to_replace: Dict):
@@ -94,10 +116,12 @@ def get_data_for_environments(data_dirs, num_envs_to_load=None, num_data_from_en
             if num_data_from_env and i+1 >= num_data_from_env:
                 break
         env_data.append(EnvData(images, coordinates, rotations))
-        print(f'\rloaded {len(images)} entrys from  environment '
+        sc = spinner.get_spin_char()
+        print(f'\r{sc} loaded {len(images)} entrys from environment '
               f'{len(env_data)}/{num_envs_to_load} - '
-              f'{int(len(env_data) / num_envs_to_load * 100)}%', end='')
-    print(f'\n{num_loaded} data points loaded')
+              f'{int(len(env_data) / num_envs_to_load * 100)}% - '
+              f'{num_loaded} images loaded', end='')
+    print()
     delete_corrupt_files(corrupt_files)
     return env_data
 
@@ -129,7 +153,7 @@ def autoencoder(picture_input_shape):
 
 def get_gqn_model(picture_input_shape, coordinates_input_shape):
     print('creating model')
-    NUM_LAYERS = 10
+    NUM_LAYERS = 12
     NUM_NON_STATE_NEURONS = 1024
     # TODO Add ability to add up multiple observations to the latent representation
     number_of_pixels = product(picture_input_shape)
@@ -175,7 +199,7 @@ def replace_multiple(str, old, new):
     return str
 
 
-def get_unique_model_save_name(img_shape, bw=True, old_name=None, postfix='', newest_version=True):
+def get_unique_model_save_name(img_shape, bw=True, old_name=None, newest_version=True):
     prefix_name = names.get_full_name()
     rand_id = random.randint(1000, 10000)
     version = 1
@@ -192,9 +216,8 @@ def get_unique_model_save_name(img_shape, bw=True, old_name=None, postfix='', ne
         old_img_shape = tuple([int(x) for x in replace_multiple(old_name.split('_')[-1], replace_strings, '').split('-')])
         if old_img_shape != img_shape:
             raise ValueError(f'The input of image shape {img_shape} is not equal to the original input {old_img_shape}.')
-
     name = f'{prefix_name}_v-{version}_id-{rand_id}_trained-{datetime.datetime.now().date()}_' \
-           f'{datetime.datetime.now().time()}_IDim-{str(img_shape).replace(", ", "-")}{("_" + postfix) if postfix else ""}'
+           f'{datetime.datetime.now().time()}_IDim-{str(img_shape).replace(", ", "-")}'
     return replace_multiple(name, [':', ' '], '-')
 
 
@@ -266,8 +289,11 @@ class CharacterController:
             self.current_position += self.move_speed * delta_time * right_vec
 
         if keys[pygame.K_KP2]:
-            print('reset to center')
+            print('reset position to center')
             self.current_position = np.array(self.center_pos)
+        if keys[pygame.K_KP3]:
+            print('reset rotation')
+            self.current_y_rotation = 0
 
 
 def get_closesd_image_to_coordinates(pos, rot):
@@ -278,9 +304,13 @@ def get_closesd_image_to_coordinates(pos, rot):
     # return env[np.argmax(similarity_at_idx)]
 
 
-def black_n_white_to_rgb255(img):
+def black_n_white_1_to_rgb_255(img):
     img = np.stack([img] * 3, -1)
     return img / np.max(img) * 255
+
+
+def rgba_to_rgb(img):
+    return np.delete(img, [3], -1)
 
 
 def rgba_to_black_n_white(img):
@@ -312,20 +342,24 @@ def unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=
         images, poss, rots = env
         if black_n_white:
             images = [rgba_to_black_n_white(img) for img in images]
+        else:
+            images = [rgba_to_rgb(img) for img in images]
         images = [np.reshape(img, product(np.shape(img))) for img in images]
         coordinates = [network_inputs_from_coordinates_single(pos, rot) for pos, rot in zip(poss, rots)]
         envs_data.append((np.asarray(images), np.asarray(coordinates)))
     return envs_data
 
 
-def train_model(network_inputs, model_save_file_path, model_to_train, epochs=100, sub_epochs=10, environment_epochs=None, batch_size=None):
+def train_model(network_inputs, model_save_file_path, model_to_train, true_epochs=100, sub_epochs=10, environment_epochs=None, batch_size=None, additional_meta_data={}):
+    input_params = locals()
     print(f'model name: {os.path.basename(model_save_file_path)}')
     checkpoint_save_path = f'{model_save_file_path}.checkpoint'
     final_save_path = f'{model_save_file_path}.hdf5'
+    meta_data_save_path = f'{model_save_file_path}.modelmeta'
 
     training_aborted = False
     environment_epochs = environment_epochs if environment_epochs else len(network_inputs)
-    for i in range(int(epochs / sub_epochs)):
+    for i in range(int(true_epochs / sub_epochs)):
         random.shuffle(network_inputs)
         for j, (flat_image_inputs, coordinate_inputs) in enumerate(network_inputs):
             batch_size = batch_size if batch_size else len(flat_image_inputs)
@@ -338,12 +372,12 @@ def train_model(network_inputs, model_save_file_path, model_to_train, epochs=100
             model_to_train.fit([
                 scrambled_flat_image_inputs_2, coordinate_inputs], flat_image_inputs, batch_size=batch_size, epochs=sub_epochs, verbose=2,
                 callbacks=[
-                    keras.callbacks.EarlyStopping(monitor='loss', patience=0, min_delta=1),
+                    # keras.callbacks.EarlyStopping(monitor='loss', patience=0, min_delta=1),
                     keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=sub_epochs),
                     keras.callbacks.LambdaCallback(on_epoch_end=
                         lambda _a, _b: print(f'\n'
                                              f'batch size: {batch_size}\n'
-                                             f'TrueEpoch {i*sub_epochs}/{epochs} - {int(i*sub_epochs / epochs * 100)}%\n'
+                                             f'TrueEpoch {i*sub_epochs}/{true_epochs} - {int(i*sub_epochs / true_epochs * 100)}%\n'
                                              f'Environment epoch {j}/{environment_epochs} - {int(j / environment_epochs * 100)}%')),
                 ]
             )
@@ -355,16 +389,32 @@ def train_model(network_inputs, model_save_file_path, model_to_train, epochs=100
             break
     print(f'saving model as {final_save_path}')
     model_to_train.save(final_save_path)
-    if not training_aborted:
+    if not training_aborted and os.path.isfile(checkpoint_save_path):
         print('removing checkpoint save')
         os.remove(checkpoint_save_path)
+    # print('writing metadata')
+    # meta_data = {**additional_meta_data, **input_params}
+    # ENTRY_MAX_SIZE = 1000
+    # with open(meta_data_save_path, 'w') as file:
+    #     ids=['Description', 'description', 'Description_', 'description_']
+    #     for id in ids[:2]:
+    #         file.write(meta_data.pop(id, '') + '\n')
+    #     for id in ids:
+    #         for i in range(10):
+    #             file.write(meta_data.pop(id + str(i), '') + '\n')
+    #     for key, value in zip(meta_data.keys(), meta_data.values()):
+    #         if len(str(value)) < ENTRY_MAX_SIZE:
+    #             file.write(str(key) + '\n')
+    #             file.write(str(value) + '\n\n')
+    #         else:
+    #             print(f'not writing {key} bucause longer than {ENTRY_MAX_SIZE}')
     return model_to_train
 
 
 # TODO clean up and split up run method
 def run(unnormalized_environment_data, model_save_file_path, model_to_train=None, model_load_file_path=None, train=True,
         epochs=100, sub_epochs=10, environment_epochs=None, batch_size=None, run_environment=True, black_n_white=True, window_size=(1200, 600),
-        window_size_coef=1):
+        window_size_coef=1, additional_meta_data={}):
     '''
     Run the main Programm
     :param data_dirs: the directory containing the training data.
@@ -374,24 +424,28 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_train=None
     :param num_samples_to_load: number of samples to load from the data dir. None = all.
     :return: Trained model
     '''
+    input_parameters = locals()
     window_size = collections.namedtuple('Rect', field_names='x y')(
         x=int(window_size[0] * window_size_coef),
         y=int(window_size[1] * window_size_coef))
 
     _, max_pos_val, max_rot_val = get_max_env_data_values(unnormalized_environment_data)
-    img_data_shape_rgb = np.shape(unnormalized_environment_data[0][0][0])
-    img_data_shape_bw = img_data_shape_rgb[:-1]
+    orig_img_data_shape = np.shape(unnormalized_environment_data[0][0][0])
     network_inputs = unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=black_n_white)
+    img_data_shape = orig_img_data_shape[0], orig_img_data_shape[1]
+    if not black_n_white:
+        img_data_shape = img_data_shape + (3,)
 
-    model_to_train = model_to_train
-    if not model_to_train:
+
+    model = model_to_train
+    if not model:
         if model_load_file_path:
-            model_to_train = keras.models.load_model(model_load_file_path)
+            model = keras.models.load_model(model_load_file_path)
         else:
-            model_to_train = get_gqn_model(np.shape(network_inputs[0][0][0]), np.shape(network_inputs[0][1][0]))
+            model = get_gqn_model(np.shape(network_inputs[0][0][0]), np.shape(network_inputs[0][1][0]))
     if train:
-        trained_model = train_model(network_inputs, model_save_file_path, model_to_train, epochs=epochs, sub_epochs=sub_epochs,
-                                    environment_epochs=environment_epochs, batch_size=batch_size)
+        model = train_model(network_inputs, model_save_file_path, model, true_epochs=epochs, sub_epochs=sub_epochs,
+                            environment_epochs=environment_epochs, batch_size=batch_size, additional_meta_data={**additional_meta_data, **input_parameters})
     if not run_environment:
         return
 
@@ -402,16 +456,21 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_train=None
     observation_input = get_random_observation_inputs(network_inputs, 1)
     while True:
         coordinate_input = [network_inputs_from_coordinates_single(character_controller.current_position, character_controller.current_rotation_quaternion)]
-        output = trained_model.predict([observation_input, coordinate_input])
-        output = np.reshape(output[0], img_data_shape_bw)
+        output_img = model.predict([observation_input, coordinate_input])
+        output_img = np.reshape(output_img[0], img_data_shape)
 
-        stacked_output = black_n_white_to_rgb255(output)
+        if black_n_white:
+            output_img = black_n_white_1_to_rgb_255(output_img)
+            observation_input_drawable = black_n_white_1_to_rgb_255(np.reshape(observation_input, img_data_shape))
+        else:
+            output_img = output_img / np.max(output_img) * 255
+            observation_input_drawable = np.reshape(observation_input, img_data_shape) * 255
 
-        img_drawer.draw_image(stacked_output, display_duration=0, size=(window_size.x // 2, window_size.y))
-        closesed_image = get_closesd_image_to_coordinates(character_controller.current_position, character_controller.current_rotation_quaternion)
-        img_drawer.draw_image(black_n_white_to_rgb255(closesed_image), display_duration=0,
-                              size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, 0))
-        img_drawer.draw_image(black_n_white_to_rgb255(np.reshape(observation_input, img_data_shape_bw)),
+        img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
+        # closesed_image = get_closesd_image_to_coordinates(character_controller.current_position, character_controller.current_rotation_quaternion)
+        # img_drawer.draw_image(black_n_white_to_rgb255(closesed_image), display_duration=0,
+        #                       size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, 0))
+        img_drawer.draw_image(observation_input_drawable,
                               size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, window_size.y // 2))
 
         img_drawer.draw_text(f'{str(character_controller.current_position * max_pos_val)} max position {max_pos_val}', (10, 10))
@@ -425,13 +484,13 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_train=None
             observation_input = get_random_observation_inputs(network_inputs)
         if keys[pygame.K_SPACE]:
             pygame.quit()
-            return trained_model
+            return model
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                return trained_model
-    return trained_model
+                return model
+    return model
 
 
 models_dir = os.path.dirname(__file__) + '\\models\\'
@@ -446,6 +505,7 @@ model_names_home = {
     }
 model_names_uni = {
     -1: 'Conrad-Marks_v-1_id-8291_trained-2018-11-07_02-43-48.845050_IDim-(32-32).hdf5',
+    -2: 'Isabelle-Jones_v-1_id-7008_trained-2018-11-07_04-31-20.796616_IDim-(32-32).hdf5',
 }
 TRAIN_NEW = 'train'
 CONRAD = -1
@@ -459,6 +519,8 @@ data_dirs = {
     1: 'GQN_SimpleRoom',
     2: 'GQN_SimpleRoom_withobj',
     3: 'GQN_SimpleRoom_RandomizedObjects_2',
+    4: 'GQN_SimpleRoom_nocolorchange-oneobject',
+    5: 'GQN_SimpleRoom_nocolorchange-oneobject-randompositioned',
 }
 image_resolutions = {
     32: '32x32',
@@ -487,26 +549,30 @@ def get_img_dim_form_data_dir(dir):
     dims = dir.split('\\')[-1].split('x')
     return int(dims[0]), int(dims[1])
 
+spinner = Spinner()
 
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(3, 32)
+    data_dirs_path = get_data_dir(5, 32)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
     unnormalized_environment_data = \
         get_data_for_environments(data_dirs_path, num_envs_to_load=None, num_data_from_env=None)
 
-    model_name_to_load = model_names.get(CONRAD)
+    model_name_to_load = model_names.get(TRAIN_NEW)
     run_params = {
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_name_to_load,
-        'model_save_file_path': models_dir + get_unique_model_save_name(img_dims, old_name=model_name_to_load, postfix='testpostfix'),
-        'epochs': 100,
+        'model_save_file_path': models_dir + get_unique_model_save_name(img_dims, old_name=model_name_to_load),
+        'epochs': 1000000,
         'sub_epochs': 1,
-        'environment_epochs': 20,
-        'batch_size': 100,
+        'environment_epochs': None,
+        'batch_size': 200,
         'run_environment': True,
         'train': True,
-        'black_n_white': True,
-        'window_size': window_resolutions['hd']
+        'black_n_white': False,
+        'window_size': window_resolutions['hd'],
+        'additional_meta_data': {'description': 'Description:\n'
+                                                '   This is a test description',
+                                 'data_dirs_path': data_dirs_path},
     }
 
     run_params['model_to_train'] = run(**run_params)
