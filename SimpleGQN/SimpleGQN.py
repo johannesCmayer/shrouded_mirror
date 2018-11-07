@@ -12,7 +12,7 @@ from scipy import misc
 import glob
 import matplotlib.pyplot as plt
 # TODO somehow fix the false import error
-from util import ImgDrawer
+from util import ImgDrawer, Spinner
 import ntpath
 import pygame
 import datetime
@@ -24,41 +24,21 @@ import keyboard
 import threading
 import winsound
 import names
-
-
-class Spinner:
-    spin_chars = ['|','/','-','\\']
-    def __init__(self, num_to_switch_state=2):
-        self.state = 0
-        self.num_to_switch_state = num_to_switch_state
-
-    def get_current_spin_char(self):
-        if self.state >= len(Spinner.spin_chars) * self.num_to_switch_state:
-            self.state = 0
-        return Spinner.spin_chars[self.state // self.num_to_switch_state]
-
-    def get_spin_char(self):
-        self.state += 1
-        if self.state >= len(Spinner.spin_chars) * self.num_to_switch_state:
-            self.state = 0
-        return Spinner.spin_chars[self.state // self.num_to_switch_state]
-
-    def print_spinner(self):
-        print(get_spin_char())
+import json
+import music
+import pprint
 
 
 def pause_and_notify(msg='programm suspendet', timeout=None):
     start_time = time.time()
+    print(msg + ' - press q or SPACE to continue')
     while True:
-        for i in range(40):
-            time.sleep(0.1)
-            if keyboard.is_pressed('q') or keyboard.is_pressed(' ') or timeout and time.time() - start_time > timeout:
-                return
+        if keyboard.is_pressed('q') or keyboard.is_pressed(' ') or timeout and time.time() - start_time > timeout:
+            return
         try:
-            winsound.MessageBeep(2)
+            music.play_next_note_of_song()
         except Exception as e:
             print(f'winsound cant play: {e}')
-        print(msg + ' - press q or SPACE to continue')
 
 
 def rename_data(data_dir, dict_str_to_replace: Dict):
@@ -151,9 +131,10 @@ def autoencoder(picture_input_shape):
     return model
 
 
+# TODO parameterise, potentialy put into class
 def get_gqn_model(picture_input_shape, coordinates_input_shape):
     print('creating model')
-    NUM_LAYERS = 12
+    NUM_LAYERS = 2
     NUM_NON_STATE_NEURONS = 1024
     # TODO Add ability to add up multiple observations to the latent representation
     number_of_pixels = product(picture_input_shape)
@@ -199,7 +180,13 @@ def replace_multiple(str, old, new):
     return str
 
 
-def get_unique_model_save_name(img_shape, bw=True, old_name=None, newest_version=True):
+def get_unique_model_save_name(prefix_name, version, rand_id, img_shape, bw=True):
+    name = f'{prefix_name}_v-{version}_id-{rand_id}_trained-{datetime.datetime.now().date()}_' \
+           f'{datetime.datetime.now().time()}_IDim-{str(img_shape).replace(", ", "-")}'
+    return replace_multiple(name, [':', ' '], '-')
+
+
+def get_model_name_based_on_old_name(img_shape, bw=True, old_name=None, newest_version=True):
     prefix_name = names.get_full_name()
     rand_id = random.randint(1000, 10000)
     version = 1
@@ -216,9 +203,7 @@ def get_unique_model_save_name(img_shape, bw=True, old_name=None, newest_version
         old_img_shape = tuple([int(x) for x in replace_multiple(old_name.split('_')[-1], replace_strings, '').split('-')])
         if old_img_shape != img_shape:
             raise ValueError(f'The input of image shape {img_shape} is not equal to the original input {old_img_shape}.')
-    name = f'{prefix_name}_v-{version}_id-{rand_id}_trained-{datetime.datetime.now().date()}_' \
-           f'{datetime.datetime.now().time()}_IDim-{str(img_shape).replace(", ", "-")}'
-    return replace_multiple(name, [':', ' '], '-')
+    return get_unique_model_save_name(prefix_name, version, rand_id, img_shape, bw)
 
 
 def remove_extension(path, extension='hdf5'):
@@ -392,22 +377,6 @@ def train_model(network_inputs, model_save_file_path, model_to_train, true_epoch
     if not training_aborted and os.path.isfile(checkpoint_save_path):
         print('removing checkpoint save')
         os.remove(checkpoint_save_path)
-    # print('writing metadata')
-    # meta_data = {**additional_meta_data, **input_params}
-    # ENTRY_MAX_SIZE = 1000
-    # with open(meta_data_save_path, 'w') as file:
-    #     ids=['Description', 'description', 'Description_', 'description_']
-    #     for id in ids[:2]:
-    #         file.write(meta_data.pop(id, '') + '\n')
-    #     for id in ids:
-    #         for i in range(10):
-    #             file.write(meta_data.pop(id + str(i), '') + '\n')
-    #     for key, value in zip(meta_data.keys(), meta_data.values()):
-    #         if len(str(value)) < ENTRY_MAX_SIZE:
-    #             file.write(str(key) + '\n')
-    #             file.write(str(value) + '\n\n')
-    #         else:
-    #             print(f'not writing {key} bucause longer than {ENTRY_MAX_SIZE}')
     return model_to_train
 
 
@@ -551,6 +520,16 @@ def get_img_dim_form_data_dir(dir):
 
 spinner = Spinner()
 
+
+def save_dict(save_path, dict_to_save, keys_to_skip=[]):
+    with open(save_path + '.mm', 'w') as file:
+        model_meta = {}
+        for key in zip(dict_to_save.keys(), dict_to_save.values()):
+            if key not in keys_to_skip:
+                model_meta[key] = value
+        json.dump(model_meta, file)
+
+
 if __name__ == '__main__':
     data_dirs_path = get_data_dir(5, 32)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
@@ -558,10 +537,13 @@ if __name__ == '__main__':
         get_data_for_environments(data_dirs_path, num_envs_to_load=None, num_data_from_env=None)
 
     model_name_to_load = model_names.get(TRAIN_NEW)
+    def get_model_save_path():
+        return models_dir + get_model_name_based_on_old_name(img_dims, old_name=model_name_to_load)
+    model_save_path = get_model_save_path()
     run_params = {
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_name_to_load,
-        'model_save_file_path': models_dir + get_unique_model_save_name(img_dims, old_name=model_name_to_load),
+        'model_save_file_path': model_save_path,
         'epochs': 1000000,
         'sub_epochs': 1,
         'environment_epochs': None,
@@ -574,8 +556,16 @@ if __name__ == '__main__':
                                                 '   This is a test description',
                                  'data_dirs_path': data_dirs_path},
     }
+    pprint.pprint(run_params, depth=1, compact=True)
 
-    run_params['model_to_train'] = run(**run_params)
+    trained_model = run(**run_params)
+    save_dict(model_save_path, run_params, ['unnormalized_environment_data'])
+
+    run_params['model_to_train'] = trained_model
+    run_params['model_save_file_path'] = get_model_save_path()
     run_params['train'] = True
+
     while True:
         run(**run_params)
+        save_dict(model_save_path, run_params, ['unnormalized_environment_data'])
+        run_params['model_save_file_path'] = get_model_save_path()

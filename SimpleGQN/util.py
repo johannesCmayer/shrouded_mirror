@@ -86,3 +86,24 @@ def load_images(paths, number_to_load=None):
             print('\r{}% loaded'.format(int(counter / number_to_load * 100)), end='')
     print(end='\n')
     return np.array(images)
+
+
+class Spinner:
+    spin_chars = ['|','/','-','\\']
+    def __init__(self, num_to_switch_state=2):
+        self.state = 0
+        self.num_to_switch_state = num_to_switch_state
+
+    def get_current_spin_char(self):
+        if self.state >= len(Spinner.spin_chars) * self.num_to_switch_state:
+            self.state = 0
+        return Spinner.spin_chars[self.state // self.num_to_switch_state]
+
+    def get_spin_char(self):
+        self.state += 1
+        if self.state >= len(Spinner.spin_chars) * self.num_to_switch_state:
+            self.state = 0
+        return Spinner.spin_chars[self.state // self.num_to_switch_state]
+
+    def print_spinner(self):
+        print(get_spin_char())
