@@ -132,8 +132,11 @@ def autoencoder(picture_input_shape):
 
 
 # TODO parameterise, potentialy put into class
-def get_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3, num_layers_decoder=num_layers_encoder, num_neurons_per_layer=1024, num_state_neurons=1024):
+def get_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3, num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')
+    if not num_layers_decoder:
+        num_layers_decoder = num_layers_encoder
+
     # TODO Add ability to add up multiple observations to the latent representation
     number_of_pixels = product(picture_input_shape)
 
@@ -497,6 +500,8 @@ data_dirs = {
     6: 'GQN_SimpleRoom_no_variation'
 }
 image_resolutions = {
+    8: '8x8',
+    16: '16x16',
     32: '32x32',
     64: '64x64',
     128: '128x128',
@@ -537,7 +542,7 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
 FAST_START = False
 
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(6, 64)
+    data_dirs_path = get_data_dir(6, 8)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
     data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
