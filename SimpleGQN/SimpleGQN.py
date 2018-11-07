@@ -32,11 +32,11 @@ import pprint
 def pause_and_notify(msg='programm suspendet', timeout=None):
     start_time = time.time()
     print(msg + ' - press q or SPACE to continue')
-    while True:
+    for i in music.infinity():
         if keyboard.is_pressed('q') or keyboard.is_pressed(' ') or timeout and time.time() - start_time > timeout:
             return
         try:
-            music.play_next_note_of_song()
+            music.play_next_note_of_song(i)
         except Exception as e:
             print(f'winsound cant play: {e}')
 
@@ -132,24 +132,22 @@ def autoencoder(picture_input_shape):
 
 
 # TODO parameterise, potentialy put into class
-def get_gqn_model(picture_input_shape, coordinates_input_shape):
+def get_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3, num_layers_decoder=num_layers_encoder, num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')
-    NUM_LAYERS = 2
-    NUM_NON_STATE_NEURONS = 1024
     # TODO Add ability to add up multiple observations to the latent representation
     number_of_pixels = product(picture_input_shape)
 
     picture_input = keras.Input(picture_input_shape, name='picture_input')
     coordinates_input = keras.Input(coordinates_input_shape, name='coordinates_input')
 
-    x = keras.layers.Dense(NUM_NON_STATE_NEURONS, 'relu', True)(picture_input)
-    for _ in range(NUM_LAYERS):
-        x = keras.layers.Dense(NUM_NON_STATE_NEURONS, 'relu', True)(x)
-    x = keras.layers.Dense(512, 'relu', True)(x)
+    x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(picture_input)
+    for _ in range(num_layers_encoder):
+        x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(x)
+    x = keras.layers.Dense(num_state_neurons, 'relu', True)(x)
 
     x = keras.layers.concatenate([x, coordinates_input])
-    for _ in range(NUM_LAYERS):
-        x = keras.layers.Dense(NUM_NON_STATE_NEURONS, 'relu', True)(x)
+    for _ in range(num_layers_decoder):
+        x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(x)
     predictions = keras.layers.Dense(number_of_pixels, 'relu', True)(x)
 
     model = keras.Model(inputs=[picture_input, coordinates_input], outputs=predictions)
@@ -344,7 +342,9 @@ def train_model(network_inputs, model_save_file_path, model_to_train, true_epoch
 
     training_aborted = False
     environment_epochs = environment_epochs if environment_epochs else len(network_inputs)
+    compute_time_of_true_epoch = 0
     for i in range(int(true_epochs / sub_epochs)):
+        start_time = time.time()
         random.shuffle(network_inputs)
         for j, (flat_image_inputs, coordinate_inputs) in enumerate(network_inputs):
             batch_size = batch_size if batch_size else len(flat_image_inputs)
@@ -363,9 +363,11 @@ def train_model(network_inputs, model_save_file_path, model_to_train, true_epoch
                         lambda _a, _b: print(f'\n'
                                              f'batch size: {batch_size}\n'
                                              f'TrueEpoch {i*sub_epochs}/{true_epochs} - {int(i*sub_epochs / true_epochs * 100)}%\n'
-                                             f'Environment epoch {j}/{environment_epochs} - {int(j / environment_epochs * 100)}%')),
+                                             f'Environment epoch {j}/{environment_epochs} - {int(j / environment_epochs * 100)}%\n'
+                                             f'ComputeTime of last epoch was {compute_time_of_true_epoch}')),
                 ]
             )
+            compute_time_of_true_epoch = (time.time() - start_time) / sub_epochs
             if keyboard.is_pressed('q'):
                 print('learning aborted by user')
                 training_aborted = True
@@ -475,9 +477,11 @@ model_names_home = {
 model_names_uni = {
     -1: 'Conrad-Marks_v-1_id-8291_trained-2018-11-07_02-43-48.845050_IDim-(32-32).hdf5',
     -2: 'Isabelle-Jones_v-1_id-7008_trained-2018-11-07_04-31-20.796616_IDim-(32-32).hdf5',
+    -3: 'Harold-Brown_v-1_id-4470_trained-2018-11-07_21-17-01.121610_IDim-(32-32).hdf5',
 }
 TRAIN_NEW = 'train'
 CONRAD = -1
+HAROLD = -3
 model_names = {**model_names_home, **model_names_uni}
 model_names = {id: models_dir + model_name for id, model_name in zip(model_names.keys(), model_names.values())}
 model_names = {'train': None, 0: None, **model_names}
@@ -490,6 +494,7 @@ data_dirs = {
     3: 'GQN_SimpleRoom_RandomizedObjects_2',
     4: 'GQN_SimpleRoom_nocolorchange-oneobject',
     5: 'GQN_SimpleRoom_nocolorchange-oneobject-randompositioned',
+    6: 'GQN_SimpleRoom_no_variation'
 }
 image_resolutions = {
     32: '32x32',
@@ -524,17 +529,23 @@ spinner = Spinner()
 def save_dict(save_path, dict_to_save, keys_to_skip=[]):
     with open(save_path + '.mm', 'w') as file:
         model_meta = {}
-        for key in zip(dict_to_save.keys(), dict_to_save.values()):
+        for key, value in dict_to_save.items():
             if key not in keys_to_skip:
                 model_meta[key] = value
         json.dump(model_meta, file)
 
+FAST_START = False
 
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(5, 32)
+    data_dirs_path = get_data_dir(6, 64)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
+
+    data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
+    if FAST_START:
+        data_dirs_arg = {'num_envs_to_load': 10, 'num_data_from_env': 10}
+
     unnormalized_environment_data = \
-        get_data_for_environments(data_dirs_path, num_envs_to_load=None, num_data_from_env=None)
+        get_data_for_environments(data_dirs_path, **data_dirs_arg)
 
     model_name_to_load = model_names.get(TRAIN_NEW)
     def get_model_save_path():
@@ -544,7 +555,7 @@ if __name__ == '__main__':
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_name_to_load,
         'model_save_file_path': model_save_path,
-        'epochs': 1000000,
+        'epochs': 100,
         'sub_epochs': 1,
         'environment_epochs': None,
         'batch_size': 200,
@@ -556,10 +567,12 @@ if __name__ == '__main__':
                                                 '   This is a test description',
                                  'data_dirs_path': data_dirs_path},
     }
+    print('\nparams')
     pprint.pprint(run_params, depth=1, compact=True)
+    print()
 
     trained_model = run(**run_params)
-    save_dict(model_save_path, run_params, ['unnormalized_environment_data'])
+    save_dict(model_save_path, run_params, ['unnormalized_environment_data', 'model_to_train'])
 
     run_params['model_to_train'] = trained_model
     run_params['model_save_file_path'] = get_model_save_path()

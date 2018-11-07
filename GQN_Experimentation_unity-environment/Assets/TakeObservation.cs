@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using UnityEngine.SceneManagement;
+using UnityEditor;
 
 public class TakeObservation : MonoBehaviour {
 
@@ -15,6 +16,8 @@ public class TakeObservation : MonoBehaviour {
     public int captureBatchSize = 32;
 
     public CaptureSettings[] captureSettings = new CaptureSettings[] {
+        new CaptureSettings(8,8,20000),
+        new CaptureSettings(16,16,20000),
         new CaptureSettings(32,32,20000),
         new CaptureSettings(64,64,20000),
         new CaptureSettings(128,128,20000),
@@ -78,11 +81,12 @@ public class TakeObservation : MonoBehaviour {
             }
         }
         print($"Capture completed, {totalImages} images generated in {Time.time - startTime}s");
-        for (int i = 0; i < 10; i++)        
+        for (int i = 0; i < 8; i++)        
         {
             myAS.Play();            
-            yield return new WaitForSeconds(1);
+            yield return new WaitForSeconds(0.2f);
         }
+        UnityEditor.EditorApplication.isPlaying = false;
     }
 
     public string CreateDirectoryIfNotExists(string path)

@@ -31,11 +31,14 @@ class ImgDrawer:
         self.idx_of_auto_text = 0
         pygame.display.set_mode(screen_size, pygame.RESIZABLE)
 
-    def draw_image(self, image, display_duration=0, size=None, position=(0,0)):
+    def draw_image(self, image, display_duration=0, size=None, position=(0,0), smoothscale=True):
         surf = pygame.surfarray.make_surface(image)
         surf = surf.convert()
         surf = pygame.transform.rotate(surf, -90)
-        surf = pygame.transform.scale(surf, size if size else self.screen_size)
+        if smoothscale:
+            surf = pygame.transform.smoothscale(surf, size if size else self.screen_size)
+        else:
+            surf = pygame.transform.scale(surf, size if size else self.screen_size)
         self.screen.blit(surf, position)
         pygame.time.wait(int(display_duration * 1000))
 

@@ -115,6 +115,9 @@ data = [
 data_dict = {x.split('\t')[0]: x.split('\t')[1] for x in data}
 
 BLUES_SCALE = np.array([0, 3, 5, 6, 7, 10, 12])
+MINOR_SCALE = np.array([0, 2, 3, 5, 7, 8, 11, 12])
+
+SWING_TIMING_1 = np.array([*[500, 250, 500, 500] * 4, *[500, 250, 250, 750]])
 
 def idx_of_note(note_str):
     for i, e in enumerate(data_dict.keys()):
@@ -158,20 +161,24 @@ def infinity():
 
 
 class BLUES_SONG:
-    SWING_TIMING_1 = np.array([500, 250, 500, 500])
     SPEED = 1
     timing = (SWING_TIMING_1 * SPEED).astype(np.int32)
     SCALE = BLUES_SCALE - 5
     generator = song_generator(scale=SCALE)
 
+class MINOR_SONG:
+    SPEED = 1
+    timing = (SWING_TIMING_1 * SPEED).astype(np.int32)
+    SCALE = MINOR_SCALE - 5
+    generator = song_generator(scale=SCALE)
 
-def play_next_note_of_song(song=BLUES_SONG):
+def play_next_note_of_song(i, song=MINOR_SONG):
     note = next(song.generator)
     note_freq = int(num_to_note_freq(note))
     winsound.Beep(note_freq, song.timing[i % len(song.timing)])
 
 
-def play_song(num_notes, song=BLUES_SONG):
+def play_song(num_notes, song=MINOR_SONG):
     for i in num_notes:
         play_next_note_of_song(song)
 
