@@ -23,19 +23,20 @@ import collections
 import keyboard
 import threading
 import winsound
+import names
 
 
 def pause_and_notify(msg='programm suspendet'):
     while True:
         for i in range(40):
             time.sleep(0.1)
-            if keyboard.is_pressed('q'):
+            if keyboard.is_pressed('q') or keyboard.is_pressed(' '):
                 return
         try:
             winsound.MessageBeep(2)
         except Exception as e:
             print(f'winsound cant play: {e}')
-        print(msg + ' - press q to continue')
+        print(msg + ' - press q or space  to continue')
 
 
 def rename_data(data_dir, dict_str_to_replace: Dict):
@@ -74,6 +75,7 @@ def get_data_for_environments(data_dirs, num_envs_to_load=None, num_data_from_en
     if randomized_draw:
         random.shuffle(data_dirs)
     env_data = []
+    num_loaded = 0
     for data_paths in data_dirs[0:num_envs_to_load]:
         data_paths = glob.glob(data_paths + '/*')
         if randomized_draw:
@@ -83,6 +85,7 @@ def get_data_for_environments(data_dirs, num_envs_to_load=None, num_data_from_en
             coordinate, rotation = get_coordinates_from_filename(dp)
             try:
                 images.append(misc.imread(dp))
+                num_loaded += 1
             except OSError:
                 corrupt_files.append(dp)
                 continue
@@ -94,7 +97,7 @@ def get_data_for_environments(data_dirs, num_envs_to_load=None, num_data_from_en
         print(f'\rloaded {len(images)} entrys from  environment '
               f'{len(env_data)}/{num_envs_to_load} - '
               f'{int(len(env_data) / num_envs_to_load * 100)}%', end='')
-    print(end='\n')
+    print(f'\n{num_loaded} data points loaded')
     delete_corrupt_files(corrupt_files)
     return env_data
 
@@ -126,20 +129,22 @@ def autoencoder(picture_input_shape):
 
 def get_gqn_model(picture_input_shape, coordinates_input_shape):
     print('creating model')
+    NUM_LAYERS = 10
+    NUM_NON_STATE_NEURONS = 1024
     # TODO Add ability to add up multiple observations to the latent representation
     number_of_pixels = product(picture_input_shape)
 
     picture_input = keras.Input(picture_input_shape, name='picture_input')
     coordinates_input = keras.Input(coordinates_input_shape, name='coordinates_input')
 
-    x = keras.layers.Dense(1024, 'relu', True)(picture_input)
-    for _ in range(100):
-        x = keras.layers.Dense(1024, 'relu', True)(x)
+    x = keras.layers.Dense(NUM_NON_STATE_NEURONS, 'relu', True)(picture_input)
+    for _ in range(NUM_LAYERS):
+        x = keras.layers.Dense(NUM_NON_STATE_NEURONS, 'relu', True)(x)
     x = keras.layers.Dense(512, 'relu', True)(x)
 
     x = keras.layers.concatenate([x, coordinates_input])
-    for _ in range(100):
-        x = keras.layers.Dense(1024, 'relu', True)(x)
+    for _ in range(NUM_LAYERS):
+        x = keras.layers.Dense(NUM_NON_STATE_NEURONS, 'relu', True)(x)
     predictions = keras.layers.Dense(number_of_pixels, 'relu', True)(x)
 
     model = keras.Model(inputs=[picture_input, coordinates_input], outputs=predictions)
@@ -164,8 +169,23 @@ def network_inputs_from_coordinates_single(position_data, rotation_data):
     return np.asarray(coordinates_vec)
 
 
-def get_unique_model_save_name(img_shape, name=''):
-    return f'{datetime.datetime.now()}_{img_shape[0]}x{img_shape[1]}_{name}.hdf5'.replace(':', '-')
+def replace_multiple(str, old, new):
+    for tr in old:
+        str = str.replace(tr, new)
+    return str
+
+
+def get_unique_model_save_name(img_shape, bw=True, name='', old_name=None):
+    prefix_name = names.get_full_name()
+    rand_id = random.randint(1000, 10000)
+    version = 1
+    if old_name:
+        prefix_name, version, rand_id = old_name.split('_')[:3]
+        old_img_shape = (int(x) for x in old_name.split('_')[-1].replace('(', '').replace(')', '').split('-'))
+        if old_img_shape != img_shape:
+            raise ValueError(f'The input of image shape {img_shape} is not equal to the original input {old_img_shape}.')
+    name = f'{prefix_name}_v{version}_id{rand_id}_trained-{datetime.datetime.now()}_IDim{str(img_shape).replace(", ", "-")}'
+    return replace_multiple(name, [':', ' '], '-')
 
 
 def remove_extension(path, extension='hdf5'):
@@ -240,18 +260,66 @@ class CharacterController:
             self.current_position = np.array(self.center_pos)
 
 
-def train_model(network_inputs, model_save_file_path, model_to_train, epochs=100, sub_epochs=10, environment_batch_size=None, batch_size=None):
-    model_save_file_path = remove_extension(model_save_file_path)
+def get_closesd_image_to_coordinates(pos, rot):
+    return np.zeros((32,32)) + 255
+    # similarity_at_idx = []
+    # for im_pos, im_rot in zip(position_data, rotation_data):
+    #     similarity_at_idx.append((np.sum(np.abs(pos - im_pos)) + np.sum(np.abs(rot - im_rot)) * 10))
+    # return env[np.argmax(similarity_at_idx)]
+
+
+def black_n_white_to_rgb255(img):
+    img = np.stack([img] * 3, -1)
+    return img / np.max(img) * 255
+
+
+def rgba_to_black_n_white(img):
+    return np.sum(img, -1) / 4
+
+
+def get_random_observation_inputs(network_inputs, number_of_observations=1):
+    return random.choices(random.choice(network_inputs)[0], k=number_of_observations)
+
+
+def get_max_env_data_values(environment_data):
+    max_img, max_pos, max_rot = 0, 0, 0
+    for e in environment_data:
+        im, pos, rot = e
+        max_img = max(np.max(im), max_img)
+        max_pos = max(np.max(pos), max_pos)
+        max_rot = max(np.max(rot), max_rot)
+    return max_img, max_pos, max_rot
+
+
+def normalize_environment_data(environment_data):
+    max_img, max_pos, max_rot = get_max_env_data_values(environment_data)
+    return [(img / max_img, pos / max_pos, rot / max_rot) for img, pos, rot in environment_data]
+
+
+def unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=False):
+    envs_data = []
+    for env in normalize_environment_data(unnormalized_environment_data):
+        images, poss, rots = env
+        if black_n_white:
+            images = [rgba_to_black_n_white(img) for img in images]
+        images = [np.reshape(img, product(np.shape(img))) for img in images]
+        coordinates = [network_inputs_from_coordinates_single(pos, rot) for pos, rot in zip(poss, rots)]
+        envs_data.append((np.asarray(images), np.asarray(coordinates)))
+    return envs_data
+
+
+def train_model(network_inputs, model_save_file_path, model_to_train, epochs=100, sub_epochs=10, environment_epochs=None, batch_size=None):
+    print(f'model name: {os.path.basename(model_save_file_path)}')
     checkpoint_save_path = f'{model_save_file_path}.checkpoint'
-    model_final_save = f'{model_save_file_path}.hdf5'
+    final_save_path = f'{model_save_file_path}.hdf5'
 
     training_aborted = False
-    environment_batch_size = environment_batch_size if environment_batch_size else len(network_inputs)
+    environment_epochs = environment_epochs if environment_epochs else len(network_inputs)
     for i in range(int(epochs / sub_epochs)):
         random.shuffle(network_inputs)
         for j, (flat_image_inputs, coordinate_inputs) in enumerate(network_inputs):
             batch_size = batch_size if batch_size else len(flat_image_inputs)
-            if environment_batch_size and j > environment_batch_size:
+            if environment_epochs and j > environment_epochs:
                 break
             flat_image_inputs = np.asarray(flat_image_inputs)
             coordinate_inputs = np.asarray(coordinate_inputs)
@@ -265,8 +333,8 @@ def train_model(network_inputs, model_save_file_path, model_to_train, epochs=100
                     keras.callbacks.LambdaCallback(on_epoch_end=
                         lambda _a, _b: print(f'\n'
                                              f'batch size: {batch_size}\n'
-                                             f'TrueEpoch {i*sub_epochs}/{epochs} - {int(i*sub_epochs / epochs) * 100}%\n'
-                                             f'Environment epoch {j}/{environment_batch_size} - {int(j / environment_batch_size) * 100}%')),
+                                             f'TrueEpoch {i*sub_epochs}/{epochs} - {int(i*sub_epochs / epochs * 100)}%\n'
+                                             f'Environment epoch {j}/{environment_epochs} - {int(j / environment_epochs * 100)}%')),
                 ]
             )
             if keyboard.is_pressed('q'):
@@ -275,8 +343,8 @@ def train_model(network_inputs, model_save_file_path, model_to_train, epochs=100
                 break
         if training_aborted:
             break
-    print('saving model')
-    model_to_train.save(model_final_save)
+    print(f'saving model as {final_save_path}')
+    model_to_train.save(final_save_path)
     if not training_aborted:
         print('removing checkpoint save')
         os.remove(checkpoint_save_path)
@@ -284,59 +352,18 @@ def train_model(network_inputs, model_save_file_path, model_to_train, epochs=100
 
 
 # TODO clean up and split up run method
-def run(unnormalized_environment_data, model_save_file_path, image_dim, load_model_path=None, train=True,
-        epochs=100, sub_epochs=10, batch_size=None, run_environment=True, black_n_white=True, window_size=(1200, 600),
+def run(unnormalized_environment_data, model_save_file_path, model_to_train=None, model_load_file_path=None, train=True,
+        epochs=100, sub_epochs=10, environment_epochs=None, batch_size=None, run_environment=True, black_n_white=True, window_size=(1200, 600),
         window_size_coef=1):
     '''
     Run the main Programm
     :param data_dirs: the directory containing the training data.
     :param model_save_file_path: the path where to save a model.
     :param image_dim: the dimensions of the images in the data path.
-    :param load_model_path: the name of the model to load. None = train new model.
+    :param model_load_file_path: the name of the model to load. None = train new model.
     :param num_samples_to_load: number of samples to load from the data dir. None = all.
-    :return: None
+    :return: Trained model
     '''
-    def get_closesd_image_to_coordinates(pos, rot):
-        return np.zeros((32,32)) + 255
-        # similarity_at_idx = []
-        # for im_pos, im_rot in zip(position_data, rotation_data):
-        #     similarity_at_idx.append((np.sum(np.abs(pos - im_pos)) + np.sum(np.abs(rot - im_rot)) * 10))
-        # return env[np.argmax(similarity_at_idx)]
-
-    def black_n_white_to_rgb255(img):
-        img = np.stack([img] * 3, -1)
-        return img / np.max(img) * 255
-
-    def rgba_to_black_n_white(img):
-        return np.sum(img, -1) / 4
-
-    def get_random_observation_inputs(network_inputs, number_of_observations=1):
-        return random.choices(random.choice(network_inputs)[0], k=number_of_observations)
-
-    def get_max_env_data_values(environment_data):
-        max_img, max_pos, max_rot = 0, 0, 0
-        for e in environment_data:
-            im, pos, rot = e
-            max_img = max(np.max(im), max_img)
-            max_pos = max(np.max(pos), max_pos)
-            max_rot = max(np.max(rot), max_rot)
-        return max_img, max_pos, max_rot
-
-    def normalize_environment_data(environment_data):
-        max_img, max_pos, max_rot = get_max_env_data_values(environment_data)
-        return [(img / max_img, pos / max_pos, rot / max_rot) for img, pos, rot in environment_data]
-
-    def unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=False):
-        envs_data = []
-        for env in normalize_environment_data(unnormalized_environment_data):
-            images, poss, rots = env
-            if black_n_white:
-                images = [rgba_to_black_n_white(img) for img in images]
-            images = [np.reshape(img, product(image_dim)) for img in images]
-            coordinates = [network_inputs_from_coordinates_single(pos, rot) for pos, rot in zip(poss, rots)]
-            envs_data.append((np.asarray(images), np.asarray(coordinates)))
-        return envs_data
-
     window_size = collections.namedtuple('Rect', field_names='x y')(
         x=int(window_size[0] * window_size_coef),
         y=int(window_size[1] * window_size_coef))
@@ -346,14 +373,15 @@ def run(unnormalized_environment_data, model_save_file_path, image_dim, load_mod
     img_data_shape_bw = img_data_shape_rgb[:-1]
     network_inputs = unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=black_n_white)
 
-    model = None
-    if load_model_path:
-        model = keras.models.load_model(load_model_path)
-    else:
-        model = get_gqn_model(np.shape(network_inputs[0][0][0]), np.shape(network_inputs[0][1][0]))
+    model_to_train = model_to_train
+    if not model_to_train:
+        if model_load_file_path:
+            model_to_train = keras.models.load_model(model_load_file_path)
+        else:
+            model_to_train = get_gqn_model(np.shape(network_inputs[0][0][0]), np.shape(network_inputs[0][1][0]))
     if train:
-        model = train_model(network_inputs, model_save_file_path, model, epochs=epochs, sub_epochs=sub_epochs, batch_size=batch_size)
-
+        trained_model = train_model(network_inputs, model_save_file_path, model_to_train, epochs=epochs, sub_epochs=sub_epochs,
+                                    environment_epochs=environment_epochs, batch_size=batch_size)
     if not run_environment:
         return
 
@@ -361,11 +389,10 @@ def run(unnormalized_environment_data, model_save_file_path, image_dim, load_mod
     character_controller = CharacterController(center_pos=(0,1.5,0) / max_pos_val)
     img_drawer = ImgDrawer(window_size)
 
-    # TODO make it work with network input strukture
     observation_input = get_random_observation_inputs(network_inputs, 1)
     while True:
         coordinate_input = [network_inputs_from_coordinates_single(character_controller.current_position, character_controller.current_rotation_quaternion)]
-        output = model.predict([observation_input, coordinate_input])
+        output = trained_model.predict([observation_input, coordinate_input])
         output = np.reshape(output[0], img_data_shape_bw)
 
         stacked_output = black_n_white_to_rgb255(output)
@@ -386,11 +413,15 @@ def run(unnormalized_environment_data, model_save_file_path, image_dim, load_mod
         keys = pygame.key.get_pressed()
         if keys[pygame.K_KP1]:
             observation_input = get_random_observation_inputs(network_inputs)
+        if keys[pygame.K_SPACE]:
+            pygame.quit()
+            return trained_model
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                return
+                return trained_model
+    return trained_model
 
 
 models_dir = os.path.dirname(__file__) + '\\models\\'
@@ -451,15 +482,23 @@ if __name__ == '__main__':
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
     unnormalized_environment_data = \
         get_data_for_environments(data_dirs_path, num_envs_to_load=None, num_data_from_env=None)
+
+    model_name_to_load = model_names.get('train')
+    run_params = {
+        'unnormalized_environment_data': unnormalized_environment_data,
+        'model_load_file_path': model_name_to_load,
+        'model_save_file_path': models_dir + get_unique_model_save_name(img_dims, model_name_to_load),
+        'epochs': 1,
+        'sub_epochs': 1,
+        'environment_epochs': 5,
+        'batch_size': 20,
+        'run_environment': True,
+        'train': True,
+        'black_n_white': True,
+        'window_size': window_resolutions['hd']
+    }
+
+    run_params['model_to_train'] = run(**run_params)
+    run_params['train'] = True
     while True:
-        run(unnormalized_environment_data=unnormalized_environment_data,
-            load_model_path=model_names.get('train'),
-            image_dim=img_dims,
-            model_save_file_path=models_dir + get_unique_model_save_name(img_dims, name='normal-run'),
-            epochs=100,
-            sub_epochs=10,
-            batch_size=None,
-            run_environment=True,
-            train=True,
-            black_n_white=True,
-            window_size=window_resolutions['hd'])
+        run(**run_params)
