@@ -175,16 +175,26 @@ def replace_multiple(str, old, new):
     return str
 
 
-def get_unique_model_save_name(img_shape, bw=True, name='', old_name=None):
+def get_unique_model_save_name(img_shape, bw=True, old_name=None, postfix='', newest_version=True):
     prefix_name = names.get_full_name()
     rand_id = random.randint(1000, 10000)
     version = 1
     if old_name:
-        prefix_name, version, rand_id = old_name.split('_')[:3]
-        old_img_shape = (int(x) for x in old_name.split('_')[-1].replace('(', '').replace(')', '').split('-'))
+        old_name_dir = os.path.dirname(old_name)
+        old_name = os.path.basename(old_name)
+        prefix_name, version, rand_id = replace_multiple(old_name, ['v-', 'id-'], '').split('_')[:3]
+        if newest_version:
+            split_old_name = old_name.split("_")
+            for p in glob.glob(f'{old_name_dir}\\{split_old_name[0]}_v-*_{split_old_name[2]}*'):
+                version = max(int(replace_multiple(os.path.basename(p), ['v-'], '').split('_')[1]), int(version))
+        version = int(version) + 1
+        replace_strings = ['IDim-', '(', ')', '.hdf5', '.checkpoint']
+        old_img_shape = tuple([int(x) for x in replace_multiple(old_name.split('_')[-1], replace_strings, '').split('-')])
         if old_img_shape != img_shape:
             raise ValueError(f'The input of image shape {img_shape} is not equal to the original input {old_img_shape}.')
-    name = f'{prefix_name}_v{version}_id{rand_id}_trained-{datetime.datetime.now()}_IDim{str(img_shape).replace(", ", "-")}'
+
+    name = f'{prefix_name}_v-{version}_id-{rand_id}_trained-{datetime.datetime.now().date()}_' \
+           f'{datetime.datetime.now().time()}_IDim-{str(img_shape).replace(", ", "-")}{("_" + postfix) if postfix else ""}'
     return replace_multiple(name, [':', ' '], '-')
 
 
@@ -435,9 +445,10 @@ model_names_home = {
     5: '2018-11-02 01-19-11_(32, 32).checkpoint',
     }
 model_names_uni = {
-    -1: '2018-11-02 13-47-15.hdf5',
-    -2: '2018-11-06 21-24-21.hdf5',
+    -1: 'Conrad-Marks_v-1_id-8291_trained-2018-11-07_02-43-48.845050_IDim-(32-32).hdf5',
 }
+TRAIN_NEW = 'train'
+CONRAD = -1
 model_names = {**model_names_home, **model_names_uni}
 model_names = {id: models_dir + model_name for id, model_name in zip(model_names.keys(), model_names.values())}
 model_names = {'train': None, 0: None, **model_names}
@@ -481,13 +492,13 @@ if __name__ == '__main__':
     data_dirs_path = get_data_dir(3, 32)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
     unnormalized_environment_data = \
-        get_data_for_environments(data_dirs_path, num_envs_to_load=None, num_data_from_env=None)
+        get_data_for_environments(data_dirs_path, num_envs_to_load=10, num_data_from_env=10)
 
-    model_name_to_load = model_names.get('train')
+    model_name_to_load = model_names.get(CONRAD)
     run_params = {
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_name_to_load,
-        'model_save_file_path': models_dir + get_unique_model_save_name(img_dims, model_name_to_load),
+        'model_save_file_path': models_dir + get_unique_model_save_name(img_dims, old_name=model_name_to_load, postfix='testpostfix'),
         'epochs': 1,
         'sub_epochs': 1,
         'environment_epochs': 5,
