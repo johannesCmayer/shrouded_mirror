@@ -492,17 +492,17 @@ if __name__ == '__main__':
     data_dirs_path = get_data_dir(3, 32)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
     unnormalized_environment_data = \
-        get_data_for_environments(data_dirs_path, num_envs_to_load=10, num_data_from_env=10)
+        get_data_for_environments(data_dirs_path, num_envs_to_load=None, num_data_from_env=None)
 
     model_name_to_load = model_names.get(CONRAD)
     run_params = {
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_name_to_load,
         'model_save_file_path': models_dir + get_unique_model_save_name(img_dims, old_name=model_name_to_load, postfix='testpostfix'),
-        'epochs': 1,
+        'epochs': 100,
         'sub_epochs': 1,
-        'environment_epochs': 5,
-        'batch_size': 20,
+        'environment_epochs': 20,
+        'batch_size': 100,
         'run_environment': True,
         'train': True,
         'black_n_white': True,
