@@ -132,7 +132,10 @@ def autoencoder(picture_input_shape):
     model.compile(keras.optimizers.Adam, 'mse', ['mse'])
     return model
 
-def get_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3, num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
+
+# TODO make it so it can take non flat input (test if it already can)
+def get_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3, num_layers_decoder=None,
+                  num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
@@ -156,11 +159,12 @@ def get_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encod
     joint_model = keras.Model(inputs=[picture_input, coordinates_input], outputs=predictions)
     joint_model.compile('rmsprop', 'mse')
 
-    print('model created')
+    joint_model.summary()
     return joint_model
 
-
-def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=1, num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons_coef=1024):
+# TODO find out how to remove gray shadow walls
+def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=1,
+                                num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons_coef=1024):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
@@ -172,7 +176,8 @@ def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, nu
     coordinates_input = keras.Input(coordinates_input_shape, name='coordinates_input')
 
     DOWNSAMPLE_TO = 16
-    if any(shape % DOWNSAMPLE_TO != 0 for shape in picture_input_shape[:2]) or picture_input_shape[0] != picture_input_shape[1]:
+    if any(shape % DOWNSAMPLE_TO != 0 for shape in picture_input_shape[:2]) \
+            or picture_input_shape[0] != picture_input_shape[1]:
         raise ValueError(f'Picture input shape needs to be multiple of 16 in x and y but is {picture_input_shape[:2]}')
     num_of_sampeling_steps = int(math.log2(picture_input_shape[0]) - math.log2(DOWNSAMPLE_TO))
 
@@ -210,12 +215,13 @@ def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, nu
     joint_model.compile('adam', 'mse')
 
     joint_model.summary()
-    print('model created')
     return joint_model
 
 
 # TODO parameterise, potentialy put into class
-def get_multi_input_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3, num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
+# TODO Implement this
+def get_multi_input_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3,
+                              num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
@@ -244,7 +250,7 @@ def get_multi_input_gqn_model(picture_input_shape, coordinates_input_shape, num_
     joint_model = keras.Model(inputs=[picture_input, coordinates_input], outputs=decoder_model_output)
     joint_model.compile('rmsprop', 'mse')
 
-    print('model created')
+    joint_model.summary()
     return joint_model
 
 
@@ -274,7 +280,7 @@ def get_unique_model_save_name(prefix_name, version, rand_id, img_shape, bw=True
            f'{datetime.datetime.now().time()}_IDim-{str(img_shape).replace(", ", "-")}'
     return replace_multiple(name, [':', ' '], '-')
 
-
+# TODO refactor to use a dict to parse name
 def get_model_name_based_on_old_name(img_shape, bw=True, old_name=None, newest_version=True):
     prefix_name = names.get_full_name()
     rand_id = random.randint(1000, 10000)
@@ -425,14 +431,22 @@ def unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=
     return envs_data
 
 
+def return_mkdir(path):
+    if not os.path.isdir(path):
+        os.mkdir(path)
+    return path
+
+
+# TODO make it so, that the model_save_file_path is a relative path (or just the model name) -> only need refactor
 def train_model(network_inputs, model_save_file_path, model_to_train, true_epochs=100, sub_epochs=10,
                 environment_epochs=None, batch_size=None, additional_meta_data={}, save_model=True):
     input_params = locals()
+    model_dir = os.path.dirname(__file__) + '\\models'
     model_name = os.path.basename(model_save_file_path)
     print(f'model name: {model_name}')
-    checkpoint_save_path = f'{model_save_file_path}.checkpoint'
-    final_save_path = f'{model_save_file_path}.hdf5'
-    meta_data_save_path = f'{model_save_file_path}.modelmeta'
+    checkpoint_save_path = return_mkdir(f'{model_dir}\\checkpoints') + f'\\{model_name}.checkpoint'
+    final_save_path = return_mkdir(f'{model_dir}\\final') + f'\\{model_name}.hdf5'
+    meta_data_save_path = return_mkdir(f'{model_dir}\\meta_data\\') + f'{model_name}.checkpoint'
     true_epochs = true_epochs if true_epochs else math.inf
 
     training_aborted = False
@@ -451,39 +465,39 @@ def train_model(network_inputs, model_save_file_path, model_to_train, true_epoch
 
             # TODO implement keeping x of latest checkpoints
             model_to_train.fit([
-                scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size, epochs=sub_epochs, verbose=2,
+                scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size, epochs=sub_epochs,
+                verbose=2,
                 callbacks=[
                     # keras.callbacks.EarlyStopping(monitor='loss', patience=0, min_delta=1),
-                    keras.callbacks.TensorBoard(log_dir=f'./logs/{model_name}'),
-                    keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=sub_epochs),
-                    keras.callbacks.LambdaCallback(on_epoch_end=
-                        lambda _a, _b: print(f'\n'
-                                             f'batch size: {batch_size}\n'
-                                             f'TrueEpoch {i*sub_epochs}/{true_epochs} - {int(i*sub_epochs / true_epochs * 100)}%\n'
-                                             f'Environment epoch {j}/{environment_epochs} - {int(j / environment_epochs * 100)}%\n'
-                                             f'ComputeTime of last epoch was {compute_time_of_true_epoch}')),
+                    keras.callbacks.TensorBoard(log_dir=f'./tb_logs/{model_name}'),
+                    keras.callbacks.LambdaCallback(on_epoch_end=lambda _a, _b: print(
+                            f'\n'
+                            f'batch size: {batch_size}\n'
+                            f'TrueEpoch {i*sub_epochs}/{true_epochs} - {int(i*sub_epochs / true_epochs * 100)}%\n'
+                            f'Environment epoch {j}/{environment_epochs} - {int(j / environment_epochs * 100)}%\n'
+                            f'ComputeTime of last epoch was {compute_time_of_true_epoch}')),
                 ]
             )
             if keyboard.is_pressed('q'):
                 print('learning aborted by user')
                 training_aborted = True
                 break
+        if save_model:
+            print(f'saving model as {checkpoint_save_path}')
+            model_to_train.save(checkpoint_save_path)
         compute_time_of_true_epoch = (time.time() - start_time) / sub_epochs / len(network_inputs)
         if training_aborted:
             break
     if save_model:
         print(f'saving model as {final_save_path}')
         model_to_train.save(final_save_path)
-        if not training_aborted and os.path.isfile(checkpoint_save_path):
-            print('removing checkpoint save')
-            os.remove(checkpoint_save_path)
     return model_to_train
 
 
 # TODO clean up and split up run method
 def run(unnormalized_environment_data, model_save_file_path, model_to_train=None, model_load_file_path=None, train=True,
-        epochs=100, sub_epochs=10, environment_epochs=None, batch_size=None, run_environment=True, black_n_white=True, window_size=(1200, 600),
-        window_size_coef=1, additional_meta_data={}, save_model=True):
+        epochs=100, sub_epochs=10, environment_epochs=None, batch_size=None, run_environment=True, black_n_white=True,
+        window_size=(1200, 600), window_size_coef=1, additional_meta_data={}, save_model=True):
     '''
     Run the main Programm
     :param data_dirs: the directory containing the training data.
@@ -518,7 +532,8 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_train=None
         if model_load_file_path:
             model = keras.models.load_model(model_load_file_path)
         else:
-            model = model_generators[model_to_generate](np.shape(network_inputs[0][0][0]), np.shape(network_inputs[0][1][0]))
+            model = model_generators[model_to_generate](np.shape(network_inputs[0][0][0]),
+                                                        np.shape(network_inputs[0][1][0]))
     if train:
         model = train_model(network_inputs, model_save_file_path, model, true_epochs=epochs, sub_epochs=sub_epochs,
                             environment_epochs=environment_epochs, batch_size=batch_size,
@@ -532,7 +547,8 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_train=None
 
     observation_input = get_random_observation_inputs(network_inputs, 1)
     while True:
-        coordinate_input = [network_inputs_from_coordinates_single(character_controller.current_position, character_controller.current_rotation_quaternion)]
+        coordinate_input = [network_inputs_from_coordinates_single(character_controller.current_position,
+                                                                   character_controller.current_rotation_quaternion)]
         output_img = model.predict([observation_input, coordinate_input])
         output_img = np.reshape(output_img[0], img_data_shape)
 
@@ -548,9 +564,11 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_train=None
         # img_drawer.draw_image(black_n_white_to_rgb255(closesed_image), display_duration=0,
         #                       size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, 0))
         img_drawer.draw_image(observation_input_drawable,
-                              size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, window_size.y // 2))
+                              size=(window_size.x // 4, window_size.y // 2),
+                              position=(window_size.x // 2, window_size.y // 2))
 
-        img_drawer.draw_text(f'{str(character_controller.current_position * max_pos_val)} max position {max_pos_val}', (10, 10))
+        img_drawer.draw_text(f'{str(character_controller.current_position * max_pos_val)} '
+                             f'max position {max_pos_val}', (10, 10))
         img_drawer.draw_text(str(character_controller.current_rotation_quaternion), (10, 50))
 
         img_drawer.execute()
@@ -647,9 +665,8 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
         json.dump(model_meta, file)
 
 
+FAST_DEBUG_MODE = False
 if __name__ == '__main__':
-    FAST_DEBUG_MODE = False
-
     data_dirs_path = get_data_dir(6, 64)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
@@ -660,7 +677,7 @@ if __name__ == '__main__':
     unnormalized_environment_data = \
         get_data_for_environments(data_dirs_path, **data_dirs_arg)
 
-    model_name_to_load = model_names.get(-5)
+    model_name_to_load = model_names.get(TRAIN_NEW)
     def get_model_save_path():
         return models_dir + get_model_name_based_on_old_name(img_dims, old_name=model_name_to_load)
     model_save_path = get_model_save_path()
@@ -686,7 +703,8 @@ if __name__ == '__main__':
     print()
 
     trained_model = run(**run_params)
-    save_dict(model_save_path, run_params, ['unnormalized_environment_data', 'model_to_train'])
+
+    #save_dict(model_save_path, run_params, ['unnormalized_environment_data', 'model_to_train'])
 
     run_params['model_to_train'] = trained_model
     run_params['model_save_file_path'] = get_model_save_path()
@@ -694,5 +712,5 @@ if __name__ == '__main__':
 
     while True:
         run(**run_params)
-        save_dict(model_save_path, run_params, ['unnormalized_environment_data'])
+        #save_dict(model_save_path, run_params, ['unnormalized_environment_data'])
         run_params['model_save_file_path'] = get_model_save_path()
