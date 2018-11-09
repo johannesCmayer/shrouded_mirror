@@ -218,7 +218,7 @@ def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, nu
     return joint_model
 
 
-# TODO parameterise, potentialy put into class
+# TODO parameterise all model generaton funcitons, potentialy put into class
 # TODO Implement this
 def get_multi_input_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3,
                               num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
@@ -449,8 +449,8 @@ def return_mkdir(path):
 
 
 # TODO make it so, that the model_save_file_path is a relative path (or just the model name) -> only need refactor
-def train_model(network_inputs, model_name, model_to_train, true_epochs=100, sub_epochs=1,
-                environment_epochs=None, batch_size=None, additional_meta_data={}, save_model=True, log_frequency=25):
+def train_model(network_inputs, model_name, model_to_train, true_epochs=100, minor_epochs=1, environment_epochs=None,
+                batch_size=None, additional_meta_data={}, save_model=True, log_frequency=10, save_frequency = 30):
     input_params = locals()
     model_dir = os.path.dirname(__file__) + '\\models'
     model_name = os.path.basename(model_name)
@@ -461,49 +461,42 @@ def train_model(network_inputs, model_name, model_to_train, true_epochs=100, sub
     true_epochs = true_epochs if true_epochs else math.inf
     batch_size = batch_size if batch_size else len(image_inputs)
 
-    training_aborted = False
     environment_epochs = environment_epochs if environment_epochs else len(network_inputs)
     compute_time_of_true_epoch = 0
-    for i in range(int(true_epochs / sub_epochs)):
+    user_abort = False
+    callbacks = []
+    for i in range(int(true_epochs / minor_epochs)):
         start_time = time.time()
         random.shuffle(network_inputs)
-
-        callbacks = []
+        if user_abort:
+            print('learning aborted by user')
+            break
         if i % log_frequency == 0 and i != 0:
             hist = keras.callbacks.History()
             callbacks = callbacks = [
-                keras.callbacks.TensorBoard(log_dir=f'./tb_logs/{model_name}'),
+                keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}'),
                 hist,
                 keras.callbacks.LambdaCallback(on_epoch_end=lambda _a, _b: print(
                     f'\n'
-                    f'batch size: {batch_size}\n'
-                    f'TrueEpoch {i*sub_epochs}/{true_epochs} - {int(i*sub_epochs / true_epochs * 100)}%\n'
-                    f'Environment epoch {j}/{environment_epochs} - {int(j / environment_epochs * 100)}%\n'
+                    f'batch size: {batch_size} - environment epochs: {environment_epochs}\n'
+                    f'TrueEpoch {i*minor_epochs}/{true_epochs} - {int(i*minor_epochs / true_epochs * 100)}%\n'
                     f'ComputeTime of last epoch was {compute_time_of_true_epoch}\n'
                     f'{hist.history}')),
             ]
-        for j, (image_inputs, coordinate_inputs) in enumerate(network_inputs):
-            if environment_epochs and j > environment_epochs:
-                break
-            if keyboard.is_pressed('q'):
-                print('learning aborted by user')
-                training_aborted = True
-                break
-
-            #image_inputs = np.asarray(image_inputs)
-            #coordinate_inputs = np.asarray(coordinate_inputs)
-            scrambled_image_inputs = np.random.permutation(image_inputs)
-
-            model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
-                               epochs=sub_epochs, verbose=0, callbacks=callbacks if j == 0 else None)
-
-        if save_model and i % 25 == 0:
+        if save_model and i % save_frequency == 0:
             checkpoint_save_path = get_checkpoint_save_path(epoch=i)
             print(f'saving model as {checkpoint_save_path}')
             model_to_train.save(checkpoint_save_path)
-        compute_time_of_true_epoch = (time.time() - start_time) / sub_epochs / len(network_inputs)
-        if training_aborted:
-            break
+        for j, (image_inputs, coordinate_inputs) in enumerate(network_inputs):
+            if keyboard.is_pressed('q') or environment_epochs and j > environment_epochs:
+                model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=10,
+                                   epochs=2, verbose=0, callbacks=callbacks)
+                user_abort = True
+                break
+            scrambled_image_inputs = np.random.permutation(image_inputs)
+            model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
+                               epochs=minor_epochs, verbose=0, callbacks=callbacks if j == 0 else None)
+        compute_time_of_true_epoch = (time.time() - start_time) / minor_epochs / len(network_inputs)
     if save_model:
         print(f'saving model as {final_save_path}')
         model_to_train.save(final_save_path)
@@ -550,7 +543,7 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_generate, 
             model = model_generators[model_to_generate](np.shape(network_inputs[0][0][0]),
                                                         np.shape(network_inputs[0][1][0]))
     if train:
-        model = train_model(network_inputs, model_save_file_path, model, true_epochs=epochs, sub_epochs=sub_epochs,
+        model = train_model(network_inputs, model_save_file_path, model, true_epochs=epochs, minor_epochs=sub_epochs,
                             environment_epochs=environment_epochs, batch_size=batch_size,
                             additional_meta_data={**additional_meta_data, **input_parameters}, save_model=save_model)
     if not run_environment:
@@ -705,7 +698,7 @@ if __name__ == '__main__':
         'model_load_file_path': model_name_to_load,
         'model_save_file_path': model_save_path,
         'epochs': 1000000,
-        'sub_epochs': 1,
+        'sub_epochs': 20,
         'environment_epochs': None,
         'batch_size': 200,
         'run_environment': True,
