@@ -22,6 +22,7 @@ import music
 import pprint
 import math
 import logging
+import functools
 
 
 def convert_to_valid_os_name(string, substitute_char='-'):
@@ -275,41 +276,31 @@ def replace_multiple(str, old, new):
     return str
 
 
-def get_unique_model_save_name(name, version, rand_id, img_shape):
-    def format(string):
-        string = replace_multiple(string, ['+', ', ', ' '], '-')
+def get_unique_model_save_name(name, version, id):
+    def fm(val):
+        string = replace_multiple(str(val), ['=', ', ', ' ', '.'], '-')
         return convert_to_valid_os_name(string, substitute_char='-')
-    l = [name, version, rand_id, img_shape]
-    for i, e in enumerate(l):
-        l[i] = format(str(e))
-    date = format(str(datetime.datetime.now().date()))
-    time = format(str(datetime.datetime.now().time()))
-    return f'date+{date}_time+{time}_n+{l[0]}_ver+{l[1]}_id+{l[2]}_idim+{l[3]}'
+    date = datetime.datetime.now().date()
+    time = datetime.datetime.now().time()
+    d = {'date': date, 'time': time, 'name': name, 'version': version, 'id': id}
+    return functools.reduce(lambda acc, val: f'{acc}_{val[0]}={fm(val[1])}', d.items(), '')[1:]
 
 
 # TODO refactor to use a dict to parse name
-def get_model_name_based_on_existing(img_shape, previous_name=None, newest_version=True):
-    prefix_name = names.get_full_name()
-    rand_id = random.randint(1000, 10000)
+def get_model_name_based_on_existing(previous_name=None):
+    name = names.get_full_name()
+    id = random.randint(1000, 10000)
     version = 1
     if previous_name:
         old_name_dir = os.path.dirname(previous_name)
         previous_name = os.path.basename(previous_name)
-        vals = {}
-        for e in previous_name.split('_'):
-            key, val = e.split('+')
-            vals[key] = val
-
-        if newest_version:
-            split_old_name = previous_name.split("_")
-            for p in glob.glob(f'{old_name_dir}\\{split_old_name[0]}_v-*_{split_old_name[2]}*'):
-                version = max(int(replace_multiple(os.path.basename(p), ['v-'], '').split('_')[1]), int(version))
-        version = int(version) + 1
-        replace_strings = ['IDim-', '(', ')', '.hdf5', '.checkpoint']
-        old_img_shape = tuple([int(x) for x in replace_multiple(previous_name.split('_')[-1], replace_strings, '').split('-')])
-        if old_img_shape != img_shape:
-            raise ValueError(f'The input of image shape {img_shape} is not equal to the original input {old_img_shape}.')
-    return get_unique_model_save_name(prefix_name, version, rand_id, img_shape)
+        param_dict = {key: val for key, val in [e.split('=') for e in previous_name.split('_')]}
+        id = param_dict['id']
+        name = param_dict['name']
+        for p in glob.glob(f'{old_name_dir}\\*{name}*{id}*'):
+            version = max(int(param_dict['version']), version)
+        version += 1
+    return get_unique_model_save_name(name, version, id)
 
 
 def remove_extension(path, extension='hdf5'):
@@ -472,16 +463,14 @@ def train_model(network_inputs, model_name, model_to_train, true_epochs=100, min
             print('learning aborted by user')
             break
         if i % log_frequency == 0 and i != 0:
-            hist = keras.callbacks.History()
             callbacks = callbacks = [
                 keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}'),
-                hist,
-                keras.callbacks.LambdaCallback(on_epoch_end=lambda _a, _b: print(
+                keras.callbacks.LambdaCallback(on_train_end=lambda _a, _b: print(
                     f'\n'
                     f'batch size: {batch_size} - environment epochs: {environment_epochs}\n'
                     f'TrueEpoch {i*minor_epochs}/{true_epochs} - {int(i*minor_epochs / true_epochs * 100)}%\n'
                     f'ComputeTime of last epoch was {compute_time_of_true_epoch}\n'
-                    f'{hist.history}')),
+                 )),
             ]
         if save_model and i % save_frequency == 0:
             checkpoint_save_path = get_checkpoint_save_path(epoch=i)
@@ -607,14 +596,7 @@ model_names_home = {
     5: '2018-11-02 01-19-11_(32, 32).checkpoint',
     }
 model_names_uni = {
-    -1: 'Conrad-Marks_v-1_id-8291_trained-2018-11-07_02-43-48.845050_IDim-(32-32).hdf5',
-    -2: 'Isabelle-Jones_v-1_id-7008_trained-2018-11-07_04-31-20.796616_IDim-(32-32).hdf5',
-    -3: 'Harold-Brown_v-1_id-4470_trained-2018-11-07_21-17-01.121610_IDim-(32-32).hdf5',
-    -4: 'Alfred-Richardson_v-1_id-1680_trained-2018-11-07_22-12-06.866406_IDim-(8-8).hdf5',
-    -5: 'Robert-Truitt_v-1_id-7829_trained-2018-11-09_00-45-47.205080_IDim-(64-64).hdf5',
-    -6: 'final\\Harold-Alexander_v-1_id-5412_trained-2018-11-09_05-35-02.012313_IDim-(64-64).hdf5',
-    -7: 'final\\Anthony-Martin_v-1_id-6052_trained-2018-11-09_13-52-36.564804_IDim-(64-64).hdf5',
-    -8: 'final\\Ryan-Strong_v-1_id-3471_trained-2018-11-09_14-08-57.550528_IDim-(32-32).hdf5',
+    -1: 'final\\date=2018-11-09_time=20-06-34-982949_name=Joe-Cruz_version=1_id=8419_idim=(32-32).hdf5',
 }
 TRAIN_NEW = 'train'
 CONRAD = -1
@@ -680,7 +662,7 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
 FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(9, 64)
+    data_dirs_path = get_data_dir(9, 32)
     model_name_to_load = model_names.get(TRAIN_NEW)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
@@ -691,7 +673,7 @@ if __name__ == '__main__':
     unnormalized_environment_data = \
         get_data_for_environments(data_dirs_path, **data_dirs_arg)
 
-    model_save_path = models_dir + get_model_name_based_on_existing(img_dims, previous_name=model_name_to_load)
+    model_save_path = models_dir + get_model_name_based_on_existing(previous_name=model_name_to_load)
     run_params = {
         'model_to_generate': 'flat',
         'unnormalized_environment_data': unnormalized_environment_data,
