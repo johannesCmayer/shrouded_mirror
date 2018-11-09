@@ -1,18 +1,11 @@
 import os
-
-# USE_GPU = True
-# if not USE_GPU:
-#     os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
-#     os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
 from tensorflow import keras
-from tensorflow.keras.layers import Conv2D, UpSampling2D, MaxPooling2D, Dense
+from tensorflow.keras.layers import Conv2D, UpSampling2D, MaxPooling2D, Dense, Concatenate, Flatten
 import tensorflow as tf
 import numpy as np
 from scipy import misc
 import glob
 import matplotlib.pyplot as plt
-# TODO somehow fix the false import error
 from util import ImgDrawer, Spinner
 import ntpath
 import pygame
@@ -22,13 +15,17 @@ import random
 from typing import Dict
 import collections
 import keyboard
-import threading
 import winsound
 import names
 import json
 import music
 import pprint
 import math
+import logging
+
+
+def convert_to_valid_os_name(string, substitute_char='-'):
+    return replace_multiple(string, '\\ / : * ? " < > |'.split(' '), substitute_char)
 
 
 def pause_and_notify(msg='programm suspendet', timeout=None):
@@ -164,7 +161,8 @@ def get_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encod
 
 # TODO find out how to remove gray shadow walls
 def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=1,
-                                num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons_coef=1024):
+                                num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons_coef=1024,
+                                downsampled_res=32):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
@@ -175,11 +173,11 @@ def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, nu
     input_img = keras.Input(picture_input_shape, name='picture_input')
     coordinates_input = keras.Input(coordinates_input_shape, name='coordinates_input')
 
-    DOWNSAMPLE_TO = 16
-    if any(shape % DOWNSAMPLE_TO != 0 for shape in picture_input_shape[:2]) \
+    downsampled_res = downsampled_res
+    if any(shape % downsampled_res != 0 for shape in picture_input_shape[:2]) \
             or picture_input_shape[0] != picture_input_shape[1]:
         raise ValueError(f'Picture input shape needs to be multiple of 16 in x and y but is {picture_input_shape[:2]}')
-    num_of_sampeling_steps = int(math.log2(picture_input_shape[0]) - math.log2(DOWNSAMPLE_TO))
+    num_of_sampeling_steps = int(math.log2(picture_input_shape[0]) - math.log2(downsampled_res))
 
     B = True
 
@@ -188,6 +186,7 @@ def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, nu
         x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
         x = MaxPooling2D((2, 2), padding='same')(x)
 
+    # TODO replace this with a flat GQN
     if B:
         x = keras.layers.Flatten()(x)
         for _ in range(2):
@@ -197,15 +196,16 @@ def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, nu
         x = keras.layers.concatenate([encoded, coordinates_input])
         for _ in range(2):
             x = keras.layers.Dense(1024, 'relu', True)(x)
-        x = Dense(16 * 16 * 3, 'relu')(x)
+        x = Dense(downsampled_res * downsampled_res * 3, 'relu')(x)
 
-    x = keras.layers.Reshape((16, 16, 3))(x)
+    x = keras.layers.Reshape((downsampled_res, downsampled_res, 3))(x)
 
     for _ in range(num_of_sampeling_steps):
         x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
         x = UpSampling2D((2, 2))(x)
-    if x.shape != picture_input_shape:
-        x = Conv2D(3, (3, 3), activation='relu', padding='same')(x)
+    # if x.shape != picture_input_shape:
+    #     x = Conv2D(3, (3, 3), activation='relu', padding='same')(x)
+
     #output_shape = [1,] + [int(x) for x in x.shape[2:]]
     #x = keras.layers.Lambda(lambda x: x[:, :, :, :3], output_shape=output_shape)(x)
     #decoded = keras.layers.Reshape(picture_input_shape)(x)
@@ -275,30 +275,41 @@ def replace_multiple(str, old, new):
     return str
 
 
-def get_unique_model_save_name(prefix_name, version, rand_id, img_shape, bw=True):
-    name = f'{prefix_name}_v-{version}_id-{rand_id}_trained-{datetime.datetime.now().date()}_' \
-           f'{datetime.datetime.now().time()}_IDim-{str(img_shape).replace(", ", "-")}'
-    return replace_multiple(name, [':', ' '], '-')
+def get_unique_model_save_name(name, version, rand_id, img_shape):
+    def format(string):
+        string = replace_multiple(string, ['+', ', ', ' '], '-')
+        return convert_to_valid_os_name(string, substitute_char='-')
+    l = [name, version, rand_id, img_shape]
+    for i, e in enumerate(l):
+        l[i] = format(str(e))
+    date = format(str(datetime.datetime.now().date()))
+    time = format(str(datetime.datetime.now().time()))
+    return f'date+{date}_time+{time}_n+{l[0]}_ver+{l[1]}_id+{l[2]}_idim+{l[3]}'
+
 
 # TODO refactor to use a dict to parse name
-def get_model_name_based_on_old_name(img_shape, bw=True, old_name=None, newest_version=True):
+def get_model_name_based_on_existing(img_shape, previous_name=None, newest_version=True):
     prefix_name = names.get_full_name()
     rand_id = random.randint(1000, 10000)
     version = 1
-    if old_name:
-        old_name_dir = os.path.dirname(old_name)
-        old_name = os.path.basename(old_name)
-        prefix_name, version, rand_id = replace_multiple(old_name, ['v-', 'id-'], '').split('_')[:3]
+    if previous_name:
+        old_name_dir = os.path.dirname(previous_name)
+        previous_name = os.path.basename(previous_name)
+        vals = {}
+        for e in previous_name.split('_'):
+            key, val = e.split('+')
+            vals[key] = val
+
         if newest_version:
-            split_old_name = old_name.split("_")
+            split_old_name = previous_name.split("_")
             for p in glob.glob(f'{old_name_dir}\\{split_old_name[0]}_v-*_{split_old_name[2]}*'):
                 version = max(int(replace_multiple(os.path.basename(p), ['v-'], '').split('_')[1]), int(version))
         version = int(version) + 1
         replace_strings = ['IDim-', '(', ')', '.hdf5', '.checkpoint']
-        old_img_shape = tuple([int(x) for x in replace_multiple(old_name.split('_')[-1], replace_strings, '').split('-')])
+        old_img_shape = tuple([int(x) for x in replace_multiple(previous_name.split('_')[-1], replace_strings, '').split('-')])
         if old_img_shape != img_shape:
             raise ValueError(f'The input of image shape {img_shape} is not equal to the original input {old_img_shape}.')
-    return get_unique_model_save_name(prefix_name, version, rand_id, img_shape, bw)
+    return get_unique_model_save_name(prefix_name, version, rand_id, img_shape)
 
 
 def remove_extension(path, extension='hdf5'):
@@ -438,16 +449,17 @@ def return_mkdir(path):
 
 
 # TODO make it so, that the model_save_file_path is a relative path (or just the model name) -> only need refactor
-def train_model(network_inputs, model_save_file_path, model_to_train, true_epochs=100, sub_epochs=10,
-                environment_epochs=None, batch_size=None, additional_meta_data={}, save_model=True):
+def train_model(network_inputs, model_name, model_to_train, true_epochs=100, sub_epochs=1,
+                environment_epochs=None, batch_size=None, additional_meta_data={}, save_model=True, log_frequency=25):
     input_params = locals()
     model_dir = os.path.dirname(__file__) + '\\models'
-    model_name = os.path.basename(model_save_file_path)
+    model_name = os.path.basename(model_name)
     print(f'model name: {model_name}')
-    checkpoint_save_path = return_mkdir(f'{model_dir}\\checkpoints') + f'\\{model_name}.checkpoint'
+    get_checkpoint_save_path = lambda epoch: return_mkdir(f'{model_dir}\\checkpoints') + f'\\{model_name}_epoch+{epoch}.checkpoint'
     final_save_path = return_mkdir(f'{model_dir}\\final') + f'\\{model_name}.hdf5'
     meta_data_save_path = return_mkdir(f'{model_dir}\\meta_data\\') + f'{model_name}.checkpoint'
     true_epochs = true_epochs if true_epochs else math.inf
+    batch_size = batch_size if batch_size else len(image_inputs)
 
     training_aborted = False
     environment_epochs = environment_epochs if environment_epochs else len(network_inputs)
@@ -455,34 +467,38 @@ def train_model(network_inputs, model_save_file_path, model_to_train, true_epoch
     for i in range(int(true_epochs / sub_epochs)):
         start_time = time.time()
         random.shuffle(network_inputs)
+
+        callbacks = []
+        if i % log_frequency == 0 and i != 0:
+            hist = keras.callbacks.History()
+            callbacks = callbacks = [
+                keras.callbacks.TensorBoard(log_dir=f'./tb_logs/{model_name}'),
+                hist,
+                keras.callbacks.LambdaCallback(on_epoch_end=lambda _a, _b: print(
+                    f'\n'
+                    f'batch size: {batch_size}\n'
+                    f'TrueEpoch {i*sub_epochs}/{true_epochs} - {int(i*sub_epochs / true_epochs * 100)}%\n'
+                    f'Environment epoch {j}/{environment_epochs} - {int(j / environment_epochs * 100)}%\n'
+                    f'ComputeTime of last epoch was {compute_time_of_true_epoch}\n'
+                    f'{hist.history}')),
+            ]
         for j, (image_inputs, coordinate_inputs) in enumerate(network_inputs):
-            batch_size = batch_size if batch_size else len(image_inputs)
             if environment_epochs and j > environment_epochs:
                 break
-            image_inputs = np.asarray(image_inputs)
-            coordinate_inputs = np.asarray(coordinate_inputs)
-            scrambled_image_inputs = np.random.permutation(image_inputs)
-
-            # TODO implement keeping x of latest checkpoints
-            model_to_train.fit([
-                scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size, epochs=sub_epochs,
-                verbose=2,
-                callbacks=[
-                    # keras.callbacks.EarlyStopping(monitor='loss', patience=0, min_delta=1),
-                    keras.callbacks.TensorBoard(log_dir=f'./tb_logs/{model_name}'),
-                    keras.callbacks.LambdaCallback(on_epoch_end=lambda _a, _b: print(
-                            f'\n'
-                            f'batch size: {batch_size}\n'
-                            f'TrueEpoch {i*sub_epochs}/{true_epochs} - {int(i*sub_epochs / true_epochs * 100)}%\n'
-                            f'Environment epoch {j}/{environment_epochs} - {int(j / environment_epochs * 100)}%\n'
-                            f'ComputeTime of last epoch was {compute_time_of_true_epoch}')),
-                ]
-            )
             if keyboard.is_pressed('q'):
                 print('learning aborted by user')
                 training_aborted = True
                 break
-        if save_model:
+
+            #image_inputs = np.asarray(image_inputs)
+            #coordinate_inputs = np.asarray(coordinate_inputs)
+            scrambled_image_inputs = np.random.permutation(image_inputs)
+
+            model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
+                               epochs=sub_epochs, verbose=0, callbacks=callbacks if j == 0 else None)
+
+        if save_model and i % 25 == 0:
+            checkpoint_save_path = get_checkpoint_save_path(epoch=i)
             print(f'saving model as {checkpoint_save_path}')
             model_to_train.save(checkpoint_save_path)
         compute_time_of_true_epoch = (time.time() - start_time) / sub_epochs / len(network_inputs)
@@ -495,7 +511,7 @@ def train_model(network_inputs, model_save_file_path, model_to_train, true_epoch
 
 
 # TODO clean up and split up run method
-def run(unnormalized_environment_data, model_save_file_path, model_to_train=None, model_load_file_path=None, train=True,
+def run(unnormalized_environment_data, model_save_file_path, model_to_generate, model_to_train=None, model_load_file_path=None, train=True,
         epochs=100, sub_epochs=10, environment_epochs=None, batch_size=None, run_environment=True, black_n_white=True,
         window_size=(1200, 600), window_size_coef=1, additional_meta_data={}, save_model=True):
     '''
@@ -512,7 +528,6 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_train=None
         'flat': get_gqn_model,
         'multi_flat': get_multi_input_gqn_model,
     }
-    model_to_generate = 'conv'
 
     input_parameters = locals()
     window_size = collections.namedtuple('Rect', field_names='x y')(
@@ -604,6 +619,9 @@ model_names_uni = {
     -3: 'Harold-Brown_v-1_id-4470_trained-2018-11-07_21-17-01.121610_IDim-(32-32).hdf5',
     -4: 'Alfred-Richardson_v-1_id-1680_trained-2018-11-07_22-12-06.866406_IDim-(8-8).hdf5',
     -5: 'Robert-Truitt_v-1_id-7829_trained-2018-11-09_00-45-47.205080_IDim-(64-64).hdf5',
+    -6: 'final\\Harold-Alexander_v-1_id-5412_trained-2018-11-09_05-35-02.012313_IDim-(64-64).hdf5',
+    -7: 'final\\Anthony-Martin_v-1_id-6052_trained-2018-11-09_13-52-36.564804_IDim-(64-64).hdf5',
+    -8: 'final\\Ryan-Strong_v-1_id-3471_trained-2018-11-09_14-08-57.550528_IDim-(32-32).hdf5',
 }
 TRAIN_NEW = 'train'
 CONRAD = -1
@@ -623,6 +641,7 @@ data_dirs = {
     6: 'GQN_SimpleRoom_no_variation',
     7: 'GQN_SimpleRoom_rand-sky-color',
     8: 'GQN_SimpleRoom_sphere_rand_‎pos',
+    9: 'GQN_SimpleRoom_sphere_rand_‎pos+rand_sky',
 }
 image_resolutions = {
     8: '8x8',
@@ -668,7 +687,8 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
 FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(6, 64)
+    data_dirs_path = get_data_dir(9, 64)
+    model_name_to_load = model_names.get(TRAIN_NEW)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
     data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
@@ -678,11 +698,9 @@ if __name__ == '__main__':
     unnormalized_environment_data = \
         get_data_for_environments(data_dirs_path, **data_dirs_arg)
 
-    model_name_to_load = model_names.get(TRAIN_NEW)
-    def get_model_save_path():
-        return models_dir + get_model_name_based_on_old_name(img_dims, old_name=model_name_to_load)
-    model_save_path = get_model_save_path()
+    model_save_path = models_dir + get_model_name_based_on_existing(img_dims, previous_name=model_name_to_load)
     run_params = {
+        'model_to_generate': 'flat',
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_name_to_load,
         'model_save_file_path': model_save_path,
@@ -694,9 +712,6 @@ if __name__ == '__main__':
         'train': True,
         'black_n_white': False,
         'window_size': window_resolutions['hd'],
-        'additional_meta_data': {'description': 'Description:\n'
-                                                '   This is a test description',
-                                 'data_dirs_path': data_dirs_path},
         'save_model': not FAST_DEBUG_MODE
     }
     print('\nparams')
@@ -704,11 +719,12 @@ if __name__ == '__main__':
     print()
 
     trained_model = run(**run_params)
-
+    # TODO fix continue training with same model
     #save_dict(model_save_path, run_params, ['unnormalized_environment_data', 'model_to_train'])
 
     run_params['model_to_train'] = trained_model
-    run_params['model_save_file_path'] = get_model_save_path()
+    run_params['model_save_file_path'] = models_dir + \
+                                         get_model_name_based_on_existing(img_dims, previous_name=model_name_to_load)
     run_params['train'] = True
 
     while True:
