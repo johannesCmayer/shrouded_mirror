@@ -286,11 +286,13 @@ def get_unique_model_save_name(name, version, id):
     return functools.reduce(lambda acc, val: f'{acc}_{val[0]}={fm(val[1])}', d.items(), '')[1:]
 
 
-# TODO refactor to use a dict to parse name
-def get_model_name_based_on_existing(previous_name=None):
+def get_new_unique_model_save_name():
     name = names.get_full_name()
     id = random.randint(1000, 10000)
-    version = 1
+    return get_unique_model_save_name(name, 1, id)
+
+
+def get_model_name(previous_name=None):
     if previous_name:
         old_name_dir = os.path.dirname(previous_name)
         previous_name = os.path.basename(previous_name)
@@ -300,7 +302,9 @@ def get_model_name_based_on_existing(previous_name=None):
         for p in glob.glob(f'{old_name_dir}\\*{name}*{id}*'):
             version = max(int(param_dict['version']), version)
         version += 1
-    return get_unique_model_save_name(name, version, id)
+        return get_unique_model_save_name(name, version, id)
+    else:
+        return get_new_unique_model_save_name()
 
 
 def remove_extension(path, extension='hdf5'):
@@ -454,37 +458,57 @@ def train_model(network_inputs, model_name, model_to_train, true_epochs=100, min
 
     environment_epochs = environment_epochs if environment_epochs else len(network_inputs)
     compute_time_of_true_epoch = 0
-    user_abort = False
-    callbacks = []
+    interrupt = False
+    exit = False
+    run_callback = []
     for i in range(int(true_epochs / minor_epochs)):
         start_time = time.time()
         random.shuffle(network_inputs)
-        if user_abort:
-            print('learning aborted by user')
-            break
+        if interrupt:
+            while True:
+                command = input('CMD MODE $ ')
+                split_command = command.split(' ')
+                if command == 'exit':
+                    print('learning aborted by user')
+                    exit = True
+                    break
+                elif command == 'resume':
+                    break
+                elif command == 'help':
+                    print('exit resume locals globals help')
+                elif command == 'locals':
+                    pprint.pprint(locals(), depth=1, compact=True)
+                elif command == 'globals':
+                    pprint.pprint(globals(), depth=1, compact=True)
+                else:
+                    print(f'{command} is not a valid command')
+            if exit:
+                break
+
         if i % log_frequency == 0 and i != 0:
-            callbacks = callbacks = [
+            run_callback = run_callback = [
                 keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}'),
-                keras.callbacks.LambdaCallback(on_train_end=lambda _a, _b: print(
+                keras.callbacks.LambdaCallback(on_train_end=lambda _a: print(
                     f'\n'
                     f'batch size: {batch_size} - environment epochs: {environment_epochs}\n'
                     f'TrueEpoch {i*minor_epochs}/{true_epochs} - {int(i*minor_epochs / true_epochs * 100)}%\n'
                     f'ComputeTime of last epoch was {compute_time_of_true_epoch}\n'
                  )),
             ]
-        if save_model and i % save_frequency == 0:
+        if save_model and i % save_frequency == 0 and i != 0:
             checkpoint_save_path = get_checkpoint_save_path(epoch=i)
             print(f'saving model as {checkpoint_save_path}')
             model_to_train.save(checkpoint_save_path)
+
         for j, (image_inputs, coordinate_inputs) in enumerate(network_inputs):
             if keyboard.is_pressed('q') or environment_epochs and j > environment_epochs:
                 model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=10,
-                                   epochs=2, verbose=0, callbacks=callbacks)
-                user_abort = True
+                                   epochs=2, verbose=0, callbacks=run_callback)
+                interrupt = True
                 break
             scrambled_image_inputs = np.random.permutation(image_inputs)
             model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
-                               epochs=minor_epochs, verbose=0, callbacks=callbacks if j == 0 else None)
+                               epochs=minor_epochs, verbose=0, callbacks=run_callback if j == 0 else None)
         compute_time_of_true_epoch = (time.time() - start_time) / minor_epochs / len(network_inputs)
     if save_model:
         print(f'saving model as {final_save_path}')
@@ -659,10 +683,10 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
         json.dump(model_meta, file)
 
 
-FAST_DEBUG_MODE = False
+FAST_DEBUG_MODE = True
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(9, 32)
+    data_dirs_path = get_data_dir(9, 128)
     model_name_to_load = model_names.get(TRAIN_NEW)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
@@ -673,14 +697,14 @@ if __name__ == '__main__':
     unnormalized_environment_data = \
         get_data_for_environments(data_dirs_path, **data_dirs_arg)
 
-    model_save_path = models_dir + get_model_name_based_on_existing(previous_name=model_name_to_load)
+    model_save_path = models_dir + get_model_name(model_name_to_load)
     run_params = {
-        'model_to_generate': 'flat',
+        'model_to_generate': 'conv',
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_name_to_load,
         'model_save_file_path': model_save_path,
         'epochs': 1000000,
-        'sub_epochs': 20,
+        'sub_epochs': 1,
         'environment_epochs': None,
         'batch_size': 200,
         'run_environment': True,
@@ -699,7 +723,7 @@ if __name__ == '__main__':
 
     run_params['model_to_train'] = trained_model
     run_params['model_save_file_path'] = models_dir + \
-                                         get_model_name_based_on_existing(img_dims, previous_name=model_name_to_load)
+                                         get_model_name(previous_name=model_name_to_load)
     run_params['train'] = True
 
     while True:
