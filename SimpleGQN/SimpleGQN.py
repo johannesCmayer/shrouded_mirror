@@ -666,6 +666,7 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
 
 
 FAST_DEBUG_MODE = False
+# TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
     data_dirs_path = get_data_dir(6, 64)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
