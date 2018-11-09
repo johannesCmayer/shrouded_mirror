@@ -629,8 +629,9 @@ model_names = {**model_names_home, **model_names_uni}
 model_names = {id: models_dir + model_name for id, model_name in zip(model_names.keys(), model_names.values())}
 model_names = {'train': None, 0: None, **model_names}
 
-data_base_dirs = ['D:\\Projects\\Unity_Projects\\GQN_Experimentation\\trainingData',
-                  r'D:\JohannesCMayer\GQN_Experimentation\trainingData']
+data_base_dirs = [
+    os.path.dirname(__file__) + '\\..\\trainingData',
+]
 data_dirs = {
     1: 'GQN_SimpleRoom',
     2: 'GQN_SimpleRoom_withobj',
@@ -686,7 +687,7 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
 FAST_DEBUG_MODE = True
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(9, 128)
+    data_dirs_path = get_data_dir(9, 32)
     model_name_to_load = model_names.get(TRAIN_NEW)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
