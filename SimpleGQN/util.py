@@ -31,7 +31,7 @@ class ImgDrawer:
         self.idx_of_auto_text = 0
         pygame.display.set_mode(screen_size, pygame.RESIZABLE)
 
-    def draw_image(self, image, display_duration=0, size=None, position=(0,0), smoothscale=True):
+    def draw_image(self, image, display_duration=0, size=None, position=(0,0), smoothscale=False):
         surf = pygame.surfarray.make_surface(image)
         surf = surf.convert()
         surf = pygame.transform.rotate(surf, -90)

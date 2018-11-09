@@ -6,6 +6,7 @@ import os
 #     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 from tensorflow import keras
+from tensorflow.keras.layers import Conv2D, UpSampling2D, MaxPooling2D, Dense
 import tensorflow as tf
 import numpy as np
 from scipy import misc
@@ -27,6 +28,7 @@ import names
 import json
 import music
 import pprint
+import math
 
 
 def pause_and_notify(msg='programm suspendet', timeout=None):
@@ -130,8 +132,6 @@ def autoencoder(picture_input_shape):
     model.compile(keras.optimizers.Adam, 'mse', ['mse'])
     return model
 
-
-# TODO parameterise, potentialy put into class
 def get_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3, num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')
     if not num_layers_decoder:
@@ -153,11 +153,99 @@ def get_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encod
         x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(x)
     predictions = keras.layers.Dense(number_of_pixels, 'relu', True)(x)
 
-    model = keras.Model(inputs=[picture_input, coordinates_input], outputs=predictions)
-    model.compile('rmsprop', 'mse')
+    joint_model = keras.Model(inputs=[picture_input, coordinates_input], outputs=predictions)
+    joint_model.compile('rmsprop', 'mse')
 
     print('model created')
-    return model
+    return joint_model
+
+
+def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=1, num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons_coef=1024):
+    print('creating model')
+    if not num_layers_decoder:
+        num_layers_decoder = num_layers_encoder
+
+    # TODO Add ability to add up multiple observations to the latent representation
+    number_of_pixels = product(picture_input_shape)
+
+    input_img = keras.Input(picture_input_shape, name='picture_input')
+    coordinates_input = keras.Input(coordinates_input_shape, name='coordinates_input')
+
+    DOWNSAMPLE_TO = 16
+    if any(shape % DOWNSAMPLE_TO != 0 for shape in picture_input_shape[:2]) or picture_input_shape[0] != picture_input_shape[1]:
+        raise ValueError(f'Picture input shape needs to be multiple of 16 in x and y but is {picture_input_shape[:2]}')
+    num_of_sampeling_steps = int(math.log2(picture_input_shape[0]) - math.log2(DOWNSAMPLE_TO))
+
+    B = True
+
+    x = input_img
+    for _ in range(num_of_sampeling_steps):
+        x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
+        x = MaxPooling2D((2, 2), padding='same')(x)
+
+    if B:
+        x = keras.layers.Flatten()(x)
+        for _ in range(2):
+            x = keras.layers.Dense(1024, 'relu', True)(x)
+        encoded = x
+
+        x = keras.layers.concatenate([encoded, coordinates_input])
+        for _ in range(2):
+            x = keras.layers.Dense(1024, 'relu', True)(x)
+        x = Dense(16 * 16 * 3, 'relu')(x)
+
+    x = keras.layers.Reshape((16, 16, 3))(x)
+
+    for _ in range(num_of_sampeling_steps):
+        x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
+        x = UpSampling2D((2, 2))(x)
+    if x.shape != picture_input_shape:
+        x = Conv2D(3, (3, 3), activation='relu', padding='same')(x)
+    #output_shape = [1,] + [int(x) for x in x.shape[2:]]
+    #x = keras.layers.Lambda(lambda x: x[:, :, :, :3], output_shape=output_shape)(x)
+    #decoded = keras.layers.Reshape(picture_input_shape)(x)
+    decoded = x
+
+    joint_model = keras.Model(inputs=[input_img, coordinates_input], outputs=decoded)
+    joint_model.compile('adam', 'mse')
+
+    joint_model.summary()
+    print('model created')
+    return joint_model
+
+
+# TODO parameterise, potentialy put into class
+def get_multi_input_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3, num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
+    print('creating model')
+    if not num_layers_decoder:
+        num_layers_decoder = num_layers_encoder
+
+    # TODO Add ability to add up multiple observations to the latent representation
+    number_of_pixels = product(picture_input_shape)
+
+    picture_input = keras.Input(picture_input_shape, name='picture_input')
+    x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(picture_input)
+    for _ in range(num_layers_encoder):
+        x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(x)
+    x = keras.layers.Dense(num_state_neurons, 'relu', True)(x)
+    encoder_model = keras.Model(inputs=picture_input, outputs=x)
+
+    #picture_input = keras.Input(picture_input_shape, name='picture_input')
+    coordinates_input = keras.Input(coordinates_input_shape, name='coordinates_input')
+
+    encoder_model_input = encoder_model(picture_input)
+    x = keras.layers.concatenate([encoder_model_input, coordinates_input])
+    for _ in range(num_layers_decoder):
+        x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(x)
+    predictions = keras.layers.Dense(number_of_pixels, 'relu', True)(x)
+    decoder_model = keras.Model(inputs=[encoder_model_input, coordinates_input], outputs=predictions)
+
+    decoder_model_output = decoder_model(inputs=[picture_input, coordinates_input])
+    joint_model = keras.Model(inputs=[picture_input, coordinates_input], outputs=decoder_model_output)
+    joint_model.compile('rmsprop', 'mse')
+
+    print('model created')
+    return joint_model
 
 
 # TODO test: might not work anymore
@@ -322,7 +410,7 @@ def normalize_environment_data(environment_data):
     return [(img / max_img, pos / max_pos, rot / max_rot) for img, pos, rot in environment_data]
 
 
-def unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=False):
+def unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=False, flatten_images=True):
     envs_data = []
     for env in normalize_environment_data(unnormalized_environment_data):
         images, poss, rots = env
@@ -330,18 +418,22 @@ def unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=
             images = [rgba_to_black_n_white(img) for img in images]
         else:
             images = [rgba_to_rgb(img) for img in images]
-        images = [np.reshape(img, product(np.shape(img))) for img in images]
+        if flatten_images:
+            images = [np.reshape(img, product(np.shape(img))) for img in images]
         coordinates = [network_inputs_from_coordinates_single(pos, rot) for pos, rot in zip(poss, rots)]
         envs_data.append((np.asarray(images), np.asarray(coordinates)))
     return envs_data
 
 
-def train_model(network_inputs, model_save_file_path, model_to_train, true_epochs=100, sub_epochs=10, environment_epochs=None, batch_size=None, additional_meta_data={}):
+def train_model(network_inputs, model_save_file_path, model_to_train, true_epochs=100, sub_epochs=10,
+                environment_epochs=None, batch_size=None, additional_meta_data={}, save_model=True):
     input_params = locals()
-    print(f'model name: {os.path.basename(model_save_file_path)}')
+    model_name = os.path.basename(model_save_file_path)
+    print(f'model name: {model_name}')
     checkpoint_save_path = f'{model_save_file_path}.checkpoint'
     final_save_path = f'{model_save_file_path}.hdf5'
     meta_data_save_path = f'{model_save_file_path}.modelmeta'
+    true_epochs = true_epochs if true_epochs else math.inf
 
     training_aborted = False
     environment_epochs = environment_epochs if environment_epochs else len(network_inputs)
@@ -349,18 +441,20 @@ def train_model(network_inputs, model_save_file_path, model_to_train, true_epoch
     for i in range(int(true_epochs / sub_epochs)):
         start_time = time.time()
         random.shuffle(network_inputs)
-        for j, (flat_image_inputs, coordinate_inputs) in enumerate(network_inputs):
-            batch_size = batch_size if batch_size else len(flat_image_inputs)
+        for j, (image_inputs, coordinate_inputs) in enumerate(network_inputs):
+            batch_size = batch_size if batch_size else len(image_inputs)
             if environment_epochs and j > environment_epochs:
                 break
-            flat_image_inputs = np.asarray(flat_image_inputs)
+            image_inputs = np.asarray(image_inputs)
             coordinate_inputs = np.asarray(coordinate_inputs)
-            scrambled_flat_image_inputs_2 = np.random.permutation(flat_image_inputs)
+            scrambled_image_inputs = np.random.permutation(image_inputs)
 
+            # TODO implement keeping x of latest checkpoints
             model_to_train.fit([
-                scrambled_flat_image_inputs_2, coordinate_inputs], flat_image_inputs, batch_size=batch_size, epochs=sub_epochs, verbose=2,
+                scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size, epochs=sub_epochs, verbose=2,
                 callbacks=[
                     # keras.callbacks.EarlyStopping(monitor='loss', patience=0, min_delta=1),
+                    keras.callbacks.TensorBoard(log_dir=f'./logs/{model_name}'),
                     keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=sub_epochs),
                     keras.callbacks.LambdaCallback(on_epoch_end=
                         lambda _a, _b: print(f'\n'
@@ -370,25 +464,26 @@ def train_model(network_inputs, model_save_file_path, model_to_train, true_epoch
                                              f'ComputeTime of last epoch was {compute_time_of_true_epoch}')),
                 ]
             )
-            compute_time_of_true_epoch = (time.time() - start_time) / sub_epochs
             if keyboard.is_pressed('q'):
                 print('learning aborted by user')
                 training_aborted = True
                 break
+        compute_time_of_true_epoch = (time.time() - start_time) / sub_epochs / len(network_inputs)
         if training_aborted:
             break
-    print(f'saving model as {final_save_path}')
-    model_to_train.save(final_save_path)
-    if not training_aborted and os.path.isfile(checkpoint_save_path):
-        print('removing checkpoint save')
-        os.remove(checkpoint_save_path)
+    if save_model:
+        print(f'saving model as {final_save_path}')
+        model_to_train.save(final_save_path)
+        if not training_aborted and os.path.isfile(checkpoint_save_path):
+            print('removing checkpoint save')
+            os.remove(checkpoint_save_path)
     return model_to_train
 
 
 # TODO clean up and split up run method
 def run(unnormalized_environment_data, model_save_file_path, model_to_train=None, model_load_file_path=None, train=True,
         epochs=100, sub_epochs=10, environment_epochs=None, batch_size=None, run_environment=True, black_n_white=True, window_size=(1200, 600),
-        window_size_coef=1, additional_meta_data={}):
+        window_size_coef=1, additional_meta_data={}, save_model=True):
     '''
     Run the main Programm
     :param data_dirs: the directory containing the training data.
@@ -398,6 +493,13 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_train=None
     :param num_samples_to_load: number of samples to load from the data dir. None = all.
     :return: Trained model
     '''
+    model_generators = {
+        'conv': get_convolitional_gqn_model,
+        'flat': get_gqn_model,
+        'multi_flat': get_multi_input_gqn_model,
+    }
+    model_to_generate = 'conv'
+
     input_parameters = locals()
     window_size = collections.namedtuple('Rect', field_names='x y')(
         x=int(window_size[0] * window_size_coef),
@@ -405,21 +507,22 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_train=None
 
     _, max_pos_val, max_rot_val = get_max_env_data_values(unnormalized_environment_data)
     orig_img_data_shape = np.shape(unnormalized_environment_data[0][0][0])
-    network_inputs = unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=black_n_white)
+    network_inputs = unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=black_n_white,
+                                                    flatten_images=False if model_to_generate == 'conv' else True)
     img_data_shape = orig_img_data_shape[0], orig_img_data_shape[1]
     if not black_n_white:
         img_data_shape = img_data_shape + (3,)
-
 
     model = model_to_train
     if not model:
         if model_load_file_path:
             model = keras.models.load_model(model_load_file_path)
         else:
-            model = get_gqn_model(np.shape(network_inputs[0][0][0]), np.shape(network_inputs[0][1][0]))
+            model = model_generators[model_to_generate](np.shape(network_inputs[0][0][0]), np.shape(network_inputs[0][1][0]))
     if train:
         model = train_model(network_inputs, model_save_file_path, model, true_epochs=epochs, sub_epochs=sub_epochs,
-                            environment_epochs=environment_epochs, batch_size=batch_size, additional_meta_data={**additional_meta_data, **input_parameters})
+                            environment_epochs=environment_epochs, batch_size=batch_size,
+                            additional_meta_data={**additional_meta_data, **input_parameters}, save_model=save_model)
     if not run_environment:
         return
 
@@ -481,6 +584,8 @@ model_names_uni = {
     -1: 'Conrad-Marks_v-1_id-8291_trained-2018-11-07_02-43-48.845050_IDim-(32-32).hdf5',
     -2: 'Isabelle-Jones_v-1_id-7008_trained-2018-11-07_04-31-20.796616_IDim-(32-32).hdf5',
     -3: 'Harold-Brown_v-1_id-4470_trained-2018-11-07_21-17-01.121610_IDim-(32-32).hdf5',
+    -4: 'Alfred-Richardson_v-1_id-1680_trained-2018-11-07_22-12-06.866406_IDim-(8-8).hdf5',
+    -5: 'Robert-Truitt_v-1_id-7829_trained-2018-11-09_00-45-47.205080_IDim-(64-64).hdf5',
 }
 TRAIN_NEW = 'train'
 CONRAD = -1
@@ -497,7 +602,9 @@ data_dirs = {
     3: 'GQN_SimpleRoom_RandomizedObjects_2',
     4: 'GQN_SimpleRoom_nocolorchange-oneobject',
     5: 'GQN_SimpleRoom_nocolorchange-oneobject-randompositioned',
-    6: 'GQN_SimpleRoom_no_variation'
+    6: 'GQN_SimpleRoom_no_variation',
+    7: 'GQN_SimpleRoom_rand-sky-color',
+    8: 'GQN_SimpleRoom_sphere_rand_‎pos',
 }
 image_resolutions = {
     8: '8x8',
@@ -539,20 +646,21 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
                 model_meta[key] = value
         json.dump(model_meta, file)
 
-FAST_START = False
 
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(6, 8)
+    FAST_DEBUG_MODE = False
+
+    data_dirs_path = get_data_dir(6, 64)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
     data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
-    if FAST_START:
+    if FAST_DEBUG_MODE:
         data_dirs_arg = {'num_envs_to_load': 10, 'num_data_from_env': 10}
 
     unnormalized_environment_data = \
         get_data_for_environments(data_dirs_path, **data_dirs_arg)
 
-    model_name_to_load = model_names.get(TRAIN_NEW)
+    model_name_to_load = model_names.get(-5)
     def get_model_save_path():
         return models_dir + get_model_name_based_on_old_name(img_dims, old_name=model_name_to_load)
     model_save_path = get_model_save_path()
@@ -560,7 +668,7 @@ if __name__ == '__main__':
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_name_to_load,
         'model_save_file_path': model_save_path,
-        'epochs': 100,
+        'epochs': 1000000,
         'sub_epochs': 1,
         'environment_epochs': None,
         'batch_size': 200,
@@ -571,6 +679,7 @@ if __name__ == '__main__':
         'additional_meta_data': {'description': 'Description:\n'
                                                 '   This is a test description',
                                  'data_dirs_path': data_dirs_path},
+        'save_model': not FAST_DEBUG_MODE
     }
     print('\nparams')
     pprint.pprint(run_params, depth=1, compact=True)

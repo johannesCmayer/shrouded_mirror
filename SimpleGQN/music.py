@@ -172,7 +172,7 @@ class MINOR_SONG:
     SCALE = MINOR_SCALE - 5
     generator = song_generator(scale=SCALE)
 
-def play_next_note_of_song(i, song=MINOR_SONG):
+def play_next_note_of_song(i, song=BLUES_SONG):
     note = next(song.generator)
     note_freq = int(num_to_note_freq(note))
     winsound.Beep(note_freq, song.timing[i % len(song.timing)])
@@ -185,4 +185,4 @@ def play_song(num_notes, song=MINOR_SONG):
 
 if __name__ == '__main__':
     for i in infinity():
-        play_next_note_of_song(BLUES_SONG)
+        play_next_note_of_song(i, MINOR_SONG)
