@@ -444,79 +444,6 @@ def return_mkdir(path):
     return path
 
 
-# TODO make it so, that the model_save_file_path is a relative path (or just the model name) -> only need refactor
-def train_model_dynamic(network_inputs, model_name, model_to_train, true_epochs=100, minor_epochs=1, environment_epochs=None,
-                        batch_size=None, additional_meta_data={}, save_model=True, log_frequency=10, save_frequency = 30):
-    input_params = locals()
-    model_dir = os.path.dirname(__file__) + '\\models'
-    model_name = os.path.basename(model_name)
-    print(f'model name: {model_name}')
-    get_checkpoint_save_path = lambda epoch: return_mkdir(f'{model_dir}\\checkpoints') + f'\\{model_name}_epoch+{epoch}.checkpoint'
-    final_save_path = return_mkdir(f'{model_dir}\\final') + f'\\{model_name}.hdf5'
-    meta_data_save_path = return_mkdir(f'{model_dir}\\meta_data\\') + f'{model_name}.checkpoint'
-    true_epochs = true_epochs if true_epochs else math.inf
-    batch_size = batch_size if batch_size else len(image_inputs)
-
-    environment_epochs = environment_epochs if environment_epochs else len(network_inputs)
-    compute_time_of_true_epoch = 0
-    interrupt = False
-    exit = False
-    run_callback = []
-    for i in range(int(true_epochs / minor_epochs)):
-        start_time = time.time()
-        random.shuffle(network_inputs)
-        if interrupt:
-            while True:
-                command = input('CMD MODE $ ')
-                split_command = command.split(' ')
-                if any([command == x for x in ['exit', 'q', 'quit']]):
-                    print('learning aborted by user')
-                    exit = True
-                    break
-                elif any([command == x for x in ['resume']]):
-                    break
-                elif command == 'help':
-                    print('exit resume locals globals help')
-                elif command == 'locals':
-                    pprint.pprint(locals(), depth=1, compact=True)
-                elif command == 'globals':
-                    pprint.pprint(globals(), depth=1, compact=True)
-                else:
-                    print(f'{command} is not a valid command')
-            if exit:
-                break
-
-        if i % log_frequency == 0 and i != 0:
-            run_callback = run_callback = [
-                keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}'),
-                keras.callbacks.LambdaCallback(on_train_end=lambda _a: print(
-                    f'\n'
-                    f'batch size: {batch_size} - environment epochs: {environment_epochs}\n'
-                    f'TrueEpoch {i*minor_epochs}/{true_epochs} - {int(i*minor_epochs / true_epochs * 100)}%\n'
-                    f'ComputeTime of last epoch was {compute_time_of_true_epoch}\n'
-                 )),
-            ]
-        if save_model and i % save_frequency == 0 and i != 0:
-            checkpoint_save_path = get_checkpoint_save_path(epoch=i)
-            print(f'saving model as {checkpoint_save_path}')
-            model_to_train.save(checkpoint_save_path)
-
-        for j, (image_inputs, coordinate_inputs) in enumerate(network_inputs):
-            if keyboard.is_pressed('q') or environment_epochs and j > environment_epochs:
-                model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=10,
-                                   epochs=2, verbose=0, callbacks=run_callback)
-                interrupt = True
-                break
-            scrambled_image_inputs = np.random.permutation(image_inputs)
-            model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
-                               epochs=minor_epochs, verbose=0, callbacks=run_callback if j == 0 else None)
-        compute_time_of_true_epoch = (time.time() - start_time) / minor_epochs / len(network_inputs)
-    if save_model:
-        print(f'saving model as {final_save_path}')
-        model_to_train.save(final_save_path)
-    return model_to_train
-
-
 def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
                        data_composition_multiplier=10, log_frequency=10, save_frequency = 30):
     model_dir = os.path.dirname(__file__) + '\\models'
@@ -550,10 +477,9 @@ def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, b
 
     print('starting training')
     model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
-                       epochs=epochs, verbose=1, callbacks=[
+                       epochs=epochs, verbose=2, callbacks=[
                             keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
-                            keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
-                                                        ),
+                            #keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
         ])
 
     if save_model:
@@ -666,6 +592,7 @@ model_names_home = {
     }
 model_names_uni = {
     -1: 'final\\date=2018-11-09_time=20-06-34-982949_name=Joe-Cruz_version=1_id=8419_idim=(32-32).hdf5',
+    -2: 'final\\date=2018-11-10_time=02-04-25-643243_name=Walter-Meltzer_version=1_id=5155.hdf5',
 }
 TRAIN_NEW = 'train'
 CONRAD = -1
@@ -733,7 +660,7 @@ FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
     data_dirs_path = get_data_dir(6, 32)
-    model_name_to_load = model_names.get(TRAIN_NEW)
+    model_name_to_load = model_names.get(-2)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
     data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
