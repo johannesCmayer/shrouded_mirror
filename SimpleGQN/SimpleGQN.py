@@ -311,7 +311,7 @@ def generate_model_name(previous_name=None):
         id = param_dict['id']
         name = param_dict['name']
         version = 0
-        for p in glob.glob(f'{old_name_dir}\\*{name}*{id}*'):
+        for p in glob.glob(f'{previous_name}\\*{name}*{id}*'):
             exisiting_param_dict = parse_path_to_params(p)
             version = max(int(exisiting_param_dict['version']), version)
         version += 1
@@ -629,7 +629,7 @@ model_names_uni = {
     -1: 'date=2018-11-09_time=20-06-34-982949_name=Joe-Cruz_version=1_id=8419_idim=(32-32).hdf5',
     -2: 'date=2018-11-10_time=02-04-25-643243_name=Walter-Meltzer_version=1_id=5155.hdf5',
     -3: 'date=2018-11-10_time=04-01-37-084561_name=Allen-Sullivan_version=1_id=8980.hdf5',
-    -4: 'date=2018-11-10_time=04-30-10-670564_name=Allen-Sullivan_version=2_id=8980-hdf5.hdf5'
+    -4: 'date=2018-11-10_time=19-38-46-521301_name=Cynthia-Westfall_version=1_id=4765.hdf5'
 }
 model_names = {**model_names_home, **model_names_uni}
 
@@ -692,7 +692,7 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
 FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(6, 128)
+    data_dirs_path = get_data_dir(10, 32)
     params = parse_path_to_params(model_names.get(-4))
     model_load_path = get_model_load_path(params['name'], params['id'])
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
@@ -710,13 +710,13 @@ if __name__ == '__main__':
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_load_path,
         'model_save_file_path': model_save_path,
-        'epochs': 1,
-        'batch_size': None,
+        'epochs': 10,
+        'batch_size': 600,
         'data_composition_multiplier': 10,
         'log_frequency': 10,
         'save_frequency': 30,
         'run_environment': True,
-        'train': False,
+        'train': True,
         'black_n_white': False,
         'window_size': window_resolutions['hd'],
         'save_model': not FAST_DEBUG_MODE
