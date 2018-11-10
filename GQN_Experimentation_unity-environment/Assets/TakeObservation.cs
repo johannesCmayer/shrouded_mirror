@@ -13,7 +13,7 @@ public class TakeObservation : MonoBehaviour {
     public Transform observeVolume;
     public EnvironmentGenerator environmentGenerator;
 
-    public int captureBatchSize = 32;
+    public int obsPerEnv = 32;
 
     public CaptureSettings[] captureSettings = new CaptureSettings[] {
         new CaptureSettings(8,8,20000),
@@ -35,6 +35,7 @@ public class TakeObservation : MonoBehaviour {
     void Start()
     {
         myAS = GetComponent<AudioSource>();
+        environmentGenerator.RandomizeEnv(cam);
         StartCoroutine(Capture());
 	}
 
@@ -68,15 +69,19 @@ public class TakeObservation : MonoBehaviour {
                     SaveImage(capture, savePath, GetFileName(capture));
                     TookObservation();
                     totalImages++;
-                    if (i % Mathf.Max(captureBatchSize, 1000) == 0)
+                    if (i % Mathf.Max(obsPerEnv, 1000) == 0)
                     {
                         print($"{(int)(((float)totalImages / totalImagesToMake) * 100)}% - " +
                             $"{(int)(totalImages / (Time.time - startTime))} images per second - " +
                             $"{totalImages}/{totalImagesToMake} are captured - " +
                             $"capturing now {cs.renderWidth}x{cs.renderHeight} images");                        
                     }
-                    if (i % captureBatchSize == 0)
+                    if (i % obsPerEnv == 0)
+                    {
+                        environmentGenerator.RandomizeEnv(cam);
                         yield return null;
+                    }
+                        
                 }
             }
         }

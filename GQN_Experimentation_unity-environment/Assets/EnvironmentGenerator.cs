@@ -13,14 +13,16 @@ public class EnvironmentGenerator : MonoBehaviour {
     public GameObject[] environmentBaseObjects;
     public GameObject[] environmentalObjectsPrefabs;
     [Header("Settings")]
-    public int capturesBevoreRandomization = 100;
     public int maxNumEnvObjects = 1;
     public int minNumEnvObjects = 1;
     public float environmentObjectsMinScale = 0.4f;
     public float environmentObjectsMaxScale = 2f;
+    public bool useColorPool = true;
+    public Color[] colorPool;
     [Header("Toogle randomization")]
     public bool randCamBackgroundColor = true;
     public bool randEnvColor = true;
+    public bool allWallsSameColor = true;
     public bool randEnvObjColor = true;
     public bool randEnvObjPosition = true;
     public bool randEnvObjRotation = true;
@@ -30,90 +32,36 @@ public class EnvironmentGenerator : MonoBehaviour {
 
     List<GameObject> environmentalObjects = new List<GameObject>();
     int captureCounter;
-    int seed;
     string environmentID;
 
-    public void UpdateEnvID()
+    public string EnvironmentID
     {
-        //FieldInfo[] properties = typeof(EnvironmentGenerator).GetFields(
-        //    BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-
-        //long hash = ((float)seed).GetHashCode();
-        //int i = 0;
-        //foreach (var p in properties)
-        //{
-        //    if (!(p.FieldType == typeof(int) || 
-        //        p.FieldType == typeof(bool) || 
-        //        p.FieldType ==  typeof(float))) { continue; }
-
-        //    float val;
-        //    if (p.FieldType == typeof(bool))
-        //    {
-        //        val = (bool)p.GetValue(this) ? 1 : 0;
-        //        if (val == 0)
-        //            print("");
-        //        else
-        //            print("");
-        //    }
-        //    else
-        //        val = (float)System.Convert.ChangeType(p.GetValue(this), typeof(float));
-        //    hash += ((float)((i + 1) * 10 + val)).GetHashCode();
-        //    hash = hash << 6;
-
-        //    i++;
-        //}
-        environmentID = System.DateTime.UtcNow.ToString("yyyy-MM-dd-hh-mm-ss-fffffff-(zz)");
-    }
-
-    public string EnvironmentID {
-        get {
+        get
+        {
             return environmentID;
         }
     }
 
-	void Start () {
-        takeObservation.TookObservation += OnTookObservation;
-        RandomizeEnv();
-	}
-
-    void OnTookObservation()
+    public void RandomizeEnv(Camera observationCamera)
     {
-        captureCounter++;
-        if (captureCounter >= capturesBevoreRandomization)
-        {
-            captureCounter = 0;
-            RandomizeEnv();
-        }
-    }
-
-    Vector3 GetRandomVec3(float rangeMin=0, float rangeMax=1)
-    {
-        System.Func<float> r_val = () => Random.Range(rangeMin, rangeMax);
-        return new Vector3(r_val(), r_val(), r_val());
-    }
-
-    Color GetRandomColor(float rangeMin = 0, float rangeMax = 1)
-    {
-        System.Func<float> r_val = () => Random.Range(rangeMin, rangeMax);
-        return new Color(r_val(), r_val(), r_val());
-    }
-
-    void SetRandomColor(GameObject go)
-    {
-        go.GetComponent<Renderer>().material.color = GetRandomColor();
-    }
-
-    void RandomizeEnv()
-    {
-        seed++;
-        Random.InitState(seed);       
         if (randCamBackgroundColor)
-            takeObservation.cam.backgroundColor = GetRandomColor();
+            observationCamera.backgroundColor = GetRandomColor();
         if (randEnvColor)
         {
-            foreach (var item in environmentBaseObjects)
+            if (allWallsSameColor)
             {
-                SetRandomColor(item);
+                var color = GetRandomColor();
+                foreach (var item in environmentBaseObjects)
+                {
+                    item.GetComponent<Renderer>().material.color = color;
+                }
+            }
+            else
+            {
+                foreach (var item in environmentBaseObjects)
+                {
+                    SetRandomColor(item);
+                }
             }
         }
         foreach (var item in environmentalObjectsPrefabs)
@@ -142,10 +90,40 @@ public class EnvironmentGenerator : MonoBehaviour {
                 if (randEnvObjColor)
                     SetRandomColor(newEnvObj);
                 environmentalObjects.Add(newEnvObj);
-            }            
+            }
         }
         UpdateEnvID();
         EnvironmentChanged(EnvironmentID);
-        print("Environment Randomized");
     }
+
+    public void UpdateEnvID()
+    {
+        environmentID = System.DateTime.UtcNow.ToString("yyyy-MM-dd-hh-mm-ss-fffffff-(zz)");
+    }    
+
+    private Vector3 GetRandomVec3(float rangeMin=0, float rangeMax=1)
+    {
+        System.Func<float> r_val = () => Random.Range(rangeMin, rangeMax);
+        return new Vector3(r_val(), r_val(), r_val());
+    }
+
+    private Color GetRandomColor(float rangeMin = 0, float rangeMax = 1)
+    {
+        if (useColorPool)
+        {
+            return colorPool[Random.Range(0, colorPool.Length - 1)];
+        }
+        else
+        {
+            System.Func<float> r_val = () => Random.Range(rangeMin, rangeMax);
+            return new Color(r_val(), r_val(), r_val());
+        }
+    }
+
+    private void SetRandomColor(GameObject go)
+    {
+        go.GetComponent<Renderer>().material.color = GetRandomColor();
+    }
+
+    
 }

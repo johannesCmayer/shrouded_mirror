@@ -24,6 +24,7 @@ import math
 import logging
 import functools
 
+print(f'started execution at {datetime.datetime.now()}')
 
 def convert_to_valid_os_name(string, substitute_char='-'):
     return replace_multiple(string, '\\ / : * ? " < > |'.split(' '), substitute_char)
@@ -648,6 +649,7 @@ data_dirs = {
     7: 'GQN_SimpleRoom_rand-sky-color',
     8: 'GQN_SimpleRoom_sphere_rand_‎pos',
     9: 'GQN_SimpleRoom_sphere_rand_‎pos+rand_sky',
+    10: 'GQN_SimpleRoom_colorchange-skyandwalls',
 }
 image_resolutions = {
     8: '8x8',
@@ -707,13 +709,13 @@ if __name__ == '__main__':
 
     model_save_path = models_dir + generate_model_name(model_load_path)
     run_params = {
-        'model_to_generate': 'conv',
+        'model_to_generate': 'flat',
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_load_path,
         'model_save_file_path': model_save_path,
         'epochs': 1,
         'batch_size': None,
-        'data_composition_multiplier': 1,
+        'data_composition_multiplier': 10,
         'log_frequency': 10,
         'save_frequency': 30,
         'run_environment': True,
