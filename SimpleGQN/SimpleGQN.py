@@ -1,7 +1,7 @@
 import os
-from tensorflow import keras
-from tensorflow.keras.layers import Conv2D, UpSampling2D, MaxPooling2D, Dense, Concatenate, Flatten
 import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.layers import Conv2D, UpSampling2D, MaxPooling2D, Dense, Concatenate, Flatten, Reshape
 import numpy as np
 from scipy import misc
 import glob
@@ -135,31 +135,55 @@ def autoencoder(picture_input_shape):
     return model
 
 
+def get_gqn_encoder(picture_input_shape, num_layers=2, num_neurons_layer=1024, num_state_neurons=None):
+    num_state_neurons = num_state_neurons if num_state_neurons else num_neurons_layer
+    picture_input = keras.Input(picture_input_shape, name='picture_input')
+    x = Flatten()(picture_input)
+    for _ in range(num_layers):
+        x = Dense(num_neurons_layer, 'relu', True)(x)
+    output = Dense(num_state_neurons, 'relu', True)(x)
+    return keras.Model(picture_input, output)
+
+def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_layers=2, num_neurons_layer=1024):
+    state_input = keras.Input(state_input_shape, name='picture_input')
+    coordinate_input = keras.Input(coordinate_input_shape, name='coordinate_input')
+    x = Concatenate()([state_input, coordinate_input])
+    for _ in range(num_layers - 1):
+        x = Dense(num_neurons_layer, 'relu', True)(x)
+    x = Dense(product(output_dim), 'relu', True)(x)
+    predictions = Reshape(output_dim)(x)
+    return keras.Model(inputs=[state_input, coordinate_input], outputs=predictions)
+
 # TODO make it so it can take non flat input (test if it already can)
 def get_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3, num_layers_decoder=None,
-                  num_neurons_per_layer=1024, num_state_neurons=1024):
+                  num_neurons_per_layer=1024, num_state_neurons=1024, compile=True):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
 
     # TODO Add ability to add up multiple observations to the latent representation
-    number_of_pixels = product(picture_input_shape)
+    number_of_data_points = product(picture_input_shape)
 
     picture_input = keras.Input(picture_input_shape, name='picture_input')
     coordinates_input = keras.Input(coordinates_input_shape, name='coordinates_input')
 
-    x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(picture_input)
-    for _ in range(num_layers_encoder):
-        x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(x)
-    x = keras.layers.Dense(num_state_neurons, 'relu', True)(x)
+    x = picture_input
+    if len(picture_input_shape) > 1:
+        x = Flatten()(picture_input)
 
-    x = keras.layers.concatenate([x, coordinates_input])
+    for _ in range(num_layers_encoder):
+        x = Dense(num_neurons_per_layer, 'relu', True)(x)
+    x = Dense(num_state_neurons, 'relu', True)(x)
+
+    x = Concatenate()([x, coordinates_input])
     for _ in range(num_layers_decoder):
-        x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(x)
-    predictions = keras.layers.Dense(number_of_pixels, 'relu', True)(x)
+        x = Dense(num_neurons_per_layer, 'relu', True)(x)
+    x = Dense(number_of_data_points, 'relu', True)(x)
+    predictions = Reshape(picture_input_shape)(x)
 
     joint_model = keras.Model(inputs=[picture_input, coordinates_input], outputs=predictions)
-    joint_model.compile('rmsprop', 'mse')
+    if compile:
+        joint_model.compile('rmsprop', 'mse')
 
     joint_model.summary()
     return joint_model
@@ -172,48 +196,26 @@ def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, nu
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
 
-    # TODO Add ability to add up multiple observations to the latent representation
-    number_of_pixels = product(picture_input_shape)
-
     input_img = keras.Input(picture_input_shape, name='picture_input')
     coordinates_input = keras.Input(coordinates_input_shape, name='coordinates_input')
 
-    downsampled_res = downsampled_res
     if any(shape % downsampled_res != 0 for shape in picture_input_shape[:2]) \
             or picture_input_shape[0] != picture_input_shape[1]:
         raise ValueError(f'Picture input shape needs to be multiple of 16 in x and y but is {picture_input_shape[:2]}')
     num_of_sampeling_steps = int(math.log2(picture_input_shape[0]) - math.log2(downsampled_res))
-
-    B = True
 
     x = input_img
     for _ in range(num_of_sampeling_steps):
         x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
         x = MaxPooling2D((2, 2), padding='same')(x)
 
-    # TODO replace this with a flat GQN
-    if B:
-        x = keras.layers.Flatten()(x)
-        for _ in range(2):
-            x = keras.layers.Dense(1024, 'relu', True)(x)
-        encoded = x
-
-        x = keras.layers.concatenate([encoded, coordinates_input])
-        for _ in range(2):
-            x = keras.layers.Dense(1024, 'relu', True)(x)
-        x = Dense(downsampled_res * downsampled_res * 3, 'relu')(x)
-
-    x = keras.layers.Reshape((downsampled_res, downsampled_res, 3))(x)
+    x = get_gqn_model(x.shape[1:], coordinates_input_shape, compile=False)([x, coordinates_input])
 
     for _ in range(num_of_sampeling_steps):
         x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
         x = UpSampling2D((2, 2))(x)
     if x.shape != picture_input_shape:
         x = Conv2D(3, (3, 3), activation='relu', padding='same')(x)
-
-    #output_shape = [1,] + [int(x) for x in x.shape[2:]]
-    #x = keras.layers.Lambda(lambda x: x[:, :, :, :3], output_shape=output_shape)(x)
-    #decoded = keras.layers.Reshape(picture_input_shape)(x)
     decoded = x
 
     joint_model = keras.Model(inputs=[input_img, coordinates_input], outputs=decoded)
@@ -225,34 +227,26 @@ def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, nu
 
 # TODO parameterise all model generaton funcitons, potentialy put into class
 # TODO Implement this
-def get_multi_input_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3,
+def get_multi_input_gqn_model(pictures_list_input_shape, num_input_observations, coordinates_input_shape, num_layers_encoder=3,
                               num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
 
     # TODO Add ability to add up multiple observations to the latent representation
-    number_of_pixels = product(picture_input_shape)
+    number_of_pixels = product(num_input_observations * pictures_list_input_shape)
 
-    picture_input = keras.Input(picture_input_shape, name='picture_input')
-    x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(picture_input)
-    for _ in range(num_layers_encoder):
-        x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(x)
-    x = keras.layers.Dense(num_state_neurons, 'relu', True)(x)
-    encoder_model = keras.Model(inputs=picture_input, outputs=x)
+    picture_input = [keras.Input(pictures_list_input_shape, name=f'picture_input{i}') for i in range(num_input_observations)]
+    coordinate_input = keras.Input(coordinates_input_shape, name='coordinate_input')
 
-    #picture_input = keras.Input(picture_input_shape, name='picture_input')
-    coordinates_input = keras.Input(coordinates_input_shape, name='coordinates_input')
+    encoder = get_gqn_encoder(pictures_list_input_shape)
 
-    encoder_model_input = encoder_model(picture_input)
-    x = keras.layers.concatenate([encoder_model_input, coordinates_input])
-    for _ in range(num_layers_decoder):
-        x = keras.layers.Dense(num_neurons_per_layer, 'relu', True)(x)
-    predictions = keras.layers.Dense(number_of_pixels, 'relu', True)(x)
-    decoder_model = keras.Model(inputs=[encoder_model_input, coordinates_input], outputs=predictions)
+    encoded = [encoder(o) for o in picture_input]
+    encoded = keras.layers.Average()(encoded)
 
-    decoder_model_output = decoder_model(inputs=[picture_input, coordinates_input])
-    joint_model = keras.Model(inputs=[picture_input, coordinates_input], outputs=decoder_model_output)
+    decoded = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_list_input_shape)([encoded, coordinate_input])
+
+    joint_model = keras.Model(inputs=[*picture_input, coordinate_input], outputs=decoded)
     joint_model.compile('rmsprop', 'mse')
 
     joint_model.summary()
@@ -343,21 +337,6 @@ def remove_extension(path, extension='hdf5'):
     if path.split('.')[-1] == extension:
         return ''.join(path.split('.')[0:-2])
     return path
-
-
-def draw_autoencoding_evaluation():
-    num_comparisons = 6
-    for i in range(1, num_comparisons + 1):
-        plt.subplot(num_comparisons/2,4,i*2-1)
-        plt.imshow(np.reshape(output[i-1], np.shape(image_data[0])), cmap='gray')
-        plt.yticks([])
-        plt.xticks([])
-
-        plt.subplot(num_comparisons/2,4,i*2)
-        plt.imshow(image_data[i-1], cmap='gray')
-        plt.yticks([])
-        plt.xticks([])
-    plt.show()
 
 
 class CharacterController:
@@ -477,7 +456,7 @@ def return_mkdir(path):
     return path
 
 
-def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
+def train_model_pregen(network_inputs, num_input_observations, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
                        data_composition_multiplier=10, data_recomposition_frequency=1, log_frequency=10,
                        save_frequency = 30):
     model_dir = os.path.dirname(__file__) + '\\models'
@@ -492,7 +471,7 @@ def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, b
     for i in music.infinity():
         if i % data_recomposition_frequency == 0:
             print('composing training data')
-            scrambled_image_inputs, image_inputs, coordinate_inputs = [], [], []
+            scrambled_image_inputs_list, image_inputs, coordinate_inputs = [[] for _ in range(num_input_observations)], [], []
             total_number_of_compositions = 0
             number_of_compositions = 0
             for _ in range(data_composition_multiplier):
@@ -500,7 +479,8 @@ def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, b
                     total_number_of_compositions += len(coordinate_input_list)
             for _ in range(data_composition_multiplier):
                 for img_input_list, coordinate_input_list in network_inputs:
-                    scrambled_image_inputs.extend(np.random.permutation(img_input_list))
+                    for i in scrambled_image_inputs_list:
+                        i.extend(np.random.permutation(img_input_list))
                     image_inputs.extend(img_input_list)
                     coordinate_inputs.extend(coordinate_input_list)
 
@@ -508,11 +488,11 @@ def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, b
                     print(f'\r{number_of_compositions}/{total_number_of_compositions} - '
                           f'{int(100 * number_of_compositions/total_number_of_compositions)}% data points composed', end='')
             print('\nconverting to numpy arrays')
-            scrambled_image_inputs, image_inputs, coordinate_inputs = \
-                np.asarray(scrambled_image_inputs), np.asarray(image_inputs), np.asarray(coordinate_inputs)
+            scrambled_image_inputs_list, image_inputs, coordinate_inputs = \
+                [np.asarray(x) for x in scrambled_image_inputs_list], np.asarray(image_inputs), np.asarray(coordinate_inputs)
             print()
         print('starting training')
-        model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
+        model_to_train.fit([*scrambled_image_inputs_list, coordinate_inputs], image_inputs, batch_size=batch_size,
                            epochs=epochs, callbacks=[
                                 keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
                                 #keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
@@ -527,7 +507,7 @@ def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, b
 
 
 # TODO clean up and split up run method
-def run(unnormalized_environment_data, model_save_file_path, model_to_generate, model_to_train=None, model_load_file_path=None, train=True,
+def run(unnormalized_environment_data, num_input_observations, model_save_file_path, model_to_generate, model_to_train=None, model_load_file_path=None, train=True,
         epochs=100, batch_size=None, data_composition_multiplier=10, log_frequency=10, save_frequency = 30, run_environment=True, black_n_white=True,
         window_size=(1200, 600), window_size_coef=1, additional_meta_data={}, save_model=True):
     '''
@@ -542,7 +522,7 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_generate, 
     model_generators = {
         'conv': get_convolitional_gqn_model,
         'flat': get_gqn_model,
-        'multi_flat': get_multi_input_gqn_model,
+        'multi': get_multi_input_gqn_model,
     }
 
     input_parameters = locals()
@@ -553,7 +533,8 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_generate, 
     _, max_pos_val, max_rot_val = get_max_env_data_values(unnormalized_environment_data)
     orig_img_data_shape = np.shape(unnormalized_environment_data[0][0][0])
     network_inputs = unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=black_n_white,
-                                                    flatten_images=False if model_to_generate == 'conv' else True)
+                                                    flatten_images=False if
+                                                    any([model_to_generate == x for x in ['conv', 'multi']]) else True)
     img_data_shape = orig_img_data_shape[0], orig_img_data_shape[1]
     if not black_n_white:
         img_data_shape = img_data_shape + (3,)
@@ -563,10 +544,10 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_generate, 
         if model_load_file_path:
             model = keras.models.load_model(model_load_file_path)
         else:
-            model = model_generators[model_to_generate](np.shape(network_inputs[0][0][0]),
+            model = model_generators[model_to_generate](np.shape(network_inputs[0][0][0]), num_input_observations,
                                                         np.shape(network_inputs[0][1][0]))
     if train:
-        model = train_model_pregen(network_inputs, model_save_file_path, model, epochs=epochs,
+        model = train_model_pregen(network_inputs, num_input_observations, model_save_file_path, model, epochs=epochs,
                                    batch_size=batch_size, save_model=save_model,
                                    data_composition_multiplier=data_composition_multiplier,
                                    log_frequency=log_frequency, save_frequency = save_frequency)
@@ -576,24 +557,27 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_generate, 
     character_controller = CharacterController(center_pos=(0,1.5,0) / max_pos_val)
     img_drawer = ImgDrawer(window_size)
 
-    observation_input = get_random_observation_inputs(network_inputs, 1)
+    def get_random_observation_input_list():
+        return [np.asarray([x]) for x in get_random_observation_inputs(network_inputs, num_input_observations)]
+    observation_inputs = get_random_observation_input_list()
     while True:
-        coordinate_input = [network_inputs_from_coordinates_single(character_controller.current_position,
-                                                                   character_controller.current_rotation_quaternion)]
-        output_img = model.predict([observation_input, coordinate_input])
+        coordinate_input = np.asarray([network_inputs_from_coordinates_single(character_controller.current_position,
+                                                                   character_controller.current_rotation_quaternion)])
+        output_img = model.predict([*observation_inputs, coordinate_input])
         output_img = np.reshape(output_img[0], img_data_shape)
 
         if black_n_white:
             output_img = black_n_white_1_to_rgb_255(output_img)
-            observation_input_drawable = black_n_white_1_to_rgb_255(np.reshape(observation_input, img_data_shape))
+            #observation_input_drawable = black_n_white_1_to_rgb_255(np.reshape(observation_inputs, img_data_shape))
         else:
             output_img = output_img / np.max(output_img) * 255
-            observation_input_drawable = np.reshape(observation_input, img_data_shape) * 255
+            observation_inputs_drawable = [np.reshape(obs_input, img_data_shape) * 255 for obs_input in observation_inputs]
 
         img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
-        img_drawer.draw_image(observation_input_drawable,
-                              size=(window_size.x // 4, window_size.y // 2),
-                              position=(window_size.x // 2, window_size.y // 2))
+        for i, o in enumerate(observation_inputs_drawable):
+            img_drawer.draw_image(o,
+                                  size=(window_size.x // 8, window_size.y // 4),
+                                  position=(window_size.x // 2*i, window_size.y // 2*i))
 
         img_drawer.draw_text(f'{str(character_controller.current_position * max_pos_val)} '
                              f'max position {max_pos_val}', (10, 10))
@@ -604,7 +588,7 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_generate, 
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_KP1]:
-            observation_input = get_random_observation_inputs(network_inputs)
+            observation_inputs = get_random_observation_input_list()
         if keys[pygame.K_SPACE]:
             pygame.quit()
             return model
@@ -630,7 +614,8 @@ model_names_uni = {
     -1: 'date=2018-11-09_time=20-06-34-982949_name=Joe-Cruz_version=1_id=8419_idim=(32-32).hdf5',
     -2: 'date=2018-11-10_time=02-04-25-643243_name=Walter-Meltzer_version=1_id=5155.hdf5',
     -3: 'date=2018-11-10_time=04-01-37-084561_name=Allen-Sullivan_version=1_id=8980.hdf5',
-    -4: 'date=2018-11-10_time=19-38-46-521301_name=Cynthia-Westfall_version=1_id=4765.hdf5'
+    -4: 'date=2018-11-10_time=19-38-46-521301_name=Cynthia-Westfall_version=1_id=4765.hdf5',
+    -5: 'date=2018-11-10_time=23-52-03-966682_name=Michelle-Zenon_version=1_id=6702.hdf5',
 }
 model_names = {**model_names_home, **model_names_uni}
 
@@ -690,13 +675,14 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
         json.dump(model_meta, file)
 
 
-FAST_DEBUG_MODE = False
+FAST_DEBUG_MODE = True
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
     data_dirs_path = get_data_dir(10, 32)
-    params = parse_path_to_params(model_names.get(-4))
-    model_load_path = get_model_load_path(params['name'], params['id'])
-    img_dims = get_img_dim_form_data_dir(data_dirs_path)
+    model_load_path = -5
+    if model_load_path:
+        params = parse_path_to_params(model_names.get(model_load_path))
+        model_load_path = get_model_load_path(params['name'], params['id'])
 
     data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
     if FAST_DEBUG_MODE:
@@ -707,17 +693,18 @@ if __name__ == '__main__':
 
     model_save_path = models_dir + generate_model_name(model_load_path)
     run_params = {
-        'model_to_generate': 'flat',
+        'model_to_generate': 'multi',
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_load_path,
         'model_save_file_path': model_save_path,
-        'epochs': 10,
-        'batch_size': 600,
-        'data_composition_multiplier': 10,
+        'num_input_observations': 4,
+        'epochs': 1,
+        'batch_size': 32,
+        'data_composition_multiplier': 4,
         'log_frequency': 10,
         'save_frequency': 30,
         'run_environment': True,
-        'train': True,
+        'train': False,
         'black_n_white': False,
         'window_size': window_resolutions['hd'],
         'save_model': not FAST_DEBUG_MODE
