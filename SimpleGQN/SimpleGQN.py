@@ -295,21 +295,46 @@ def get_new_unique_model_save_name():
     return get_unique_model_save_name(name, 1, id)
 
 
-def get_model_name(previous_name=None):
+def parse_path_to_params(path, params_seperator='_', key_val_seperator='='):
+    previous_name = replace_multiple(os.path.basename(path), ['.hdf5', '.checkpoint', '-hdf5', '-checkpoint'], '')
+    return {key: val for key, val in [e.split(key_val_seperator) for e in previous_name.split(params_seperator)]}
+
+
+def time_int_from_param_dict(params):
+    return int((params['day'] + params['time']).replace('-', ''))
+
+
+def generate_model_name(previous_name=None):
     if previous_name:
-        old_name_dir = os.path.dirname(previous_name)
-        previous_name = os.path.basename(previous_name)
-        param_dict = {key: val for key, val in [e.split('=') for e in previous_name.split('_')]}
+        param_dict = parse_path_to_params(previous_name)
         id = param_dict['id']
         name = param_dict['name']
         version = 0
-        # TODO fix incremental versioning
         for p in glob.glob(f'{old_name_dir}\\*{name}*{id}*'):
-            version = max(int(param_dict['version']), version)
+            exisiting_param_dict = parse_path_to_params(p)
+            version = max(int(exisiting_param_dict['version']), version)
         version += 1
         return get_unique_model_save_name(name, version, id)
     else:
         return get_new_unique_model_save_name()
+
+
+def get_model_load_path(name, id):
+    dir = os.path.dirname(__file__) + '\\models'
+    dirs = [dir + p for p in ['\\final', '\\checkpoints']]
+    newest = ''
+    highest_version = 0
+    for d in dirs:
+        for p in glob.glob(f'{d}\\*{name}*{id}*'):
+            exisiting_param_dict = parse_path_to_params(p)
+            version_is_higher = int(exisiting_param_dict['version']) >= highest_version
+            if version_is_higher or version_is_higher and newest != '' \
+                    and time_int_from_param_dict(exisiting_param_dict) >= time_int_from_param_dict(newest):
+                newest = p
+    if newest != '':
+        return newest
+    else:
+        raise Exception(f'model file for {name} {id} not found')
 
 
 def remove_extension(path, extension='hdf5'):
@@ -381,7 +406,8 @@ class CharacterController:
         if keys[pygame.K_a]:
             self.current_y_rotation += self.rotate_speed * delta_time
         if keys[pygame.K_s]:
-            self.current_y_rotation += self.rotate_speed * delta_time
+            self.current_y_rotation -= self.rotate_speed * delta_time
+
         if keys[pygame.K_UP]:
             self.current_position += self.move_speed * delta_time * forward_vec
         if keys[pygame.K_DOWN]:
@@ -602,16 +628,12 @@ model_names_home = {
     5: '2018-11-02 01-19-11_(32, 32).checkpoint',
     }
 model_names_uni = {
-    -1: 'final\\date=2018-11-09_time=20-06-34-982949_name=Joe-Cruz_version=1_id=8419_idim=(32-32).hdf5',
-    -2: 'final\\date=2018-11-10_time=02-04-25-643243_name=Walter-Meltzer_version=1_id=5155.hdf5',
-    -3: 'final\\date=2018-11-10_time=04-01-37-084561_name=Allen-Sullivan_version=1_id=8980.hdf5'
+    -1: 'date=2018-11-09_time=20-06-34-982949_name=Joe-Cruz_version=1_id=8419_idim=(32-32).hdf5',
+    -2: 'date=2018-11-10_time=02-04-25-643243_name=Walter-Meltzer_version=1_id=5155.hdf5',
+    -3: 'date=2018-11-10_time=04-01-37-084561_name=Allen-Sullivan_version=1_id=8980.hdf5',
+    -4: 'date=2018-11-10_time=04-30-10-670564_name=Allen-Sullivan_version=2_id=8980-hdf5.hdf5'
 }
-TRAIN_NEW = 'train'
-CONRAD = -1
-HAROLD = -3
 model_names = {**model_names_home, **model_names_uni}
-model_names = {id: models_dir + model_name for id, model_name in zip(model_names.keys(), model_names.values())}
-model_names = {'train': None, 0: None, **model_names}
 
 data_base_dirs = [
     os.path.dirname(__file__) + '\\..\\trainingData',
@@ -672,7 +694,8 @@ FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
     data_dirs_path = get_data_dir(6, 128)
-    model_name_to_load = model_names.get(-3)
+    params = parse_path_to_params(model_names.get(-4))
+    model_load_path = get_model_load_path(params['name'], params['id'])
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
     data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
@@ -682,11 +705,11 @@ if __name__ == '__main__':
     unnormalized_environment_data = \
         get_data_for_environments(data_dirs_path, **data_dirs_arg)
 
-    model_save_path = models_dir + get_model_name(model_name_to_load)
+    model_save_path = models_dir + generate_model_name(model_load_path)
     run_params = {
         'model_to_generate': 'conv',
         'unnormalized_environment_data': unnormalized_environment_data,
-        'model_load_file_path': model_name_to_load,
+        'model_load_file_path': model_load_path,
         'model_save_file_path': model_save_path,
         'epochs': 1,
         'batch_size': None,
@@ -694,7 +717,7 @@ if __name__ == '__main__':
         'log_frequency': 10,
         'save_frequency': 30,
         'run_environment': True,
-        'train': True,
+        'train': False,
         'black_n_white': False,
         'window_size': window_resolutions['hd'],
         'save_model': not FAST_DEBUG_MODE
@@ -708,11 +731,11 @@ if __name__ == '__main__':
 
     run_params['model_to_train'] = trained_model
     run_params['model_save_file_path'] = models_dir + \
-                                            get_model_name(run_params['model_save_file_path'])
+                                         generate_model_name(run_params['model_save_file_path'])
     run_params['train'] = True
 
     while True:
         run(**run_params)
         #save_dict(model_save_path, run_params, ['unnormalized_environment_data'])
         run_params['model_save_file_path'] = models_dir + \
-                                                get_model_name(run_params['model_save_file_path'])
+                                             generate_model_name(run_params['model_save_file_path'])
