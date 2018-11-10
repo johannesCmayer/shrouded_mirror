@@ -304,6 +304,8 @@ def parse_path_to_params(path, params_seperator='_', key_val_seperator='='):
 def time_int_from_param_dict(params):
     return int((params['day'] + params['time']).replace('-', ''))
 
+model_file_locations = os.path.dirname(__file__) + '\\models'
+model_file_locations = [model_file_locations + p for p in ['\\final', '\\checkpoints']]
 
 def generate_model_name(previous_name=None):
     if previous_name:
@@ -311,9 +313,10 @@ def generate_model_name(previous_name=None):
         id = param_dict['id']
         name = param_dict['name']
         version = 0
-        for p in glob.glob(f'{old_name_dir}\\*{name}*{id}*'):
-            exisiting_param_dict = parse_path_to_params(p)
-            version = max(int(exisiting_param_dict['version']), version)
+        for d in model_file_locations:
+            for p in glob.glob(f'{d}\\*{name}*{id}*'):
+                exisiting_param_dict = parse_path_to_params(p)
+                version = max(int(exisiting_param_dict['version']), version)
         version += 1
         return get_unique_model_save_name(name, version, id)
     else:
@@ -321,11 +324,9 @@ def generate_model_name(previous_name=None):
 
 
 def get_model_load_path(name, id):
-    dir = os.path.dirname(__file__) + '\\models'
-    dirs = [dir + p for p in ['\\final', '\\checkpoints']]
     newest = ''
     highest_version = 0
-    for d in dirs:
+    for d in model_file_locations:
         for p in glob.glob(f'{d}\\*{name}*{id}*'):
             exisiting_param_dict = parse_path_to_params(p)
             version_is_higher = int(exisiting_param_dict['version']) >= highest_version
@@ -711,12 +712,12 @@ if __name__ == '__main__':
         'model_load_file_path': model_load_path,
         'model_save_file_path': model_save_path,
         'epochs': 1,
-        'batch_size': None,
-        'data_composition_multiplier': 10,
-        'log_frequency': 10,
+        'batch_size': 2000,
+        'data_composition_multiplier': 15,
+        'log_frequency': 5,
         'save_frequency': 30,
         'run_environment': True,
-        'train': False,
+        'train': True,
         'black_n_white': False,
         'window_size': window_resolutions['hd'],
         'save_model': not FAST_DEBUG_MODE
