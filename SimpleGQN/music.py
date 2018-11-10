@@ -144,13 +144,23 @@ def note_to_scale(note, scale):
 
 
 def song_generator(force_scale_key_freq=4, scale=BLUES_SCALE):
-    last_note = 0
+    def gen():
+        last_note = 0
+        for i in infinity():
+            if i % force_scale_key_freq == 0:
+                yield 0
+            new_note = (last_note + random.choice([*((1, -1) * 3), *(2, -2)])) % len(scale)
+            last_note = new_note
+            yield note_to_scale(new_note, scale)
+    generator = gen()
+    song = []
     for i in infinity():
-        if i % force_scale_key_freq == 0:
-            yield 0
-        new_note = (last_note + random.choice([*((1, -1) * 3), *(2, -2)])) % len(scale)
-        last_note = new_note
-        yield note_to_scale(new_note, scale)
+        note = next(generator)
+        song.append(note)
+        if i >= 20:
+            yield song[i % 20]
+        else:
+            yield note
 
 
 def infinity():
@@ -185,4 +195,4 @@ def play_song(num_notes, song=MINOR_SONG):
 
 if __name__ == '__main__':
     for i in infinity():
-        play_next_note_of_song(i, MINOR_SONG)
+        play_next_note_of_song(i, BLUES_SONG)

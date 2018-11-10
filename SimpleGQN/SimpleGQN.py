@@ -299,6 +299,7 @@ def get_model_name(previous_name=None):
         param_dict = {key: val for key, val in [e.split('=') for e in previous_name.split('_')]}
         id = param_dict['id']
         name = param_dict['name']
+        version = 0
         for p in glob.glob(f'{old_name_dir}\\*{name}*{id}*'):
             version = max(int(param_dict['version']), version)
         version += 1
@@ -444,8 +445,8 @@ def return_mkdir(path):
 
 
 # TODO make it so, that the model_save_file_path is a relative path (or just the model name) -> only need refactor
-def train_model(network_inputs, model_name, model_to_train, true_epochs=100, minor_epochs=1, environment_epochs=None,
-                batch_size=None, additional_meta_data={}, save_model=True, log_frequency=10, save_frequency = 30):
+def train_model_dynamic(network_inputs, model_name, model_to_train, true_epochs=100, minor_epochs=1, environment_epochs=None,
+                        batch_size=None, additional_meta_data={}, save_model=True, log_frequency=10, save_frequency = 30):
     input_params = locals()
     model_dir = os.path.dirname(__file__) + '\\models'
     model_name = os.path.basename(model_name)
@@ -468,11 +469,11 @@ def train_model(network_inputs, model_name, model_to_train, true_epochs=100, min
             while True:
                 command = input('CMD MODE $ ')
                 split_command = command.split(' ')
-                if command == 'exit':
+                if any([command == x for x in ['exit', 'q', 'quit']]):
                     print('learning aborted by user')
                     exit = True
                     break
-                elif command == 'resume':
+                elif any([command == x for x in ['resume']]):
                     break
                 elif command == 'help':
                     print('exit resume locals globals help')
@@ -510,6 +511,51 @@ def train_model(network_inputs, model_name, model_to_train, true_epochs=100, min
             model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
                                epochs=minor_epochs, verbose=0, callbacks=run_callback if j == 0 else None)
         compute_time_of_true_epoch = (time.time() - start_time) / minor_epochs / len(network_inputs)
+    if save_model:
+        print(f'saving model as {final_save_path}')
+        model_to_train.save(final_save_path)
+    return model_to_train
+
+
+def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
+                       data_composition_multiplier=10, log_frequency=10, save_frequency = 30):
+    model_dir = os.path.dirname(__file__) + '\\models'
+    model_name = os.path.basename(model_name)
+
+    checkpoint_save_path = return_mkdir(f'{model_dir}\\checkpoints') + f'\\{model_name}.checkpoint'
+    final_save_path = return_mkdir(f'{model_dir}\\final') + f'\\{model_name}.hdf5'
+    meta_data_save_path = return_mkdir(f'{model_dir}\\meta_data\\') + f'{model_name}.checkpoint'
+
+    print(f'model name: {model_name}')
+    print('composing training data')
+    scrambled_image_inputs, image_inputs, coordinate_inputs = [], [], []
+    total_number_of_compositions = 0
+    number_of_compositions = 0
+    for i in range(data_composition_multiplier):
+        for img_input_list, coordinate_input_list in network_inputs:
+            total_number_of_compositions += len(coordinate_input_list)
+    for i in range(data_composition_multiplier):
+        for img_input_list, coordinate_input_list in network_inputs:
+            scrambled_image_inputs.extend(np.random.permutation(img_input_list))
+            image_inputs.extend(img_input_list)
+            coordinate_inputs.extend(coordinate_input_list)
+
+            number_of_compositions += len(coordinate_input_list)
+            print(f'\r{number_of_compositions}/{total_number_of_compositions} - '
+                  f'{int(100 * number_of_compositions/total_number_of_compositions)}% data points composed', end='')
+    print()
+
+    scrambled_image_inputs, image_inputs, coordinate_inputs = \
+        np.array(scrambled_image_inputs), np.array(image_inputs), np.array(coordinate_inputs)
+
+    print('starting training')
+    model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
+                       epochs=epochs, verbose=1, callbacks=[
+                            keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
+                            keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
+                                                        ),
+        ])
+
     if save_model:
         print(f'saving model as {final_save_path}')
         model_to_train.save(final_save_path)
@@ -556,9 +602,8 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_generate, 
             model = model_generators[model_to_generate](np.shape(network_inputs[0][0][0]),
                                                         np.shape(network_inputs[0][1][0]))
     if train:
-        model = train_model(network_inputs, model_save_file_path, model, true_epochs=epochs, minor_epochs=sub_epochs,
-                            environment_epochs=environment_epochs, batch_size=batch_size,
-                            additional_meta_data={**additional_meta_data, **input_parameters}, save_model=save_model)
+        model = train_model_pregen(network_inputs, model_save_file_path, model, epochs=epochs,
+                                   batch_size=batch_size, save_model=save_model)
     if not run_environment:
         return
 
@@ -684,10 +729,10 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
         json.dump(model_meta, file)
 
 
-FAST_DEBUG_MODE = True
+FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(9, 32)
+    data_dirs_path = get_data_dir(6, 32)
     model_name_to_load = model_names.get(TRAIN_NEW)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
@@ -704,10 +749,10 @@ if __name__ == '__main__':
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_name_to_load,
         'model_save_file_path': model_save_path,
-        'epochs': 1000000,
+        'epochs': 10,
         'sub_epochs': 1,
         'environment_epochs': None,
-        'batch_size': 200,
+        'batch_size': None,
         'run_environment': True,
         'train': True,
         'black_n_white': False,
@@ -724,10 +769,11 @@ if __name__ == '__main__':
 
     run_params['model_to_train'] = trained_model
     run_params['model_save_file_path'] = models_dir + \
-                                         get_model_name(previous_name=model_name_to_load)
+                                            get_model_name(run_params['model_save_file_path'])
     run_params['train'] = True
 
     while True:
         run(**run_params)
         #save_dict(model_save_path, run_params, ['unnormalized_environment_data'])
-        run_params['model_save_file_path'] = get_model_save_path()
+        run_params['model_save_file_path'] = models_dir + \
+                                                get_model_name(run_params['model_save_file_path'])

@@ -93,7 +93,7 @@ def load_images(paths, number_to_load=None):
 
 class Spinner:
     spin_chars = ['|','/','-','\\']
-    def __init__(self, num_to_switch_state=2):
+    def __init__(self, num_to_switch_state=1):
         self.state = 0
         self.num_to_switch_state = num_to_switch_state
 
