@@ -626,6 +626,7 @@ data_dirs = {
     7: 'GQN_SimpleRoom_rand-sky-color',
     8: 'GQN_SimpleRoom_sphere_rand_‎pos',
     9: 'GQN_SimpleRoom_sphere_rand_‎pos+rand_sky',
+    10: 'GQN_SimpleRoom_colorchange-skyandwalls',
 }
 image_resolutions = {
     8: '8x8',
@@ -671,8 +672,8 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
 FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(6, 128)
-    model_name_to_load = model_names.get(-3)
+    data_dirs_path = get_data_dir(10, 32)
+    model_name_to_load = model_names.get(TRAIN_NEW)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
     data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
@@ -684,13 +685,13 @@ if __name__ == '__main__':
 
     model_save_path = models_dir + get_model_name(model_name_to_load)
     run_params = {
-        'model_to_generate': 'conv',
+        'model_to_generate': 'flat',
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_name_to_load,
         'model_save_file_path': model_save_path,
         'epochs': 1,
         'batch_size': None,
-        'data_composition_multiplier': 1,
+        'data_composition_multiplier': 10,
         'log_frequency': 10,
         'save_frequency': 30,
         'run_environment': True,
