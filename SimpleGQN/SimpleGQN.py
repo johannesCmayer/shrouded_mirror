@@ -24,6 +24,7 @@ import math
 import logging
 import functools
 
+print(f'started execution at {datetime.datetime.now()}')
 
 def convert_to_valid_os_name(string, substitute_char='-'):
     return replace_multiple(string, '\\ / : * ? " < > |'.split(' '), substitute_char)
