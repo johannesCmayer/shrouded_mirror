@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using UnityEngine.SceneManagement;
+using UnityEditor;
 
 public class TakeObservation : MonoBehaviour {
 
@@ -15,11 +16,15 @@ public class TakeObservation : MonoBehaviour {
     public int captureBatchSize = 32;
 
     public CaptureSettings[] captureSettings = new CaptureSettings[] {
+        new CaptureSettings(8,8,20000),
+        new CaptureSettings(16,16,20000),
         new CaptureSettings(32,32,20000),
         new CaptureSettings(64,64,20000),
         new CaptureSettings(128,128,20000),
         new CaptureSettings(256,256,20000)
     };
+
+    AudioSource myAS;
 
     private string DefaultSavePath(string sceneName, CaptureSettings cs)
     {
@@ -29,16 +34,24 @@ public class TakeObservation : MonoBehaviour {
     
     void Start()
     {
+        myAS = GetComponent<AudioSource>();
         StartCoroutine(Capture());
 	}
 
     IEnumerator Capture()
-    {        
+    {
+        for (int i = 3; i >= 0; i--)
+        {
+            yield return new WaitForSeconds(1);
+            print($"capture starts in {i}s");
+            myAS.Play();            
+        }
         int totalImages = 0;
         int totalImagesToMake = 0;
         foreach (var cs in captureSettings)
         {
-            totalImagesToMake += cs.numImagesToMake;
+            if (cs.execute)
+                totalImagesToMake += cs.numImagesToMake;
         }
         var startTime = Time.time;
         foreach (var cs in captureSettings)
@@ -55,18 +68,25 @@ public class TakeObservation : MonoBehaviour {
                     SaveImage(capture, savePath, GetFileName(capture));
                     TookObservation();
                     totalImages++;
-                    if (i % captureBatchSize == 0)
+                    if (i % Mathf.Max(captureBatchSize, 1000) == 0)
                     {
                         print($"{(int)(((float)totalImages / totalImagesToMake) * 100)}% - " +
                             $"{(int)(totalImages / (Time.time - startTime))} images per second - " +
                             $"{totalImages}/{totalImagesToMake} are captured - " +
-                            $"capturing now {cs.renderWidth}x{cs.renderHeight} images");
-                        yield return null;
+                            $"capturing now {cs.renderWidth}x{cs.renderHeight} images");                        
                     }
+                    if (i % captureBatchSize == 0)
+                        yield return null;
                 }
             }
         }
-        print($"Captured {totalImages} images in {Time.time - startTime}s");
+        print($"Capture completed, {totalImages} images generated in {Time.time - startTime}s");
+        for (int i = 0; i < 8; i++)        
+        {
+            myAS.Play();            
+            yield return new WaitForSeconds(0.2f);
+        }
+        UnityEditor.EditorApplication.isPlaying = false;
     }
 
     public string CreateDirectoryIfNotExists(string path)

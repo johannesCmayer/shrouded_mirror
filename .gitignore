@@ -16,10 +16,13 @@
 /summaries
 python/models
 python/summaries
+*events.out.tfevents.*
 
 # Models
 *.hdf5
 *.checkpoint
+*.modelmeta
+*.mm
 
 # Environemnt logfile
 *GQN_Experimentation_unity-environment.log
