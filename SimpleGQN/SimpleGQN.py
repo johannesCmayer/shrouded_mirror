@@ -29,12 +29,15 @@ def convert_to_valid_os_name(string, substitute_char='-'):
     return replace_multiple(string, '\\ / : * ? " < > |'.split(' '), substitute_char)
 
 
-def pause_and_notify(msg='programm suspendet', timeout=None):
+def pause_and_notify(msg='programm suspendet', activation_return_pairs={'y': True, 'n': False}, timeout=None):
     start_time = time.time()
-    print(msg + ' - press q or SPACE to continue')
+    print(msg + ' you can specify these return values with chars ' + pprint.pformat(activation_return_pairs))
     for i in music.infinity():
-        if keyboard.is_pressed('q') or keyboard.is_pressed(' ') or timeout and time.time() - start_time > timeout:
-            return
+        for key, val in activation_return_pairs.items():
+            if keyboard.is_pressed(key):
+                return val
+        if timeout and time.time() - start_time > timeout:
+            return activation_return_pairs.get('timeout', False)
         try:
             music.play_next_note_of_song(i)
         except Exception as e:
@@ -204,8 +207,8 @@ def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, nu
     for _ in range(num_of_sampeling_steps):
         x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
         x = UpSampling2D((2, 2))(x)
-    # if x.shape != picture_input_shape:
-    #     x = Conv2D(3, (3, 3), activation='relu', padding='same')(x)
+    if x.shape != picture_input_shape:
+        x = Conv2D(3, (3, 3), activation='relu', padding='same')(x)
 
     #output_shape = [1,] + [int(x) for x in x.shape[2:]]
     #x = keras.layers.Lambda(lambda x: x[:, :, :, :3], output_shape=output_shape)(x)
@@ -337,6 +340,7 @@ class CharacterController:
         self.prev_time = 0
         self.move_speed = 0.8
         self.rotate_speed = 0.8
+        self.mouse_rotate_speed = 0.001
 
     @staticmethod
     def y_rot_to_quaternion(rot):
@@ -359,13 +363,24 @@ class CharacterController:
         current_rot_x2_90_deg_offset = self.y_rot_to_quaternion(self.current_y_rotation * 2 + np.pi / 2)
         right_vec = -1 * np.asarray([np.sin(current_rot_x2_90_deg_offset[1]), 0., np.sin(current_rot_x2_90_deg_offset[3])])
 
+
+        mouse_delta = pygame.mouse.get_rel()
         keys = pygame.key.get_pressed()
+
+        if pygame.mouse.get_focused() and not pygame.event.get_grab():
+            pygame.event.set_grab(True)
+            pygame.mouse.set_visible(False)
+            print('grabbygrabby')
+        if keys[pygame.K_ESCAPE]:
+            pygame.event.set_grab(False)
+            pygame.mouse.set_visible(True)
+
+        self.current_y_rotation += -mouse_delta[0] * self.mouse_rotate_speed * delta_time
 
         if keys[pygame.K_a]:
             self.current_y_rotation += self.rotate_speed * delta_time
         if keys[pygame.K_s]:
-            self.current_y_rotation -= self.rotate_speed * delta_time
-
+            self.current_y_rotation += self.rotate_speed * delta_time
         if keys[pygame.K_UP]:
             self.current_position += self.move_speed * delta_time * forward_vec
         if keys[pygame.K_DOWN]:
@@ -381,14 +396,6 @@ class CharacterController:
         if keys[pygame.K_KP3]:
             print('reset rotation')
             self.current_y_rotation = 0
-
-
-def get_closesd_image_to_coordinates(pos, rot):
-    return np.zeros((32,32)) + 255
-    # similarity_at_idx = []
-    # for im_pos, im_rot in zip(position_data, rotation_data):
-    #     similarity_at_idx.append((np.sum(np.abs(pos - im_pos)) + np.sum(np.abs(rot - im_rot)) * 10))
-    # return env[np.argmax(similarity_at_idx)]
 
 
 def black_n_white_1_to_rgb_255(img):
@@ -470,17 +477,19 @@ def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, b
             number_of_compositions += len(coordinate_input_list)
             print(f'\r{number_of_compositions}/{total_number_of_compositions} - '
                   f'{int(100 * number_of_compositions/total_number_of_compositions)}% data points composed', end='')
-    print()
-
+    print('\nconverting to numpy arrays')
     scrambled_image_inputs, image_inputs, coordinate_inputs = \
-        np.array(scrambled_image_inputs), np.array(image_inputs), np.array(coordinate_inputs)
-
+        np.asarray(scrambled_image_inputs), np.asarray(image_inputs), np.asarray(coordinate_inputs)
+    print()
     print('starting training')
-    model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
-                       epochs=epochs, verbose=2, callbacks=[
-                            keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
-                            #keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
-        ])
+    while True:
+        model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
+                           epochs=epochs, callbacks=[
+                                keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
+                                #keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
+            ])
+        if pause_and_notify('do you want to stop training y=yes other=no', {'y': True, 'n': False}, timeout=1):
+            break
 
     if save_model:
         print(f'saving model as {final_save_path}')
@@ -490,7 +499,7 @@ def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, b
 
 # TODO clean up and split up run method
 def run(unnormalized_environment_data, model_save_file_path, model_to_generate, model_to_train=None, model_load_file_path=None, train=True,
-        epochs=100, sub_epochs=10, environment_epochs=None, batch_size=None, run_environment=True, black_n_white=True,
+        epochs=100, batch_size=None, data_composition_multiplier=10, log_frequency=10, save_frequency = 30, run_environment=True, black_n_white=True,
         window_size=(1200, 600), window_size_coef=1, additional_meta_data={}, save_model=True):
     '''
     Run the main Programm
@@ -529,7 +538,9 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_generate, 
                                                         np.shape(network_inputs[0][1][0]))
     if train:
         model = train_model_pregen(network_inputs, model_save_file_path, model, epochs=epochs,
-                                   batch_size=batch_size, save_model=save_model)
+                                   batch_size=batch_size, save_model=save_model,
+                                   data_composition_multiplier=data_composition_multiplier,
+                                   log_frequency=log_frequency, save_frequency = save_frequency)
     if not run_environment:
         return
 
@@ -552,9 +563,6 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_generate, 
             observation_input_drawable = np.reshape(observation_input, img_data_shape) * 255
 
         img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
-        # closesed_image = get_closesd_image_to_coordinates(character_controller.current_position, character_controller.current_rotation_quaternion)
-        # img_drawer.draw_image(black_n_white_to_rgb255(closesed_image), display_duration=0,
-        #                       size=(window_size.x // 4, window_size.y // 2), position=(window_size.x // 2, 0))
         img_drawer.draw_image(observation_input_drawable,
                               size=(window_size.x // 4, window_size.y // 2),
                               position=(window_size.x // 2, window_size.y // 2))
@@ -593,6 +601,7 @@ model_names_home = {
 model_names_uni = {
     -1: 'final\\date=2018-11-09_time=20-06-34-982949_name=Joe-Cruz_version=1_id=8419_idim=(32-32).hdf5',
     -2: 'final\\date=2018-11-10_time=02-04-25-643243_name=Walter-Meltzer_version=1_id=5155.hdf5',
+    -3: 'final\\date=2018-11-10_time=04-01-37-084561_name=Allen-Sullivan_version=1_id=8980.hdf5'
 }
 TRAIN_NEW = 'train'
 CONRAD = -1
@@ -659,8 +668,8 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
 FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(6, 32)
-    model_name_to_load = model_names.get(-2)
+    data_dirs_path = get_data_dir(6, 128)
+    model_name_to_load = model_names.get(-3)
     img_dims = get_img_dim_form_data_dir(data_dirs_path)
 
     data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
@@ -676,10 +685,11 @@ if __name__ == '__main__':
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_name_to_load,
         'model_save_file_path': model_save_path,
-        'epochs': 10,
-        'sub_epochs': 1,
-        'environment_epochs': None,
+        'epochs': 1,
         'batch_size': None,
+        'data_composition_multiplier': 1,
+        'log_frequency': 10,
+        'save_frequency': 30,
         'run_environment': True,
         'train': True,
         'black_n_white': False,
@@ -691,7 +701,6 @@ if __name__ == '__main__':
     print()
 
     trained_model = run(**run_params)
-    # TODO fix continue training with same model
     #save_dict(model_save_path, run_params, ['unnormalized_environment_data', 'model_to_train'])
 
     run_params['model_to_train'] = trained_model
