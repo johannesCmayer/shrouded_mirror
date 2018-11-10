@@ -303,6 +303,7 @@ def get_model_name(previous_name=None):
         id = param_dict['id']
         name = param_dict['name']
         version = 0
+        # TODO fix incremental versioning
         for p in glob.glob(f'{old_name_dir}\\*{name}*{id}*'):
             version = max(int(param_dict['version']), version)
         version += 1
@@ -452,7 +453,8 @@ def return_mkdir(path):
 
 
 def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
-                       data_composition_multiplier=10, log_frequency=10, save_frequency = 30):
+                       data_composition_multiplier=10, data_recomposition_frequency=1, log_frequency=10,
+                       save_frequency = 30):
     model_dir = os.path.dirname(__file__) + '\\models'
     model_name = os.path.basename(model_name)
 
@@ -461,28 +463,30 @@ def train_model_pregen(network_inputs, model_name, model_to_train, epochs=100, b
     meta_data_save_path = return_mkdir(f'{model_dir}\\meta_data\\') + f'{model_name}.checkpoint'
 
     print(f'model name: {model_name}')
-    print('composing training data')
-    scrambled_image_inputs, image_inputs, coordinate_inputs = [], [], []
-    total_number_of_compositions = 0
-    number_of_compositions = 0
-    for i in range(data_composition_multiplier):
-        for img_input_list, coordinate_input_list in network_inputs:
-            total_number_of_compositions += len(coordinate_input_list)
-    for i in range(data_composition_multiplier):
-        for img_input_list, coordinate_input_list in network_inputs:
-            scrambled_image_inputs.extend(np.random.permutation(img_input_list))
-            image_inputs.extend(img_input_list)
-            coordinate_inputs.extend(coordinate_input_list)
 
-            number_of_compositions += len(coordinate_input_list)
-            print(f'\r{number_of_compositions}/{total_number_of_compositions} - '
-                  f'{int(100 * number_of_compositions/total_number_of_compositions)}% data points composed', end='')
-    print('\nconverting to numpy arrays')
-    scrambled_image_inputs, image_inputs, coordinate_inputs = \
-        np.asarray(scrambled_image_inputs), np.asarray(image_inputs), np.asarray(coordinate_inputs)
-    print()
-    print('starting training')
-    while True:
+    for i in music.infinity():
+        if i % data_recomposition_frequency == 0:
+            print('composing training data')
+            scrambled_image_inputs, image_inputs, coordinate_inputs = [], [], []
+            total_number_of_compositions = 0
+            number_of_compositions = 0
+            for _ in range(data_composition_multiplier):
+                for img_input_list, coordinate_input_list in network_inputs:
+                    total_number_of_compositions += len(coordinate_input_list)
+            for _ in range(data_composition_multiplier):
+                for img_input_list, coordinate_input_list in network_inputs:
+                    scrambled_image_inputs.extend(np.random.permutation(img_input_list))
+                    image_inputs.extend(img_input_list)
+                    coordinate_inputs.extend(coordinate_input_list)
+
+                    number_of_compositions += len(coordinate_input_list)
+                    print(f'\r{number_of_compositions}/{total_number_of_compositions} - '
+                          f'{int(100 * number_of_compositions/total_number_of_compositions)}% data points composed', end='')
+            print('\nconverting to numpy arrays')
+            scrambled_image_inputs, image_inputs, coordinate_inputs = \
+                np.asarray(scrambled_image_inputs), np.asarray(image_inputs), np.asarray(coordinate_inputs)
+            print()
+        print('starting training')
         model_to_train.fit([scrambled_image_inputs, coordinate_inputs], image_inputs, batch_size=batch_size,
                            epochs=epochs, callbacks=[
                                 keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
@@ -541,10 +545,9 @@ def run(unnormalized_environment_data, model_save_file_path, model_to_generate, 
                                    batch_size=batch_size, save_model=save_model,
                                    data_composition_multiplier=data_composition_multiplier,
                                    log_frequency=log_frequency, save_frequency = save_frequency)
-    if not run_environment:
+    if not run_environment and not pause_and_notify('training completed, run environment? y/n'):
         return
 
-    pause_and_notify('training completed')
     character_controller = CharacterController(center_pos=(0,1.5,0) / max_pos_val)
     img_drawer = ImgDrawer(window_size)
 
