@@ -397,7 +397,6 @@ class CharacterController:
         if pygame.mouse.get_focused() and not pygame.event.get_grab():
             pygame.event.set_grab(True)
             pygame.mouse.set_visible(False)
-            print('grabbygrabby')
         if keys[pygame.K_ESCAPE]:
             pygame.event.set_grab(False)
             pygame.mouse.set_visible(True)
@@ -419,10 +418,8 @@ class CharacterController:
             self.current_position += self.move_speed * delta_time * right_vec
 
         if keys[pygame.K_KP2]:
-            print('reset position to center')
             self.current_position = np.array(self.center_pos)
         if keys[pygame.K_KP3]:
-            print('reset rotation')
             self.current_y_rotation = 0
 
 
