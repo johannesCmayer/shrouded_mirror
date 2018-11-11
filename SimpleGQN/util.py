@@ -1,5 +1,5 @@
 import random
-
+import winsound, multiprocessing, keyboard
 import numpy as np
 import pygame
 from scipy import misc
@@ -110,3 +110,105 @@ class Spinner:
 
     def print_spinner(self):
         print(get_spin_char())
+
+
+class AsyncKeyChecker:
+    def __init__(self, key, msg=None):
+        self.key = key
+        self.msg = msg
+        self.stop_learning_event = multiprocessing.Event()
+        self.key_checker = None
+
+    def start_checking(self):
+        self.key_checker = \
+            multiprocessing.Process(target=self._check_if_key_is_pressed, args=(self.stop_learning_event, self.key))
+        self.key_checker.start()
+
+    def _check_if_key_is_pressed(self, event, key_string):
+        keyboard.wait(key_string)
+        if self.msg:
+            print(self.msg)
+        winsound.Beep(220, 300)
+        event.set()
+        return
+
+    def key_was_pressed(self):
+        if self.stop_learning_event.is_set():
+            self.key_checker.join()
+            self.stop_learning_event.clear()
+            return True
+        else:
+            return False
+
+    def terminate(self):
+        self.key_checker.terminate()
+
+    def __enter__(self):
+        self.start_checking()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.terminate()
+
+
+class CharacterController:
+    def __init__(self, center_pos=(0, 1.5, 0)):
+        self.center_pos = np.asarray(center_pos)
+        self.current_position = np.array(self.center_pos)
+        self.current_y_rotation = 0
+        self.prev_time = 0
+        self.move_speed = 0.8
+        self.rotate_speed = 0.8
+        self.mouse_rotate_speed = 0.001
+
+    @staticmethod
+    def y_rot_to_quaternion(rot):
+        if rot > np.pi:
+            rot -= np.pi * (int(rot / np.pi))
+        if rot < 0:
+            rot += np.pi * (1 + int(rot / np.pi))
+        return np.asarray([0, np.sin(rot), 0, np.cos(rot)])
+
+    @property
+    def current_rotation_quaternion(self):
+        return self.y_rot_to_quaternion(self.current_y_rotation)
+
+    def movement_update(self):
+        delta_time = time.time() - self.prev_time
+        self.prev_time = time.time()
+
+        current_rot_x2 = self.y_rot_to_quaternion(self.current_y_rotation * 2)
+        forward_vec = np.asarray([np.sin(current_rot_x2[1]), 0., np.sin(current_rot_x2[3])])
+        current_rot_x2_90_deg_offset = self.y_rot_to_quaternion(self.current_y_rotation * 2 + np.pi / 2)
+        right_vec = -1 * np.asarray([np.sin(current_rot_x2_90_deg_offset[1]), 0., np.sin(current_rot_x2_90_deg_offset[3])])
+
+        keys = pygame.key.get_pressed()
+
+        # mouse_delta = pygame.mouse.get_rel()
+        # if pygame.mouse.get_focused() and not pygame.event.get_grab():
+        #     pygame.event.set_grab(True)
+        #     pygame.mouse.set_visible(False)
+        # if keys[pygame.K_ESCAPE]:
+        #     pygame.event.set_grab(False)
+        #     pygame.mouse.set_visible(True)
+        #
+        # self.current_y_rotation += -mouse_delta[0] * self.mouse_rotate_speed * delta_time
+
+        if keys[pygame.K_a]:
+            self.current_y_rotation += self.rotate_speed * delta_time
+        if keys[pygame.K_s]:
+            self.current_y_rotation -= self.rotate_speed * delta_time
+
+        if keys[pygame.K_UP]:
+            self.current_position += self.move_speed * delta_time * forward_vec
+        if keys[pygame.K_DOWN]:
+            self.current_position += self.move_speed * delta_time * -forward_vec
+        if keys[pygame.K_LEFT]:
+            self.current_position += self.move_speed * delta_time * -right_vec
+        if keys[pygame.K_RIGHT]:
+            self.current_position += self.move_speed * delta_time * right_vec
+
+        if keys[pygame.K_KP2]:
+            self.current_position = np.array(self.center_pos)
+        if keys[pygame.K_KP3]:
+            self.current_y_rotation = 0

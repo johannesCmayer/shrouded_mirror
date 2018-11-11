@@ -220,13 +220,14 @@ MonoBehaviour:
   cam: {fileID: 20159692649184960}
   observeVolume: {fileID: 0}
   environmentGenerator: {fileID: 0}
-  captureBatchSize: 32
+  obsPerEnv: 32
+  overwriteBasePath: C:\trainingData
   captureSettings:
-  - execute: 1
+  - execute: 0
     renderWidth: 8
     renderHeight: 8
-    numImagesToMake: 20000
-  - execute: 1
+    numImagesToMake: 60000
+  - execute: 0
     renderWidth: 16
     renderHeight: 16
     numImagesToMake: 20000

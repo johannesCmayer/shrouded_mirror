@@ -15,6 +15,8 @@ public class TakeObservation : MonoBehaviour {
 
     public int obsPerEnv = 32;
 
+    public string overwriteBasePath = $@"C:\trainingData";
+
     public CaptureSettings[] captureSettings = new CaptureSettings[] {
         new CaptureSettings(8,8,20000),
         new CaptureSettings(16,16,20000),
@@ -28,7 +30,10 @@ public class TakeObservation : MonoBehaviour {
 
     private string DefaultSavePath(string sceneName, CaptureSettings cs)
     {
-        return CreateDirectoryIfNotExists($@"{Application.dataPath}\..\..\trainingData\{sceneName}\" +
+        var basePath = $@"{Application.dataPath}\..\..";
+        if (overwriteBasePath != "")
+            basePath = overwriteBasePath;
+        return CreateDirectoryIfNotExists($@"\{basePath}trainingData\{sceneName}\" +
                                           $@"{cs.renderWidth}x{cs.renderHeight}\{environmentGenerator.EnvironmentID}");
     } 
     

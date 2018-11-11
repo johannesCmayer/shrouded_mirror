@@ -6,7 +6,7 @@ import numpy as np
 from scipy import misc
 import glob
 import matplotlib.pyplot as plt
-from util import ImgDrawer, Spinner
+from util import ImgDrawer, Spinner, AsyncKeyChecker, CharacterController
 import ntpath
 import pygame
 import datetime
@@ -122,14 +122,18 @@ def autoencoder(picture_input_shape):
     return model
 
 
-def get_gqn_encoder(picture_input_shape, num_layers=2, num_neurons_layer=1024, num_state_neurons=None):
+def get_gqn_encoder(picture_input_shape, num_layers=2, num_neurons_layer=1024, num_state_neurons=None, masking=True):
     num_state_neurons = num_state_neurons if num_state_neurons else num_neurons_layer
     picture_input = keras.Input(picture_input_shape, name='picture_input')
+
     x = Flatten()(picture_input)
+    if masking:
+        x = keras.layers.Masking(mask_value=0.0)(x)
     for _ in range(num_layers):
         x = Dense(num_neurons_layer, 'relu', True)(x)
     output = Dense(num_state_neurons, 'relu', True)(x)
     return keras.Model(picture_input, output)
+
 
 def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_layers=2, num_neurons_layer=1024):
     state_input = keras.Input(state_input_shape, name='picture_input')
@@ -140,6 +144,7 @@ def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_l
     x = Dense(product(output_dim), 'relu', True)(x)
     predictions = Reshape(output_dim)(x)
     return keras.Model(inputs=[state_input, coordinate_input], outputs=predictions)
+
 
 # TODO make it so it can take non flat input (test if it already can)
 def get_gqn_model(picture_input_shape, coordinates_input_shape, num_layers_encoder=3, num_layers_decoder=None,
@@ -212,15 +217,12 @@ def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, nu
     return joint_model
 
 
-# TODO parameterise all model generaton funcitons, potentialy put into class
-# TODO Implement this
 def get_multi_input_gqn_model(pictures_list_input_shape, num_input_observations, coordinates_input_shape, num_layers_encoder=3,
                               num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
 
-    # TODO Add ability to add up multiple observations to the latent representation
     number_of_pixels = product(num_input_observations * pictures_list_input_shape)
 
     picture_input = [keras.Input(pictures_list_input_shape, name=f'picture_input{i}') for i in range(num_input_observations)]
@@ -326,70 +328,6 @@ def remove_extension(path, extension='hdf5'):
     return path
 
 
-class CharacterController:
-    def __init__(self, center_pos=(0, 1.5, 0)):
-        self.center_pos = np.asarray(center_pos)
-        self.current_position = np.array(self.center_pos)
-        self.current_y_rotation = 0
-        self.prev_time = 0
-        self.move_speed = 0.8
-        self.rotate_speed = 0.8
-        self.mouse_rotate_speed = 0.001
-
-    @staticmethod
-    def y_rot_to_quaternion(rot):
-        if rot > np.pi:
-            rot -= np.pi * (int(rot / np.pi))
-        if rot < 0:
-            rot += np.pi * (1 + int(rot / np.pi))
-        return np.asarray([0, np.sin(rot), 0, np.cos(rot)])
-
-    @property
-    def current_rotation_quaternion(self):
-        return self.y_rot_to_quaternion(self.current_y_rotation)
-
-    def movement_update(self):
-        delta_time = time.time() - self.prev_time
-        self.prev_time = time.time()
-
-        current_rot_x2 = self.y_rot_to_quaternion(self.current_y_rotation * 2)
-        forward_vec = np.asarray([np.sin(current_rot_x2[1]), 0., np.sin(current_rot_x2[3])])
-        current_rot_x2_90_deg_offset = self.y_rot_to_quaternion(self.current_y_rotation * 2 + np.pi / 2)
-        right_vec = -1 * np.asarray([np.sin(current_rot_x2_90_deg_offset[1]), 0., np.sin(current_rot_x2_90_deg_offset[3])])
-
-
-        mouse_delta = pygame.mouse.get_rel()
-        keys = pygame.key.get_pressed()
-
-        if pygame.mouse.get_focused() and not pygame.event.get_grab():
-            pygame.event.set_grab(True)
-            pygame.mouse.set_visible(False)
-        if keys[pygame.K_ESCAPE]:
-            pygame.event.set_grab(False)
-            pygame.mouse.set_visible(True)
-
-        self.current_y_rotation += -mouse_delta[0] * self.mouse_rotate_speed * delta_time
-
-        if keys[pygame.K_a]:
-            self.current_y_rotation += self.rotate_speed * delta_time
-        if keys[pygame.K_s]:
-            self.current_y_rotation -= self.rotate_speed * delta_time
-
-        if keys[pygame.K_UP]:
-            self.current_position += self.move_speed * delta_time * forward_vec
-        if keys[pygame.K_DOWN]:
-            self.current_position += self.move_speed * delta_time * -forward_vec
-        if keys[pygame.K_LEFT]:
-            self.current_position += self.move_speed * delta_time * -right_vec
-        if keys[pygame.K_RIGHT]:
-            self.current_position += self.move_speed * delta_time * right_vec
-
-        if keys[pygame.K_KP2]:
-            self.current_position = np.array(self.center_pos)
-        if keys[pygame.K_KP3]:
-            self.current_y_rotation = 0
-
-
 def black_n_white_1_to_rgb_255(img):
     img = np.stack([img] * 3, -1)
     return img / np.max(img) * 255
@@ -454,8 +392,9 @@ def generate_data(network_inputs, num_input_observations, data_composition_multi
             total_number_of_compositions += len(coordinate_input_list)
     for _ in range(data_composition_multiplier):
         for img_input_list, coordinate_input_list in network_inputs:
-            for i in scrambled_image_inputs_list:
-                i.extend(np.random.permutation(img_input_list))
+            for sub_list in scrambled_image_inputs_list:
+                #sub_list.extend(np.asarray(np.random.permutation(img_input_list)))
+                sub_list.extend(np.asarray([x * random.randint(0, 1) for x in np.random.permutation(img_input_list)]))
             image_inputs.extend(img_input_list)
             coordinate_inputs.extend(coordinate_input_list)
 
@@ -463,50 +402,11 @@ def generate_data(network_inputs, num_input_observations, data_composition_multi
             print(f'\r{number_of_compositions}/{total_number_of_compositions} - '
                   f'{int(100 * number_of_compositions/total_number_of_compositions)}% data points composed', end='')
     print('\nconverting to numpy arrays')
-    scrambled_image_inputs_list, image_inputs, coordinate_inputs = \
-        [np.asarray(x) for x in scrambled_image_inputs_list], np.asarray(image_inputs), np.asarray(
-            coordinate_inputs)
+    scrambled_image_inputs_list = np.asarray([np.asarray(x) for x in scrambled_image_inputs_list])
+    image_inputs = np.asarray(image_inputs)
+    coordinate_inputs = np.asarray(coordinate_inputs)
     print('completed conversion')
     return scrambled_image_inputs_list, image_inputs, coordinate_inputs
-
-class AsyncKeyChecker:
-    def __init__(self, key, msg=None):
-        self.key = key
-        self.msg = msg
-        self.stop_learning_event = multiprocessing.Event()
-        self.key_checker = None
-
-    def start_checking(self):
-        self.key_checker = \
-            multiprocessing.Process(target=self._check_if_key_is_pressed, args=(self.stop_learning_event, self.key))
-        self.key_checker.start()
-
-    def _check_if_key_is_pressed(self, event, key_string):
-        keyboard.wait(key_string)
-        if self.msg:
-            print(self.msg)
-        winsound.Beep(220, 300)
-        event.set()
-        return
-
-    def key_was_pressed(self):
-        if self.stop_learning_event.is_set():
-            self.key_checker.join()
-            self.stop_learning_event.clear()
-            return True
-        else:
-            return False
-
-    def terminate(self):
-        self.key_checker.terminate()
-
-    def __enter__(self):
-        self.start_checking()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.terminate()
-
 
 
 def train_model_pregen(network_inputs, num_input_observations, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
@@ -537,6 +437,10 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
         print(f'saving model as {final_save_path}')
         model_to_train.save(final_save_path)
     return model_to_train
+
+
+def mask_observation_inputs(obs_inputs, num_to_mask):
+    return [x * (1 if i < num_to_mask else 0) for i, x in enumerate(obs_inputs)]
 
 
 # TODO clean up and split up run method
@@ -590,14 +494,11 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     character_controller = CharacterController(center_pos=(0,1.5,0) / max_pos_val)
     img_drawer = ImgDrawer(window_size)
 
-    def get_random_observation_input_list(num_of_real_observations):
+    def get_random_observation_input_list():
         return [np.asarray([x]) for x in get_random_observation_inputs(network_inputs, num_input_observations)]
 
-    def mask_observation_inputs(obs_inputs, num_to_mask):
-        return [x * (1 if i < num_to_mask else 0) for i, x in enumerate(obs_inputs)]
-
     num_unmask_inputs = 1
-    observation_inputs = get_random_observation_input_list(num_unmask_inputs)
+    observation_inputs = get_random_observation_input_list()
     masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
     while True:
         coordinate_input = np.asarray([network_inputs_from_coordinates_single(character_controller.current_position,
@@ -609,7 +510,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
             output_img = black_n_white_1_to_rgb_255(output_img)
             #observation_input_drawable = black_n_white_1_to_rgb_255(np.reshape(observation_inputs, img_data_shape))
         else:
-            output_img = output_img / np.max(output_img) * 255
+            output_img = 255 * output_img #q/ np.max(output_img)
             observation_inputs_drawable = [np.reshape(obs_input, img_data_shape) * 255 for obs_input in masked_observation_inputs]
 
         img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
@@ -639,7 +540,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
                 num_unmask_inputs = min(num_unmask_inputs + 1, num_input_observations)
                 masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_ENTER:
-                observation_inputs = get_random_observation_input_list(num_input_observations)
+                observation_inputs = get_random_observation_input_list()
                 masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
 
 
@@ -664,6 +565,7 @@ model_names_uni = {
 model_names = {**model_names_home, **model_names_uni}
 
 data_base_dirs = [
+    'C:\\trainingData',
     os.path.dirname(__file__) + '\\..\\trainingData',
 ]
 data_dirs = {
@@ -723,7 +625,7 @@ FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
     data_dirs_path = get_data_dir(10, 32)
-    model_load_path = -6
+    model_load_path = None
     if model_load_path:
         params = parse_path_to_params(model_names.get(model_load_path))
         model_load_path = get_model_load_path(params['name'], params['id'])
@@ -741,10 +643,10 @@ if __name__ == '__main__':
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_load_path,
         'model_save_file_path': model_save_path,
-        'num_input_observations': 6,
-        'epochs': 1,
-        'batch_size': 320,
-        'data_composition_multiplier': 2,
+        'num_input_observations': 8,
+        'epochs': 6,
+        'batch_size': 32,
+        'data_composition_multiplier': 1,
         'log_frequency': 10,
         'save_frequency': 30,
         'run_environment': True,
