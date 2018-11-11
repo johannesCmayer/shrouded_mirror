@@ -229,7 +229,7 @@ def get_multi_input_gqn_model(pictures_list_input_shape, num_input_observations,
     encoder = get_gqn_encoder(pictures_list_input_shape)
 
     encoded = [encoder(o) for o in picture_input]
-    encoded = keras.layers.Average()(encoded)
+    encoded = keras.layers.Add()(encoded)
 
     decoded = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_list_input_shape)([encoded, coordinate_input])
 
@@ -583,9 +583,12 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     character_controller = CharacterController(center_pos=(0,1.5,0) / max_pos_val)
     img_drawer = ImgDrawer(window_size)
 
-    def get_random_observation_input_list():
-        return [np.asarray([x]) for x in get_random_observation_inputs(network_inputs, num_input_observations)]
-    observation_inputs = get_random_observation_input_list()
+    def get_random_observation_input_list(num_of_real_observations):
+        obs = [np.asarray([x]) for x in get_random_observation_inputs(network_inputs, num_input_observations)]
+        return [x * (1 if i < num_of_real_observations else 0) for i, x in enumerate(obs)]
+
+    num_of_real_observations = 1
+    observation_inputs = get_random_observation_input_list(num_of_real_observations)
     while True:
         coordinate_input = np.asarray([network_inputs_from_coordinates_single(character_controller.current_position,
                                                                    character_controller.current_rotation_quaternion)])
@@ -615,18 +618,18 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         img_drawer.execute()
         character_controller.movement_update()
 
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_KP1]:
-            observation_inputs = get_random_observation_input_list()
-        if keys[pygame.K_SPACE]:
-            pygame.quit()
-            return model
-
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 pygame.quit()
                 return model
-    return model
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_MINUS:
+                num_of_real_observations = max(num_of_real_observations - 1, 0)
+                observation_inputs = get_random_observation_input_list(num_of_real_observations)
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_PLUS:
+                num_of_real_observations = min(num_of_real_observations + 1, num_input_observations)
+                observation_inputs = get_random_observation_input_list(num_of_real_observations)
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_ENTER:
+                observation_inputs = get_random_observation_input_list(num_of_real_observations)
 
 
 models_dir = os.path.dirname(__file__) + '\\models\\'
@@ -705,7 +708,7 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
         json.dump(model_meta, file)
 
 
-FAST_DEBUG_MODE = False
+FAST_DEBUG_MODE = True
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
     data_dirs_path = get_data_dir(10, 32)
@@ -730,11 +733,11 @@ if __name__ == '__main__':
         'num_input_observations': 6,
         'epochs': 1,
         'batch_size': 320,
-        'data_composition_multiplier': 1,
+        'data_composition_multiplier': 2,
         'log_frequency': 10,
         'save_frequency': 30,
         'run_environment': True,
-        'train': True,
+        'train': False,
         'black_n_white': False,
         'window_size': window_resolutions['hd'],
         'save_model': not FAST_DEBUG_MODE
