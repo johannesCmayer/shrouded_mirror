@@ -16,7 +16,7 @@ public class TakeObservation : MonoBehaviour {
     public int obsPerEnv = 32;
 
     public string overwriteBasePath = $@"C:\trainingData";
-
+    
     public CaptureSettings[] captureSettings = new CaptureSettings[] {
         new CaptureSettings(8,8,20000),
         new CaptureSettings(16,16,20000),
