@@ -570,7 +570,7 @@ model_names = {**model_names_home, **model_names_uni}
 
 data_base_dirs = [
     'C:\\trainingData',
-    os.path.dirname(__file__) + '\\..\\trainingData',
+    os.path.abspath(os.path.dirname(__file__) + '\\..\\trainingData'),
 ]
 data_dirs = {
     1: 'GQN_SimpleRoom',
@@ -599,13 +599,18 @@ window_resolutions = {
 
 
 def get_data_dir(key, resolution_key):
+    dir = ''
     for base_dir in data_base_dirs:
         dir = (f'{base_dir}\\{data_dirs.get(key)}\\{image_resolutions[resolution_key]}')
         if os.path.isdir(dir):
             print(f'Found data in: {dir}')
             return dir
         else:
-            print(f'Data not found in: {dir}')
+            exsting_dir = os.path.dirname(dir)
+            while not os.path.isdir(exsting_dir) and exsting_dir != '':
+                exsting_dir = os.path.dirname(exsting_dir)
+            print(f'Data not found in:      {dir} \n'
+                  f'nearest existing dir is {exsting_dir}')
     raise OSError('None of specified data base dirs exist.')
 
 
@@ -628,8 +633,8 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
 FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(10, 32)
-    model_load_path = -7
+    data_dirs_path = get_data_dir(8, 32)
+    model_load_path = None
     if model_load_path:
         params = parse_path_to_params(model_names.get(model_load_path))
         model_load_path = get_model_load_path(params['name'], params['id'])
@@ -642,6 +647,7 @@ if __name__ == '__main__':
         get_data_for_environments(data_dirs_path, **data_dirs_arg)
 
     model_save_path = models_dir + generate_model_name(model_load_path)
+    config_path = os.path.dirname(__file__) + '\\run_config.json'
     with open(os.path.dirname(__file__) + '\\run_config.json') as f:
         config = json.load(f)
     run_params = {

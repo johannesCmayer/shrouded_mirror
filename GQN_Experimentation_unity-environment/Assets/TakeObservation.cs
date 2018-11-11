@@ -33,7 +33,7 @@ public class TakeObservation : MonoBehaviour {
         var basePath = $@"{Application.dataPath}\..\..";
         if (overwriteBasePath != "")
             basePath = overwriteBasePath;
-        return CreateDirectoryIfNotExists($@"\{basePath}trainingData\{sceneName}\" +
+        return CreateDirectoryIfNotExists($@"{basePath}\trainingData\{sceneName}\" +
                                           $@"{cs.renderWidth}x{cs.renderHeight}\{environmentGenerator.EnvironmentID}");
     } 
     

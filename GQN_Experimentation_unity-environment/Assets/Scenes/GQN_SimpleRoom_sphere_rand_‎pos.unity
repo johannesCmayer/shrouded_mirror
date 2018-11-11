@@ -414,13 +414,15 @@ MonoBehaviour:
   - {fileID: 969883002}
   environmentalObjectsPrefabs:
   - {fileID: 1769217494984562, guid: b19bd10088402f045a1a38ff76d31407, type: 2}
-  capturesBevoreRandomization: 500
   maxNumEnvObjects: 1
   minNumEnvObjects: 1
   environmentObjectsMinScale: 1
   environmentObjectsMaxScale: 3
+  useColorPool: 1
+  colorPool: []
   randCamBackgroundColor: 0
   randEnvColor: 0
+  allWallsSameColor: 1
   randEnvObjColor: 0
   randEnvObjPosition: 1
   randEnvObjRotation: 0
@@ -1204,12 +1206,22 @@ Prefab:
     - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
         type: 2}
       propertyPath: captureSettings.Array.data[2].execute
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
         type: 2}
       propertyPath: captureSettings.Array.data[0].execute
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 2}
+      propertyPath: captureSettings.Array.data[2].numImagesToMake
+      value: 40000
+      objectReference: {fileID: 0}
+    - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 2}
+      propertyPath: overwriteBasePath
+      value: C:\\trainingData
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 2}
