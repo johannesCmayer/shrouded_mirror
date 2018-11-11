@@ -511,7 +511,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
             output_img = black_n_white_1_to_rgb_255(output_img)
             #observation_input_drawable = black_n_white_1_to_rgb_255(np.reshape(observation_inputs, img_data_shape))
         else:
-            output_img = 255 * output_img #q/ np.max(output_img)
+            output_img = 255 * output_img / np.max(output_img)
             observation_inputs_drawable = [np.reshape(obs_input, img_data_shape) * 255 for obs_input in masked_observation_inputs]
 
         img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
@@ -523,9 +523,11 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
             pos = (origin_pos[0] + offset[0], origin_pos[1] + offset[1])
             img_drawer.draw_image(o, size=size, position=pos)
 
-        img_drawer.draw_text(f'{str(character_controller.current_position * max_pos_val)} '
-                             f'max position {max_pos_val}', (10, 10))
-        img_drawer.draw_text(str(character_controller.current_rotation_quaternion), (10, 50))
+        text_orig_pos = (window_size.x // 2 + 10, window_size.y // 2 + 10)
+        img_drawer.draw_text_auto_pos(f'{str(character_controller.current_position * max_pos_val)} '
+                             f'max position {max_pos_val}', text_orig_pos)
+        img_drawer.draw_text_auto_pos(str(character_controller.current_rotation_quaternion), text_orig_pos)
+        img_drawer.draw_text_auto_pos(os.path.basename(model_save_file_path), text_orig_pos)
 
         img_drawer.execute()
         character_controller.movement_update()

@@ -23,7 +23,7 @@ class Timer:
 
 
 class ImgDrawer:
-    def __init__(self, screen_size=(500, 500), auto_pos_offset=(5, 10)):
+    def __init__(self, screen_size=(500, 500), auto_pos_offset=(0, 20)):
         pygame.init()
         self.screen_size = screen_size
         self.screen = pygame.display.set_mode(self.screen_size)
@@ -47,14 +47,15 @@ class ImgDrawer:
         textsurface = myfont.render(text, False, color)
         self.screen.blit(textsurface, position)
 
-    def draw_text_auto_posself(self, text, color=(255,0,0), size=14):
-        position = (self.auto_pos_offset[0], self.auto_pos_offset[1] * (self.idx_of_auto_text + 1))
+    def draw_text_auto_pos(self, text, orig_pos=(5,5), color=(255,0,0), size=14):
+        position = (orig_pos[0] + self.auto_pos_offset[0], orig_pos[1] + self.auto_pos_offset[1] * (self.idx_of_auto_text))
         self.draw_text(text, position, color, size)
-        self.idx_of_auto_text = 0
+        self.idx_of_auto_text += 1
 
     def execute(self):
         pygame.event.pump()
         pygame.display.flip()
+        self.screen.fill((0,0,0))
         self.idx_of_auto_text = 0
 
 
