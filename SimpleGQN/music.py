@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import winsound
+import time, pprint, keyboard
 
 data = [
     "C0	16.35	2109.89",
@@ -191,6 +192,21 @@ def play_next_note_of_song(i, song=BLUES_SONG):
 def play_song(num_notes, song=MINOR_SONG):
     for i in num_notes:
         play_next_note_of_song(song)
+
+
+def pause_and_notify(msg='programm suspendet', activation_return_pairs={'y': True, 'n': False}, timeout=None):
+    start_time = time.time()
+    print(msg + ' you can specify these return values with chars ' + pprint.pformat(activation_return_pairs))
+    for i in infinity():
+        for key, val in activation_return_pairs.items():
+            if keyboard.is_pressed(key):
+                return val
+        if timeout and time.time() - start_time > timeout:
+            return activation_return_pairs.get('timeout', False)
+        try:
+            play_next_note_of_song(i)
+        except Exception as e:
+            print(f'winsound cant play: {e}')
 
 
 if __name__ == '__main__':

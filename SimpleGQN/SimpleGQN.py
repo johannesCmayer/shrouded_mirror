@@ -18,31 +18,18 @@ import keyboard
 import winsound
 import names
 import json
-import music
 import pprint
 import math
 import logging
 import functools
+import multiprocessing
+import music
+import gqn
 
 print(f'started execution at {datetime.datetime.now()}')
 
 def convert_to_valid_os_name(string, substitute_char='-'):
     return replace_multiple(string, '\\ / : * ? " < > |'.split(' '), substitute_char)
-
-
-def pause_and_notify(msg='programm suspendet', activation_return_pairs={'y': True, 'n': False}, timeout=None):
-    start_time = time.time()
-    print(msg + ' you can specify these return values with chars ' + pprint.pformat(activation_return_pairs))
-    for i in music.infinity():
-        for key, val in activation_return_pairs.items():
-            if keyboard.is_pressed(key):
-                return val
-        if timeout and time.time() - start_time > timeout:
-            return activation_return_pairs.get('timeout', False)
-        try:
-            music.play_next_note_of_song(i)
-        except Exception as e:
-            print(f'winsound cant play: {e}')
 
 
 def rename_data(data_dir, dict_str_to_replace: Dict):
@@ -456,6 +443,43 @@ def return_mkdir(path):
     return path
 
 
+def generate_data(network_inputs, num_input_observations, data_composition_multiplier):
+    print('composing training data')
+    scrambled_image_inputs_list, image_inputs, coordinate_inputs = [[] for _ in
+                                                                    range(num_input_observations)], [], []
+    total_number_of_compositions = 0
+    number_of_compositions = 0
+    for _ in range(data_composition_multiplier):
+        for img_input_list, coordinate_input_list in network_inputs:
+            total_number_of_compositions += len(coordinate_input_list)
+    for _ in range(data_composition_multiplier):
+        for img_input_list, coordinate_input_list in network_inputs:
+            for i in scrambled_image_inputs_list:
+                i.extend(np.random.permutation(img_input_list))
+            image_inputs.extend(img_input_list)
+            coordinate_inputs.extend(coordinate_input_list)
+
+            number_of_compositions += len(coordinate_input_list)
+            print(f'\r{number_of_compositions}/{total_number_of_compositions} - '
+                  f'{int(100 * number_of_compositions/total_number_of_compositions)}% data points composed', end='')
+    print('\nconverting to numpy arrays')
+    scrambled_image_inputs_list, image_inputs, coordinate_inputs = \
+        [np.asarray(x) for x in scrambled_image_inputs_list], np.asarray(image_inputs), np.asarray(
+            coordinate_inputs)
+    print('completed conversion')
+    return scrambled_image_inputs_list, image_inputs, coordinate_inputs
+
+
+def check_if_key_is_pressed(event, key_string):
+    while True:
+        time.sleep(0.01)
+        if keyboard.is_pressed(key_string):
+            print('lerning abortion scheduled')
+            winsound.Beep(220, 300)
+            event.set()
+            return
+
+
 def train_model_pregen(network_inputs, num_input_observations, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
                        data_composition_multiplier=10, data_recomposition_frequency=1, log_frequency=10,
                        save_frequency = 30):
@@ -467,37 +491,39 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
     meta_data_save_path = return_mkdir(f'{model_dir}\\meta_data\\') + f'{model_name}.checkpoint'
 
     print(f'model name: {model_name}')
+    class DataGen:
+        def __init__(self):
+            self.q = multiprocessing.Queue()
+            self.p = None
+
+        def start_async_data_gen(self):
+            self.p = multiprocessing.Process(target=generate_data,
+                                        args=(self.q, network_inputs, num_input_observations, data_composition_multiplier))
+            self.p.start()
+
+        def get_result(self):
+            print('getting async data')
+            v = self.q.get()
+            self.p.join()
+            print('data gathering complete')
+            return v
+
+    stop_learning_event = multiprocessing.Event()
+    stop_condition_checker = multiprocessing.Process(target=check_if_key_is_pressed, args=(stop_learning_event, 'q'))
+    stop_condition_checker.start()
 
     for i in music.infinity():
         if i % data_recomposition_frequency == 0:
-            print('composing training data')
-            scrambled_image_inputs_list, image_inputs, coordinate_inputs = [[] for _ in range(num_input_observations)], [], []
-            total_number_of_compositions = 0
-            number_of_compositions = 0
-            for _ in range(data_composition_multiplier):
-                for img_input_list, coordinate_input_list in network_inputs:
-                    total_number_of_compositions += len(coordinate_input_list)
-            for _ in range(data_composition_multiplier):
-                for img_input_list, coordinate_input_list in network_inputs:
-                    for i in scrambled_image_inputs_list:
-                        i.extend(np.random.permutation(img_input_list))
-                    image_inputs.extend(img_input_list)
-                    coordinate_inputs.extend(coordinate_input_list)
-
-                    number_of_compositions += len(coordinate_input_list)
-                    print(f'\r{number_of_compositions}/{total_number_of_compositions} - '
-                          f'{int(100 * number_of_compositions/total_number_of_compositions)}% data points composed', end='')
-            print('\nconverting to numpy arrays')
             scrambled_image_inputs_list, image_inputs, coordinate_inputs = \
-                [np.asarray(x) for x in scrambled_image_inputs_list], np.asarray(image_inputs), np.asarray(coordinate_inputs)
-            print()
+                generate_data(network_inputs, num_input_observations, data_composition_multiplier)
         print('starting training')
-        model_to_train.fit([*scrambled_image_inputs_list, coordinate_inputs], image_inputs, batch_size=batch_size,
+        model_to_train.fit([*scrambled_image_inputs_list, coordinate_inputs], image_inputs, batch_size=batch_size, verbose=1,
                            epochs=epochs, callbacks=[
                                 keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
                                 #keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
             ])
-        if pause_and_notify('do you want to stop training y=yes other=no', {'y': True, 'n': False}, timeout=1):
+        if stop_learning_event.is_set():
+            stop_condition_checker.join()
             break
 
     if save_model:
@@ -551,7 +577,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
                                    batch_size=batch_size, save_model=save_model,
                                    data_composition_multiplier=data_composition_multiplier,
                                    log_frequency=log_frequency, save_frequency = save_frequency)
-    if not run_environment and not pause_and_notify('training completed, run environment? y/n'):
+    if not run_environment:
         return
 
     character_controller = CharacterController(center_pos=(0,1.5,0) / max_pos_val)
@@ -575,9 +601,12 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
 
         img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
         for i, o in enumerate(observation_inputs_drawable):
-            img_drawer.draw_image(o,
-                                  size=(window_size.x // 8, window_size.y // 4),
-                                  position=(window_size.x // 2*i, window_size.y // 2*i))
+            size = (window_size.x // 8, window_size.y // 4)
+            origin_pos = (window_size.x // 2, 0)
+            image_columns = 4
+            offset = (size[0] * (i % image_columns), size[1]*(i // image_columns))
+            pos = (origin_pos[0] + offset[0], origin_pos[1] + offset[1])
+            img_drawer.draw_image(o, size=size, position=pos)
 
         img_drawer.draw_text(f'{str(character_controller.current_position * max_pos_val)} '
                              f'max position {max_pos_val}', (10, 10))
@@ -616,6 +645,7 @@ model_names_uni = {
     -3: 'date=2018-11-10_time=04-01-37-084561_name=Allen-Sullivan_version=1_id=8980.hdf5',
     -4: 'date=2018-11-10_time=19-38-46-521301_name=Cynthia-Westfall_version=1_id=4765.hdf5',
     -5: 'date=2018-11-10_time=23-52-03-966682_name=Michelle-Zenon_version=1_id=6702.hdf5',
+    -6: 'date=2018-11-11_time=00-49-55-331805_name=Susan-Rhoads_version=1_id=2031.hdf5',
 }
 model_names = {**model_names_home, **model_names_uni}
 
@@ -675,11 +705,11 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
         json.dump(model_meta, file)
 
 
-FAST_DEBUG_MODE = True
+FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
     data_dirs_path = get_data_dir(10, 32)
-    model_load_path = -5
+    model_load_path = -6
     if model_load_path:
         params = parse_path_to_params(model_names.get(model_load_path))
         model_load_path = get_model_load_path(params['name'], params['id'])
@@ -697,14 +727,14 @@ if __name__ == '__main__':
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_load_path,
         'model_save_file_path': model_save_path,
-        'num_input_observations': 4,
+        'num_input_observations': 6,
         'epochs': 1,
-        'batch_size': 32,
-        'data_composition_multiplier': 4,
+        'batch_size': 320,
+        'data_composition_multiplier': 1,
         'log_frequency': 10,
         'save_frequency': 30,
         'run_environment': True,
-        'train': False,
+        'train': True,
         'black_n_white': False,
         'window_size': window_resolutions['hd'],
         'save_model': not FAST_DEBUG_MODE
