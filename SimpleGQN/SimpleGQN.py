@@ -26,6 +26,7 @@ import multiprocessing
 import music
 import gqn
 
+
 print(f'started execution at {datetime.datetime.now()}')
 
 def convert_to_valid_os_name(string, substitute_char='-'):
@@ -561,6 +562,7 @@ model_names_uni = {
     -4: 'date=2018-11-10_time=19-38-46-521301_name=Cynthia-Westfall_version=1_id=4765.hdf5',
     -5: 'date=2018-11-10_time=23-52-03-966682_name=Michelle-Zenon_version=1_id=6702.hdf5',
     -6: 'date=2018-11-11_time=00-49-55-331805_name=Susan-Rhoads_version=1_id=2031.hdf5',
+    -7: 'date=2018-11-11_time=05-05-40-479640_name=Andrew-Fernandez_version=1_id=4284.hdf5'
 }
 model_names = {**model_names_home, **model_names_uni}
 
@@ -625,7 +627,7 @@ FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
     data_dirs_path = get_data_dir(10, 32)
-    model_load_path = None
+    model_load_path = -7
     if model_load_path:
         params = parse_path_to_params(model_names.get(model_load_path))
         model_load_path = get_model_load_path(params['name'], params['id'])
@@ -638,22 +640,15 @@ if __name__ == '__main__':
         get_data_for_environments(data_dirs_path, **data_dirs_arg)
 
     model_save_path = models_dir + generate_model_name(model_load_path)
+    with open(os.path.dirname(__file__) + '\\run_config.json') as f:
+        config = json.load(f)
     run_params = {
-        'model_to_generate': 'multi',
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_load_path,
         'model_save_file_path': model_save_path,
-        'num_input_observations': 8,
-        'epochs': 6,
-        'batch_size': 32,
-        'data_composition_multiplier': 1,
-        'log_frequency': 10,
-        'save_frequency': 30,
-        'run_environment': True,
-        'train': True,
-        'black_n_white': False,
         'window_size': window_resolutions['hd'],
-        'save_model': not FAST_DEBUG_MODE
+        'save_model': not FAST_DEBUG_MODE,
+        **config
     }
     print('\nparams')
     pprint.pprint(run_params, depth=1, compact=True)

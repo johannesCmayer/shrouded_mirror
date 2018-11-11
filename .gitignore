@@ -11,6 +11,9 @@
 
 /trainingData
 
+# local configuration
+run_config.json
+
 # Tensorflow Model Info
 /models
 /summaries
