@@ -591,15 +591,18 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     img_drawer = ImgDrawer(window_size)
 
     def get_random_observation_input_list(num_of_real_observations):
-        obs = [np.asarray([x]) for x in get_random_observation_inputs(network_inputs, num_input_observations)]
-        return [x * (1 if i < num_of_real_observations else 0) for i, x in enumerate(obs)]
+        return [np.asarray([x]) for x in get_random_observation_inputs(network_inputs, num_input_observations)]
 
-    num_of_real_observations = 1
-    observation_inputs = get_random_observation_input_list(num_of_real_observations)
+    def mask_observation_inputs(obs_inputs, num_to_mask):
+        return [x * (1 if i < num_to_mask else 0) for i, x in enumerate(obs_inputs)]
+
+    num_unmask_inputs = 1
+    observation_inputs = get_random_observation_input_list(num_unmask_inputs)
+    masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
     while True:
         coordinate_input = np.asarray([network_inputs_from_coordinates_single(character_controller.current_position,
                                                                    character_controller.current_rotation_quaternion)])
-        output_img = model.predict([*observation_inputs, coordinate_input])
+        output_img = model.predict([*masked_observation_inputs, coordinate_input])
         output_img = np.reshape(output_img[0], img_data_shape)
 
         if black_n_white:
@@ -607,7 +610,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
             #observation_input_drawable = black_n_white_1_to_rgb_255(np.reshape(observation_inputs, img_data_shape))
         else:
             output_img = output_img / np.max(output_img) * 255
-            observation_inputs_drawable = [np.reshape(obs_input, img_data_shape) * 255 for obs_input in observation_inputs]
+            observation_inputs_drawable = [np.reshape(obs_input, img_data_shape) * 255 for obs_input in masked_observation_inputs]
 
         img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
         for i, o in enumerate(observation_inputs_drawable):
@@ -630,13 +633,14 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
                 pygame.quit()
                 return model
             if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_MINUS:
-                num_of_real_observations = max(num_of_real_observations - 1, 0)
-                observation_inputs = get_random_observation_input_list(num_of_real_observations)
+                num_unmask_inputs = max(num_unmask_inputs - 1, 0)
+                masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_PLUS:
-                num_of_real_observations = min(num_of_real_observations + 1, num_input_observations)
-                observation_inputs = get_random_observation_input_list(num_of_real_observations)
+                num_unmask_inputs = min(num_unmask_inputs + 1, num_input_observations)
+                masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_ENTER:
-                observation_inputs = get_random_observation_input_list(num_of_real_observations)
+                observation_inputs = get_random_observation_input_list(num_input_observations)
+                masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
 
 
 models_dir = os.path.dirname(__file__) + '\\models\\'
