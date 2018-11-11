@@ -16,6 +16,11 @@ public class TakeObservation : MonoBehaviour {
     public int obsPerEnv = 32;
 
     public string overwriteBasePath = $@"C:\trainingData";
+
+    [Header("Camera Settings")]
+    public bool rotateX = true;
+    public bool rotateY = true;
+    public bool rotateZ = false;
     
     public CaptureSettings[] captureSettings = new CaptureSettings[] {
         new CaptureSettings(8,8,20000),
@@ -109,7 +114,11 @@ public class TakeObservation : MonoBehaviour {
     public CaptureData TakeObservationFromVolume(Transform transformVolume, Camera camera)
     {
         camera.transform.position = new Util().GetRandomPointInAxisAlignedCube(transformVolume);
-        camera.transform.rotation = Quaternion.Euler(0, Random.Range(0, 360), 0);
+        var randRot = new Vector3(
+            rotateX ? Random.Range(0, 360) : 0,
+            rotateY ? Random.Range(0, 360) : 0,
+            rotateZ ? Random.Range(0, 360) : 0);
+        camera.transform.rotation = Quaternion.Euler(randRot);
         return AdvancedCameraObservation(camera);
     }    
 

@@ -232,7 +232,10 @@ def get_multi_input_gqn_model(pictures_list_input_shape, num_input_observations,
     encoder = get_gqn_encoder(pictures_list_input_shape)
 
     encoded = [encoder(o) for o in picture_input]
-    encoded = keras.layers.Add()(encoded)
+    if len(encoded) > 1:
+        encoded = keras.layers.Add()(encoded)
+    else:
+        encoded = encoded[0]
 
     decoded = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_list_input_shape)([encoded, coordinate_input])
 
@@ -633,12 +636,11 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
 FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(8, 32)
+    data_dirs_path = get_data_dir(6, 32)
     model_load_path = None
     if model_load_path:
         params = parse_path_to_params(model_names.get(model_load_path))
         model_load_path = get_model_load_path(params['name'], params['id'])
-
     data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
     if FAST_DEBUG_MODE:
         data_dirs_arg = {'num_envs_to_load': 10, 'num_data_from_env': 10}
