@@ -469,15 +469,44 @@ def generate_data(network_inputs, num_input_observations, data_composition_multi
     print('completed conversion')
     return scrambled_image_inputs_list, image_inputs, coordinate_inputs
 
+class AsyncKeyChecker:
+    def __init__(self, key, msg=None):
+        self.key = key
+        self.msg = msg
+        self.stop_learning_event = multiprocessing.Event()
+        self.key_checker = None
 
-def check_if_key_is_pressed(event, key_string):
-    while True:
-        time.sleep(0.01)
-        if keyboard.is_pressed(key_string):
-            print('lerning abortion scheduled')
-            winsound.Beep(220, 300)
-            event.set()
-            return
+    def start_checking(self):
+        self.key_checker = \
+            multiprocessing.Process(target=self._check_if_key_is_pressed, args=(self.stop_learning_event, self.key))
+        self.key_checker.start()
+
+    def _check_if_key_is_pressed(self, event, key_string):
+        keyboard.wait(key_string)
+        if self.msg:
+            print(self.msg)
+        winsound.Beep(220, 300)
+        event.set()
+        return
+
+    def key_was_pressed(self):
+        if self.stop_learning_event.is_set():
+            self.key_checker.join()
+            self.stop_learning_event.clear()
+            return True
+        else:
+            return False
+
+    def terminate(self):
+        self.key_checker.terminate()
+
+    def __enter__(self):
+        self.start_checking()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.terminate()
+
 
 
 def train_model_pregen(network_inputs, num_input_observations, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
@@ -491,41 +520,19 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
     meta_data_save_path = return_mkdir(f'{model_dir}\\meta_data\\') + f'{model_name}.checkpoint'
 
     print(f'model name: {model_name}')
-    class DataGen:
-        def __init__(self):
-            self.q = multiprocessing.Queue()
-            self.p = None
-
-        def start_async_data_gen(self):
-            self.p = multiprocessing.Process(target=generate_data,
-                                        args=(self.q, network_inputs, num_input_observations, data_composition_multiplier))
-            self.p.start()
-
-        def get_result(self):
-            print('getting async data')
-            v = self.q.get()
-            self.p.join()
-            print('data gathering complete')
-            return v
-
-    stop_learning_event = multiprocessing.Event()
-    stop_condition_checker = multiprocessing.Process(target=check_if_key_is_pressed, args=(stop_learning_event, 'q'))
-    stop_condition_checker.start()
-
-    for i in music.infinity():
-        if i % data_recomposition_frequency == 0:
-            scrambled_image_inputs_list, image_inputs, coordinate_inputs = \
-                generate_data(network_inputs, num_input_observations, data_composition_multiplier)
-        print('starting training')
-        model_to_train.fit([*scrambled_image_inputs_list, coordinate_inputs], image_inputs, batch_size=batch_size, verbose=1,
-                           epochs=epochs, callbacks=[
-                                keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
-                                #keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
-            ])
-        if stop_learning_event.is_set():
-            stop_condition_checker.join()
-            break
-
+    with AsyncKeyChecker('q') as kc:
+        for i in music.infinity():
+            if i % data_recomposition_frequency == 0:
+                scrambled_image_inputs_list, image_inputs, coordinate_inputs = \
+                    generate_data(network_inputs, num_input_observations, data_composition_multiplier)
+            print('starting training')
+            model_to_train.fit([*scrambled_image_inputs_list, coordinate_inputs], image_inputs, batch_size=batch_size, verbose=1,
+                               epochs=epochs, callbacks=[
+                                    keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
+                                    #keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
+                ])
+            if kc.key_was_pressed():
+                break
     if save_model:
         print(f'saving model as {final_save_path}')
         model_to_train.save(final_save_path)
@@ -708,7 +715,7 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
         json.dump(model_meta, file)
 
 
-FAST_DEBUG_MODE = True
+FAST_DEBUG_MODE = False
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
     data_dirs_path = get_data_dir(10, 32)
@@ -737,7 +744,7 @@ if __name__ == '__main__':
         'log_frequency': 10,
         'save_frequency': 30,
         'run_environment': True,
-        'train': False,
+        'train': True,
         'black_n_white': False,
         'window_size': window_resolutions['hd'],
         'save_model': not FAST_DEBUG_MODE
