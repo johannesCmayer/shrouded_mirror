@@ -25,6 +25,7 @@ import functools
 import multiprocessing
 import music
 import gqn
+import yaml
 
 
 print(f'started execution at {datetime.datetime.now()}')
@@ -123,7 +124,7 @@ def autoencoder(picture_input_shape):
     return model
 
 
-def get_gqn_encoder(picture_input_shape, num_layers=2, num_neurons_layer=1024, num_state_neurons=None, masking=True):
+def get_gqn_encoder(picture_input_shape, num_layers=6, num_neurons_layer=1024, num_state_neurons=None, masking=True):
     num_state_neurons = num_state_neurons if num_state_neurons else num_neurons_layer
     picture_input = keras.Input(picture_input_shape, name='picture_input')
 
@@ -136,7 +137,7 @@ def get_gqn_encoder(picture_input_shape, num_layers=2, num_neurons_layer=1024, n
     return keras.Model(picture_input, output)
 
 
-def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_layers=2, num_neurons_layer=1024):
+def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_layers=6, num_neurons_layer=1024):
     state_input = keras.Input(state_input_shape, name='picture_input')
     coordinate_input = keras.Input(coordinate_input_shape, name='coordinate_input')
     x = Concatenate()([state_input, coordinate_input])
@@ -218,7 +219,7 @@ def get_convolitional_gqn_model(picture_input_shape, coordinates_input_shape, nu
     return joint_model
 
 
-def get_multi_input_gqn_model(pictures_list_input_shape, num_input_observations, coordinates_input_shape, num_layers_encoder=3,
+def get_multi_input_gqn_model(pictures_list_input_shape, num_input_observations, coordinates_input_shape, num_layers_encoder=6,
                               num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')
     if not num_layers_decoder:
@@ -241,8 +242,6 @@ def get_multi_input_gqn_model(pictures_list_input_shape, num_input_observations,
 
     joint_model = keras.Model(inputs=[*picture_input, coordinate_input], outputs=decoded)
     joint_model.compile('rmsprop', 'mse')
-
-    joint_model.summary()
     return joint_model
 
 
@@ -421,7 +420,7 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
 
     checkpoint_save_path = return_mkdir(f'{model_dir}\\checkpoints') + f'\\{model_name}.checkpoint'
     final_save_path = return_mkdir(f'{model_dir}\\final') + f'\\{model_name}.hdf5'
-    meta_data_save_path = return_mkdir(f'{model_dir}\\meta_data\\') + f'{model_name}.checkpoint'
+    meta_data_save_path = return_mkdir(f'{model_dir}\\meta_data\\') + f'{model_name}.modelmeta'
 
     print(f'model name: {model_name}')
     with AsyncKeyChecker('q') as kc:
@@ -440,6 +439,9 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
     if save_model:
         print(f'saving model as {final_save_path}')
         model_to_train.save(final_save_path)
+        with open(meta_data_save_path, 'w') as f:
+            json.dump(model_to_train.to_json(), f)
+    winsound.Beep(280, 300)
     return model_to_train
 
 
@@ -448,8 +450,9 @@ def mask_observation_inputs(obs_inputs, num_to_mask):
 
 
 # TODO clean up and split up run method
-def run(unnormalized_environment_data, num_input_observations, model_save_file_path, model_to_generate, model_to_train=None, model_load_file_path=None, train=True,
-        epochs=100, batch_size=None, data_composition_multiplier=10, log_frequency=10, save_frequency = 30, run_environment=True, black_n_white=True,
+def run(unnormalized_environment_data, num_input_observations, model_save_file_path, model_to_generate,
+        model_to_train=None, model_load_file_path=None, train=True, epochs=100, batch_size=None,
+        data_multiplier=10, log_frequency=10, save_frequency = 30, run_environment=True, black_n_white=True,
         window_size=(1200, 600), window_size_coef=1, additional_meta_data={}, save_model=True):
     '''
     Run the main Programm
@@ -487,10 +490,11 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         else:
             model = model_generators[model_to_generate](np.shape(network_inputs[0][0][0]), num_input_observations,
                                                         np.shape(network_inputs[0][1][0]))
+    model.summary()
     if train:
         model = train_model_pregen(network_inputs, num_input_observations, model_save_file_path, model, epochs=epochs,
                                    batch_size=batch_size, save_model=save_model,
-                                   data_composition_multiplier=data_composition_multiplier,
+                                   data_composition_multiplier=data_multiplier,
                                    log_frequency=log_frequency, save_frequency = save_frequency)
     if not run_environment:
         return
@@ -550,61 +554,13 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
                 masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
 
 
-models_dir = os.path.dirname(__file__) + '\\models\\'
-if not os.path.isdir(models_dir):
-    os.mkdir(models_dir)
-model_names_home = {
-    1: 'first_large.hdf5',
-    2: '2018-10-26.15-41-54.307222_super-long-run',
-    3: '2018-11-01 21-15-16_(32, 32).hdf5',
-    4: '2018-11-01 22-18-28_(32, 32).hdf5',
-    5: '2018-11-02 01-19-11_(32, 32).checkpoint',
-    }
-model_names_uni = {
-    -1: 'date=2018-11-09_time=20-06-34-982949_name=Joe-Cruz_version=1_id=8419_idim=(32-32).hdf5',
-    -2: 'date=2018-11-10_time=02-04-25-643243_name=Walter-Meltzer_version=1_id=5155.hdf5',
-    -3: 'date=2018-11-10_time=04-01-37-084561_name=Allen-Sullivan_version=1_id=8980.hdf5',
-    -4: 'date=2018-11-10_time=19-38-46-521301_name=Cynthia-Westfall_version=1_id=4765.hdf5',
-    -5: 'date=2018-11-10_time=23-52-03-966682_name=Michelle-Zenon_version=1_id=6702.hdf5',
-    -6: 'date=2018-11-11_time=00-49-55-331805_name=Susan-Rhoads_version=1_id=2031.hdf5',
-    -7: 'date=2018-11-11_time=05-05-40-479640_name=Andrew-Fernandez_version=1_id=4284.hdf5'
-}
-model_names = {**model_names_home, **model_names_uni}
-
-data_base_dirs = [
-    'C:\\trainingData',
-    os.path.abspath(os.path.dirname(__file__) + '\\..\\trainingData'),
-]
-data_dirs = {
-    1: 'GQN_SimpleRoom',
-    2: 'GQN_SimpleRoom_withobj',
-    3: 'GQN_SimpleRoom_RandomizedObjects_2',
-    4: 'GQN_SimpleRoom_nocolorchange-oneobject',
-    5: 'GQN_SimpleRoom_nocolorchange-oneobject-randompositioned',
-    6: 'GQN_SimpleRoom_no_variation',
-    7: 'GQN_SimpleRoom_rand-sky-color',
-    8: 'GQN_SimpleRoom_sphere_rand_‎pos',
-    9: 'GQN_SimpleRoom_sphere_rand_‎pos+rand_sky',
-    10: 'GQN_SimpleRoom_colorchange-skyandwalls',
-}
-image_resolutions = {
-    8: '8x8',
-    16: '16x16',
-    32: '32x32',
-    64: '64x64',
-    128: '128x128',
-    256: '256x256',
-}
-window_resolutions = {
-    'uhd': (2400, 1200),
-    'hd': (1200, 600),
-}
 
 
-def get_data_dir(key, resolution_key):
+
+def get_data_dir(data_dir_name, resolution_string):
     dir = ''
     for base_dir in data_base_dirs:
-        dir = (f'{base_dir}\\{data_dirs.get(key)}\\{image_resolutions[resolution_key]}')
+        dir = (f'{base_dir}\\{data_dir_name}\\{resolution_string}')
         if os.path.isdir(dir):
             print(f'Found data in: {dir}')
             return dir
@@ -621,8 +577,6 @@ def get_img_dim_form_data_dir(dir):
     dims = dir.split('\\')[-1].split('x')
     return int(dims[0]), int(dims[1])
 
-spinner = Spinner()
-
 
 def save_dict(save_path, dict_to_save, keys_to_skip=[]):
     with open(save_path + '.mm', 'w') as file:
@@ -633,32 +587,47 @@ def save_dict(save_path, dict_to_save, keys_to_skip=[]):
         json.dump(model_meta, file)
 
 
-FAST_DEBUG_MODE = False
+def specs():
+    specs.x = 'hello'
+    with open(os.path.dirname(__file__) + '\\run_config.yaml') as f:
+        return yaml.load(f)
+
+models_dir = os.path.dirname(__file__) + '\\models\\'
+if not os.path.isdir(models_dir):
+    os.mkdir(models_dir)
+
+data_base_dirs = [
+    'C:\\trainingData',
+    os.path.abspath(os.path.dirname(__file__) + '\\..\\trainingData'),
+]
+
+spinner = Spinner()
+
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_dirs_path = get_data_dir(6, 32)
-    model_load_path = None
+    data_spec, param_spec, run_spec = specs()['data_spec'], specs()['param_spec'], specs()['run_spec']
+
+    data_dirs_path = get_data_dir(data_spec['data_dir'], data_spec['image_resolution'])
+    model_load_path = data_spec['model_load_path']
     if model_load_path:
-        params = parse_path_to_params(model_names.get(model_load_path))
-        model_load_path = get_model_load_path(params['name'], params['id'])
+        name_parameters = parse_path_to_params(model_load_path)
+        model_load_path = get_model_load_path(name_parameters['name'], name_parameters['id'])
     data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
-    if FAST_DEBUG_MODE:
+    if run_spec['fast_debug_mode']:
         data_dirs_arg = {'num_envs_to_load': 10, 'num_data_from_env': 10}
 
     unnormalized_environment_data = \
         get_data_for_environments(data_dirs_path, **data_dirs_arg)
 
     model_save_path = models_dir + generate_model_name(model_load_path)
-    config_path = os.path.dirname(__file__) + '\\run_config.json'
-    with open(os.path.dirname(__file__) + '\\run_config.json') as f:
-        config = json.load(f)
+
     run_params = {
         'unnormalized_environment_data': unnormalized_environment_data,
         'model_load_file_path': model_load_path,
         'model_save_file_path': model_save_path,
-        'window_size': window_resolutions['hd'],
-        'save_model': not FAST_DEBUG_MODE,
-        **config
+        'window_size': data_spec['window_resolution'],
+        'save_model': not run_spec['fast_debug_mode'],
+        **param_spec
     }
     print('\nparams')
     pprint.pprint(run_params, depth=1, compact=True)

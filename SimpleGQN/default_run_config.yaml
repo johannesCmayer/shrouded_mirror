@@ -1,0 +1,65 @@
+window_resolutions:
+    - &uhd [2400, 1200]
+    - &hd  [1200, 600]
+    - &hdp [1800, 900]
+
+image_resolutions:
+    - &ir_8   8x8
+    - &ir_16  16x16
+    - &ir_32  32x32
+    - &ir_64  64x64
+    - &ir_128 128x128
+    - &ir_256 256x256
+
+data_dirs:
+    - &dd_1  GQN_SimpleRoom
+    - &dd_2  GQN_SimpleRoom_withobj
+    - &dd_3  GQN_SimpleRoom_RandomizedObjects_2
+    - &dd_4  GQN_SimpleRoom_nocolorchange-oneobject
+    - &dd_5  GQN_SimpleRoom_nocolorchange-oneobject-randompositioned
+    - &dd_6  GQN_SimpleRoom_no_variation
+    - &dd_7  GQN_SimpleRoom_rand-sky-color
+    - &dd_8  GQN_SimpleRoom_sphere_rand_‎pos
+    - &dd_9  GQN_SimpleRoom_sphere_rand_‎pos+rand_sky
+    - &dd_10 GQN_SimpleRoom_colorchange-skyandwalls
+    - &dd_11 1_GQN_SR_rand_sky+walls(samecolor)
+
+model_paths:
+  - &mp_0  ~
+  - &mp_1  date=2018-11-09_time=20-06-34-982949_name=Joe-Cruz_version=1_id=8419_idim=(32-32).hdf5
+  - &mp_2  date=2018-11-10_time=02-04-25-643243_name=Walter-Meltzer_version=1_id=5155.hdf5
+  - &mp_3  date=2018-11-10_time=04-01-37-084561_name=Allen-Sullivan_version=1_id=8980.hdf5
+  - &mp_4  date=2018-11-10_time=19-38-46-521301_name=Cynthia-Westfall_version=1_id=4765.hdf5
+  - &mp_5  date=2018-11-10_time=23-52-03-966682_name=Michelle-Zenon_version=1_id=6702.hdf5
+  - &mp_6  date=2018-11-11_time=00-49-55-331805_name=Susan-Rhoads_version=1_id=2031.hdf5
+  - &mp_7  date=2018-11-11_time=05-05-40-479640_name=Andrew-Fernandez_version=1_id=4284.hdf5
+  - &mp_8  date=2018-11-11_time=08-29-17-546315_name=Nina-Flores_version=1_id=7394.hdf5
+  - &mp_9  date=2018-11-11_time=08-53-34-708542_name=Darin-Brown_version=2_id=1107.hdf5
+  - &mp_10 date=2018-11-11_time=19-13-35-540088_name=Joseph-Howell_version=1_id=9420.hdf5
+
+param_spec:
+  model_to_generate:      multi    # to generate if no model loaded
+  num_input_observations: 4
+  epochs:                 6
+  batch_size:             32
+  data_multiplier:        1
+  log_frequency:          10
+  save_frequency:         30
+  run_environment:        true
+  train:                  true
+  black_n_white:          false
+
+data_spec:
+  model_load_path:        *mp_10
+  data_dir:               *dd_11
+  image_resolution:       *ir_32
+  window_resolution:      *uhd
+
+run_spec:
+  fast_debug_mode:        true    # load less data and dont save model
+
+
+
+
+
+

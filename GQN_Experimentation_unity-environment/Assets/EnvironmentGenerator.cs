@@ -19,10 +19,12 @@ public class EnvironmentGenerator : MonoBehaviour {
     public float environmentObjectsMaxScale = 2f;
     public bool useColorPool = true;
     public Color[] colorPool;
-    [Header("Toogle randomization")]
+    [Header("Basic color randomisation")]
     public bool randCamBackgroundColor = true;
     public bool randEnvColor = true;
     public bool allWallsSameColor = true;
+    [Header("Object randomisation")]
+    public bool spawnEnvObjects = false;
     public bool randEnvObjColor = true;
     public bool randEnvObjPosition = true;
     public bool randEnvObjRotation = true;
@@ -64,32 +66,34 @@ public class EnvironmentGenerator : MonoBehaviour {
                 }
             }
         }
-        foreach (var item in environmentalObjectsPrefabs)
+        for (int i = environmentalObjects.Count - 1; i >= 0; i--)
         {
-            for (int i = environmentalObjects.Count - 1; i >= 0; i--)
+            Destroy(environmentalObjects[i]);
+        }
+        if (spawnEnvObjects)
+        {
+            foreach (var item in environmentalObjectsPrefabs)
             {
-                Destroy(environmentalObjects[i]);
-            }
-
-            int numObjs;
-            if (randEnvObjectNumber)
-                numObjs = Random.Range(minNumEnvObjects, maxNumEnvObjects + 1);
-            else
-                numObjs = maxNumEnvObjects;
-            for (int i = 0; i < numObjs; i++)
-            {
-                var idx = Random.Range(0, environmentalObjectsPrefabs.Length);
-                var newEnvObj = Instantiate(environmentalObjectsPrefabs[idx], Vector3.zero, Quaternion.identity);
-                if (randEnvObjPosition)
-                    newEnvObj.transform.position = new Util().GetRandomPointInAxisAlignedCube(environmentalObjectsSpawnVolume);
-                if (randEnvObjRotation)
-                    newEnvObj.transform.rotation = Random.rotation;
-                if (randEnvObjScale)
-                    newEnvObj.transform.localScale = GetRandomVec3(environmentObjectsMinScale, environmentObjectsMaxScale)
-                                                    .CompWiseMult(newEnvObj.transform.localScale);
-                if (randEnvObjColor)
-                    SetRandomColor(newEnvObj);
-                environmentalObjects.Add(newEnvObj);
+                int numObjs;
+                if (randEnvObjectNumber)
+                    numObjs = Random.Range(minNumEnvObjects, maxNumEnvObjects + 1);
+                else
+                    numObjs = maxNumEnvObjects;
+                for (int i = 0; i < numObjs; i++)
+                {
+                    var idx = Random.Range(0, environmentalObjectsPrefabs.Length);
+                    var newEnvObj = Instantiate(environmentalObjectsPrefabs[idx], Vector3.zero, Quaternion.identity);
+                    if (randEnvObjPosition)
+                        newEnvObj.transform.position = new Util().GetRandomPointInAxisAlignedCube(environmentalObjectsSpawnVolume);
+                    if (randEnvObjRotation)
+                        newEnvObj.transform.rotation = Random.rotation;
+                    if (randEnvObjScale)
+                        newEnvObj.transform.localScale = GetRandomVec3(environmentObjectsMinScale, environmentObjectsMaxScale)
+                                                        .CompWiseMult(newEnvObj.transform.localScale);
+                    if (randEnvObjColor)
+                        SetRandomColor(newEnvObj);
+                    environmentalObjects.Add(newEnvObj);
+                }
             }
         }
         UpdateEnvID();

@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &100100000
+Prefab:
+  m_ObjectHideFlags: 1
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications: []
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 0}
+  m_RootGameObject: {fileID: 1901219047598860}
+  m_IsPrefabAsset: 1
+--- !u!1 &1901219047598860
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4316266582379036}
+  - component: {fileID: 114689446533126764}
+  m_Layer: 0
+  m_Name: EnvironmentGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4316266582379036
+Transform:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1901219047598860}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 4.714903, y: -9.165371, z: -8.79537}
+  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &114689446533126764
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1901219047598860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a00f7a5dc0638414191a88a3a4518970, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  takeObservation: {fileID: 0}
+  environmentalObjectsSpawnVolume: {fileID: 0}
+  environmentBaseObjects:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  environmentalObjectsPrefabs: []
+  maxNumEnvObjects: 1
+  minNumEnvObjects: 1
+  environmentObjectsMinScale: 1.5
+  environmentObjectsMaxScale: 1.5
+  useColorPool: 1
+  colorPool:
+  - {r: 0, g: 1, b: 0.13905692, a: 1}
+  - {r: 1, g: 0, b: 0, a: 1}
+  - {r: 0, g: 0.97092485, b: 1, a: 1}
+  - {r: 1, g: 0, b: 0.99453926, a: 1}
+  - {r: 1, g: 1, b: 1, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  randCamBackgroundColor: 1
+  randEnvColor: 1
+  allWallsSameColor: 1
+  spawnEnvObjects: 0
+  randEnvObjColor: 0
+  randEnvObjPosition: 1
+  randEnvObjRotation: 0
+  randEnvObjScale: 1
+  randEnvObjectNumber: 1
