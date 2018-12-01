@@ -221,7 +221,10 @@ MonoBehaviour:
   observeVolume: {fileID: 0}
   environmentGenerator: {fileID: 0}
   obsPerEnv: 32
-  overwriteBasePath: C:\trainingData
+  overwriteBasePath: C:\
+  rotateX: 0
+  rotateY: 1
+  rotateZ: 0
   captureSettings:
   - execute: 0
     renderWidth: 8
@@ -234,7 +237,7 @@ MonoBehaviour:
   - execute: 1
     renderWidth: 32
     renderHeight: 32
-    numImagesToMake: 20000
+    numImagesToMake: 40000
   - execute: 0
     renderWidth: 64
     renderHeight: 64

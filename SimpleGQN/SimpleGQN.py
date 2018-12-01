@@ -237,6 +237,8 @@ def get_multi_input_gqn_model(pictures_list_input_shape, num_input_observations,
         encoded = keras.layers.Add()(encoded)
     else:
         encoded = encoded[0]
+    max = keras.backend.max(encoded)
+    encoded /= max
 
     decoded = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_list_input_shape)([encoded, coordinate_input])
 
