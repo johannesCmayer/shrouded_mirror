@@ -110,31 +110,21 @@ def product(iterable):
     return r
 
 
-def autoencoder(picture_input_shape):
-    number_of_pixels = product(picture_input_shape)
-    model = keras.Sequential([
-        keras.layers.Conv3D(28, (3,3), input_shape=picture_input_shape),
-        keras.layers.Dense(100, 'relu'),
-        keras.layers.Dense(20, 'relu'),
-        keras.layers.Dense(100, 'relu'),
-        keras.layers.Conv3D(28,(3, 3)),
-        keras.layers.Dense(number_of_pixels, 'relu')
-    ])
-    model.compile(keras.optimizers.Adam, 'mse', ['mse'])
-    return model
 
-
-def get_gqn_encoder(picture_input_shape, num_layers=6, num_neurons_layer=1024, num_state_neurons=None, masking=True):
+def get_gqn_encoder(picture_input_shape, coordinate_input_shape, num_layers=6, num_neurons_layer=1024, num_state_neurons=None, masking=True):
     num_state_neurons = num_state_neurons if num_state_neurons else num_neurons_layer
     picture_input = keras.Input(picture_input_shape, name='picture_input')
+    coordinates_picture_input = keras.Input(coordinate_input_shape, name='coordinates_picture_input')
 
     x = Flatten()(picture_input)
+    c = Flatten()(coordinates_picture_input)
+    x = Concatenate()([x, c])
     if masking:
         x = keras.layers.Masking(mask_value=0.0)(x)
     for _ in range(num_layers):
         x = Dense(num_neurons_layer, 'relu', True)(x)
     output = Dense(num_state_neurons, 'relu', True)(x)
-    return keras.Model(picture_input, output)
+    return keras.Model([picture_input, coordinates_picture_input], output, name='gqn_encoder')
 
 
 def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_layers=6, num_neurons_layer=1024):
@@ -145,33 +135,35 @@ def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_l
         x = Dense(num_neurons_layer, 'relu', True)(x)
     x = Dense(product(output_dim), 'relu', True)(x)
     predictions = Reshape(output_dim)(x)
-    return keras.Model(inputs=[state_input, coordinate_input], outputs=predictions)
+    return keras.Model(inputs=[state_input, coordinate_input], outputs=predictions, name='gqn_decoder')
 
 
-def get_multi_input_gqn_model(pictures_list_input_shape, num_input_observations, coordinates_input_shape, num_layers_encoder=6,
+def get_multi_input_gqn_model(pictures_list_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=6,
                               num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
 
-    number_of_pixels = product(num_input_observations * pictures_list_input_shape)
+    number_of_pixels = product(pictures_list_input_shape) * num_input_observations
 
     picture_input = [keras.Input(pictures_list_input_shape, name=f'picture_input{i}') for i in range(num_input_observations)]
-    coordinate_input = keras.Input(coordinates_input_shape, name='coordinate_input')
+    coordinates_picture_input = [keras.Input(coordinates_input_shape, name=f'coordinates_picture_input{i}') for i in range(num_input_observations)]
+    querry_coordinates = keras.Input(coordinates_input_shape, name='querry_coordinates')
 
-    encoder = get_gqn_encoder(pictures_list_input_shape)
+    encoder = get_gqn_encoder(pictures_list_input_shape, coordinates_input_shape)
 
-    encoded = [encoder(o) for o in picture_input]
+    encoded = [encoder([o, c]) for o, c in zip(picture_input, coordinates_picture_input)]
     if len(encoded) > 1:
         encoded = keras.layers.Add()(encoded)
     else:
         encoded = encoded[0]
-    max = keras.backend.max(encoded)
-    encoded /= max
+    #max = keras.backend.max(encoded)
+    #encoded /= max
 
-    decoded = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_list_input_shape)([encoded, coordinate_input])
+    decoder = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_list_input_shape)
+    decoded = decoder([encoded, querry_coordinates])
 
-    joint_model = keras.Model(inputs=[*picture_input, coordinate_input], outputs=decoded)
+    joint_model = keras.Model(inputs=[*picture_input, *coordinates_picture_input, querry_coordinates], outputs=decoded)
     joint_model.compile('rmsprop', 'mse')
     return joint_model
 
@@ -315,10 +307,12 @@ def return_mkdir(path):
     return path
 
 
-def generate_data(network_inputs, num_input_observations, data_composition_multiplier):
+def generate_data(network_inputs, num_input_observations, data_composition_multiplier, num_of_samples=None):
     print('composing training data')
-    scrambled_image_inputs_list, image_inputs, coordinate_inputs = [[] for _ in
-                                                                    range(num_input_observations)], [], []
+    images_1, coordinates_1 = [[] for _ in range(num_input_observations)], \
+                              [[] for _ in range(num_input_observations)]
+    image_2, coordinates_2 = [], []
+
     total_number_of_compositions = 0
     number_of_compositions = 0
     for _ in range(data_composition_multiplier):
@@ -326,21 +320,24 @@ def generate_data(network_inputs, num_input_observations, data_composition_multi
             total_number_of_compositions += len(coordinate_input_list)
     for _ in range(data_composition_multiplier):
         for img_input_list, coordinate_input_list in network_inputs:
-            for sub_list in scrambled_image_inputs_list:
-                #sub_list.extend(np.asarray(np.random.permutation(img_input_list)))
-                sub_list.extend(np.asarray([x * random.randint(0, 1) for x in np.random.permutation(img_input_list)]))
-            image_inputs.extend(img_input_list)
-            coordinate_inputs.extend(coordinate_input_list)
+            for img_list, coord_list in zip(images_1, coordinates_1):
+                take = random.randint(0, 1)
+                idx = np.random.permutation(np.arange(coordinate_input_list.shape[0]))
+                img_list.extend(np.asarray([x * take for x in np.take(img_input_list, idx, axis=0)]))
+                coord_list.extend(np.asarray([x * take for x in np.take(coordinate_input_list, idx, axis=0)]))
+            image_2.extend(img_input_list)
+            coordinates_2.extend(coordinate_input_list)
 
             number_of_compositions += len(coordinate_input_list)
             print(f'\r{number_of_compositions}/{total_number_of_compositions} - '
                   f'{int(100 * number_of_compositions/total_number_of_compositions)}% data points composed', end='')
     print('\nconverting to numpy arrays')
-    scrambled_image_inputs_list = np.asarray([np.asarray(x) for x in scrambled_image_inputs_list])
-    image_inputs = np.asarray(image_inputs)
-    coordinate_inputs = np.asarray(coordinate_inputs)
+    images_1 = [np.asarray(x) for x in images_1]
+    coordinates_1 = [np.asarray(x) for x in coordinates_1]
+    image_2 = np.asarray(image_2)
+    coordinates_2 = np.asarray(coordinates_2)
     print('completed conversion')
-    return scrambled_image_inputs_list, image_inputs, coordinate_inputs
+    return images_1, coordinates_1, image_2, coordinates_2
 
 
 def train_model_pregen(network_inputs, num_input_observations, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
@@ -357,10 +354,10 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
     with AsyncKeyChecker('q') as kc:
         for i in music.infinity():
             if i % data_recomposition_frequency == 0:
-                scrambled_image_inputs_list, image_inputs, coordinate_inputs = \
+                images_1, image_coordinates_1, images_2, image_coordinates_2 = \
                     generate_data(network_inputs, num_input_observations, data_composition_multiplier)
             print('starting training')
-            model_to_train.fit([*scrambled_image_inputs_list, coordinate_inputs], image_inputs, batch_size=batch_size, verbose=1,
+            model_to_train.fit([*images_1, *image_coordinates_1, image_coordinates_2], images_2, batch_size=batch_size, verbose=1,
                                epochs=epochs, callbacks=[
                                     keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
                                     #keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
@@ -377,7 +374,11 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
 
 
 def mask_observation_inputs(obs_inputs, num_to_mask):
-    return [x * (1 if i < num_to_mask else 0) for i, x in enumerate(obs_inputs)]
+    l = []
+    for i, (img, coord) in enumerate(zip(*obs_inputs)):
+        take = 1 if i < num_to_mask else 0
+        l.append(([img * take], [coord * take]))
+    return list(zip(*l))
 
 
 # TODO clean up and split up run method
@@ -395,8 +396,6 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     :return: Trained model
     '''
     model_generators = {
-        'conv': get_convolitional_gqn_model,
-        'flat': get_gqn_model,
         'multi': get_multi_input_gqn_model,
     }
 
@@ -419,8 +418,9 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         if model_load_file_path:
             model = keras.models.load_model(model_load_file_path)
         else:
-            model = model_generators[model_to_generate](np.shape(network_inputs[0][0][0]), num_input_observations,
-                                                        np.shape(network_inputs[0][1][0]))
+            model = model_generators[model_to_generate](np.shape(network_inputs[0][0][0]),
+                                                        np.shape(network_inputs[0][1][0]),
+                                                        num_input_observations)
     model.summary()
     if train:
         model = train_model_pregen(network_inputs, num_input_observations, model_save_file_path, model, epochs=epochs,
@@ -434,7 +434,11 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     img_drawer = ImgDrawer(window_size)
 
     def get_random_observation_input_list():
-        return [np.asarray([x]) for x in get_random_observation_inputs(network_inputs, num_input_observations)]
+        env_idx = random.choice(np.arange(len(network_inputs)))
+        env = network_inputs[env_idx]
+        obs_idxs = np.random.permutation(np.arange(len(env[0])))
+        return np.take(env[0], obs_idxs[:num_input_observations], axis=0), \
+               np.take(env[1], obs_idxs[:num_input_observations], axis=0)
 
     num_unmask_inputs = 1
     observation_inputs = get_random_observation_input_list()
@@ -442,7 +446,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     while True:
         coordinate_input = np.asarray([network_inputs_from_coordinates_single(character_controller.current_position,
                                                                    character_controller.current_rotation_quaternion)])
-        output_img = model.predict([*masked_observation_inputs, coordinate_input])
+        output_img = model.predict([*masked_observation_inputs[0], *masked_observation_inputs[1], coordinate_input])
         output_img = np.reshape(output_img[0], img_data_shape)
 
         if black_n_white:
@@ -450,10 +454,10 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
             #observation_input_drawable = black_n_white_1_to_rgb_255(np.reshape(observation_inputs, img_data_shape))
         else:
             output_img = 255 * output_img / np.max(output_img)
-            observation_inputs_drawable = [np.reshape(obs_input, img_data_shape) * 255 for obs_input in masked_observation_inputs]
+            image_inputs_drawable = [np.reshape(obs_input, img_data_shape) * 255 for obs_input in masked_observation_inputs[0]]
 
         img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
-        for i, o in enumerate(observation_inputs_drawable):
+        for i, o in enumerate(image_inputs_drawable):
             size = (window_size.x // 8, window_size.y // 4)
             origin_pos = (window_size.x // 2, 0)
             image_columns = 4
@@ -483,9 +487,6 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
             if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_ENTER:
                 observation_inputs = get_random_observation_input_list()
                 masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
-
-
-
 
 
 def get_data_dir(data_dir_name, resolution_string):

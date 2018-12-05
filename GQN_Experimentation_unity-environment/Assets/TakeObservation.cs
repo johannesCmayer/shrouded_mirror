@@ -10,7 +10,7 @@ public class TakeObservation : MonoBehaviour {
     public event System.Action TookObservation = delegate { };
 
     public Camera cam;
-    public Transform observeVolume;
+    public Transform[] observeVolumes;
     public EnvironmentGenerator environmentGenerator;
 
     public int obsPerEnv = 32;
@@ -75,6 +75,7 @@ public class TakeObservation : MonoBehaviour {
                 {
                     var sceneName = SceneManager.GetActiveScene().name;
                     var savePath = DefaultSavePath(sceneName, cs);
+                    var observeVolume = observeVolumes[Random.Range(0, observeVolumes.Length)];
                     var capture = TakeObservationFromVolume(observeVolume, cam);
                     SaveImage(capture, savePath, GetFileName(capture));
                     TookObservation();

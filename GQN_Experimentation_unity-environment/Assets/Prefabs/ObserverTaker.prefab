@@ -122,7 +122,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 8300000, guid: 3ca94dd88d9f4ab49a1ca4c48bb9f14a, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 1
+  m_Volume: 0.37
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -218,7 +218,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cam: {fileID: 20159692649184960}
-  observeVolume: {fileID: 0}
+  observeVolumes:
+  - {fileID: 0}
+  - {fileID: 0}
   environmentGenerator: {fileID: 0}
   obsPerEnv: 32
   overwriteBasePath: C:\
@@ -237,7 +239,7 @@ MonoBehaviour:
   - execute: 1
     renderWidth: 32
     renderHeight: 32
-    numImagesToMake: 40000
+    numImagesToMake: 20000
   - execute: 0
     renderWidth: 64
     renderHeight: 64

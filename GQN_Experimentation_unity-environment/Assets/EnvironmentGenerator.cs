@@ -22,6 +22,8 @@ public class EnvironmentGenerator : MonoBehaviour {
     [Header("Basic color randomisation")]
     public bool randCamBackgroundColor = true;
     public bool randEnvColor = true;
+    public bool randEnvMatTilling = true;
+    public Vector2 minMaxTiling = new Vector3(2, 6);
     public bool allWallsSameColor = true;
     [Header("Object randomisation")]
     public bool spawnEnvObjects = false;
@@ -64,6 +66,14 @@ public class EnvironmentGenerator : MonoBehaviour {
                 {
                     SetRandomColor(item);
                 }
+            }
+        }
+        if (randEnvMatTilling)
+        {
+            var scale = Random.Range((int)minMaxTiling.x, (int)minMaxTiling.y + 1);
+            foreach (var item in environmentBaseObjects)
+            {                
+                item.GetComponent<Renderer>().material.mainTextureScale = new Vector2(scale, scale);
             }
         }
         for (int i = environmentalObjects.Count - 1; i >= 0; i--)
@@ -115,7 +125,7 @@ public class EnvironmentGenerator : MonoBehaviour {
     {
         if (useColorPool)
         {
-            return colorPool[Random.Range(0, colorPool.Length - 1)];
+            return colorPool[Random.Range(0, colorPool.Length)];
         }
         else
         {
