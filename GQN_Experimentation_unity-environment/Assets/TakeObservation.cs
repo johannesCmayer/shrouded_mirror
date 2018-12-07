@@ -4,6 +4,14 @@ using UnityEngine;
 using System.IO;
 using UnityEngine.SceneManagement;
 using UnityEditor;
+using System.Linq;
+
+[System.Serializable]
+public class EnvironmentGroup
+{
+    public float weightToBeChosen = 1.0f;
+    public List<Environment> environments = new List<Environment>();
+}
 
 public class TakeObservation : MonoBehaviour {
 
@@ -12,7 +20,7 @@ public class TakeObservation : MonoBehaviour {
     public Camera cam;
     public EnvironmentGenerator environmentGenerator;
 
-    public GameObject[] environments;
+    public List<EnvironmentGroup> environmentGroups;
 
     public int obsPerEnv = 32;
     public Vector3 offsetAfterPlacement;
@@ -51,25 +59,45 @@ public class TakeObservation : MonoBehaviour {
         StartCoroutine(Capture());
 	}
 
+    public int GetRandomWeightedIndex(List<float> weights)
+    {
+        var combinedWeight = weights.Sum(item => item);
+        var currentWeight = 0.0f;
+        var floatIdx = Random.Range(0, combinedWeight);
+        for (int i = 0; i < weights.Count; i++)
+        {
+            currentWeight += weights[i];
+            if (currentWeight >= floatIdx)
+                return i;
+        }
+        throw new System.Exception("No return value");
+    }
+
     Transform GetRandomObserveAreaAndSetActiveations()
     {
-        foreach (var item in environments)
-            item.SetActive(false);
+        foreach (var envGroup in environmentGroups)
+            foreach (var env in envGroup.environments)
+                env.gameObject.SetActive(false);
         var observeAreas = new List<Transform>();
         for (int i = 0; observeAreas.Count == 0; i++)
         {
             if (i > 1000)
                 throw new System.Exception("No env found with Observe Area");
 
-            var environment = environments[Random.Range(0, environments.Length)];
-            environment.SetActive(true);
-            foreach (Transform child in environment.transform)
+            var environmentGroup = environmentGroups[GetRandomWeightedIndex(environmentGroups.Select(x => x.weightToBeChosen).ToList())];
+
+            foreach (var env in environmentGroup.environments)
             {
-                if (child.CompareTag("observeArea"))
-                    observeAreas.Add(child);
+                env.gameObject.SetActive(true);
+                foreach (Transform child in env.transform)
+                {
+                    if (child.CompareTag("observeArea"))
+                        observeAreas.Add(child);
+                }
             }
         }
-        return observeAreas[Random.Range(0, observeAreas.Count)];
+        var weights = observeAreas.Select(x => x.GetComponent<ObserveArea>().weightToBeChosen).ToList();
+        return observeAreas[GetRandomWeightedIndex(weights)];
     }
 
     IEnumerator Capture()

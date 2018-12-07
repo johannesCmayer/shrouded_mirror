@@ -6,6 +6,13 @@ from scipy import misc
 import time
 
 
+def product(iterable):
+    r = 1
+    for num in iterable:
+        r *= num
+    return r
+
+
 class Timer:
     def __init__(self):
         self.start_time = time.time()
