@@ -10,7 +10,6 @@ public class TakeObservation : MonoBehaviour {
     public event System.Action TookObservation = delegate { };
 
     public Camera cam;
-    public Transform[] observeVolumes;
     public EnvironmentGenerator environmentGenerator;
 
     public GameObject[] environments;
@@ -51,6 +50,27 @@ public class TakeObservation : MonoBehaviour {
         StartCoroutine(Capture());
 	}
 
+    Transform GetRandomObserveAreaAndSetActiveations()
+    {
+        foreach (var item in environments)
+            item.SetActive(false);
+        var observeAreas = new List<Transform>();
+        for (int i = 0; observeAreas.Count == 0; i++)
+        {
+            if (i > 1000)
+                throw new System.Exception("No env found with Observe Area");
+
+            var environment = environments[Random.Range(0, environments.Length)];
+            environment.SetActive(true);
+            foreach (Transform child in environment.transform)
+            {
+                if (child.CompareTag("observeArea"))
+                    observeAreas.Add(child);
+            }
+        }
+        return observeAreas[Random.Range(0, observeAreas.Count)];
+    }
+
     IEnumerator Capture()
     {
         for (int i = 3; i >= 0; i--)
@@ -76,9 +96,9 @@ public class TakeObservation : MonoBehaviour {
                 for (int i = 0; i < cs.numImagesToMake; i++)
                 {
                     var sceneName = SceneManager.GetActiveScene().name;
-                    var savePath = DefaultSavePath(sceneName, cs);
-                    var observeVolume = observeVolumes[Random.Range(0, observeVolumes.Length)];
-                    var capture = TakeObservationFromVolume(observeVolume, cam);
+                    var savePath = DefaultSavePath(sceneName, cs);                    
+
+                    var capture = TakeObservationFromVolume(GetRandomObserveAreaAndSetActiveations(), cam);
                     SaveImage(capture, savePath, GetFileName(capture));
                     TookObservation();
                     totalImages++;

@@ -127,6 +127,26 @@ def get_gqn_encoder(picture_input_shape, coordinate_input_shape, num_layers, num
     return keras.Model([picture_input, coordinates_picture_input], output, name='gqn_encoder')
 
 
+def get_gqn_conv_encoder(picture_input_shape, coordinate_input_shape, num_layers, num_neurons_layer=1024, num_state_neurons=None, masking=True):
+    num_state_neurons = num_state_neurons if num_state_neurons else num_neurons_layer
+    picture_input = keras.Input(picture_input_shape, name='picture_input')
+    coordinates_picture_input = keras.Input(coordinate_input_shape, name='coordinates_picture_input')
+
+    x = Conv2D(256, (2, 2), (1,1), padding='same')(picture_input)
+    out_x = Conv2D(128, (3,3), (1,1), padding='same')(x)
+    x = keras.layers.Add()([x, out_x])
+    x = Conv2D(256, (2,2), (2,2), padding='valid')(x)
+
+    expanded_coord = keras.backend.expand_dims(coordinates_picture_input)
+    expanded_coord = keras.backend.expand_dims(expanded_coord)
+    expanded_coord = keras.backend.repeat_elements(expanded_coord, x.output_shape[0], 0)
+    expanded_coord = keras.backend.repeat_elements(expanded_coord, x.output_shape[1], 1)
+
+    x = Concatenate()([x, expanded_coord])
+    out_x = Conv2D(128, (3,3), (1,1), padding='same')(x)
+    x = keras.layers.Add()([x, out_x])
+
+
 def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_layers, num_neurons_layer=1024):
     state_input = keras.Input(state_input_shape, name='picture_input')
     coordinate_input = keras.Input(coordinate_input_shape, name='coordinate_input')
