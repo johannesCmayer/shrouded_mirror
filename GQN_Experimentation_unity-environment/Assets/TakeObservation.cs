@@ -13,6 +13,8 @@ public class TakeObservation : MonoBehaviour {
     public Transform[] observeVolumes;
     public EnvironmentGenerator environmentGenerator;
 
+    public GameObject[] environments;
+
     public int obsPerEnv = 32;
 
     public string overwriteBasePath = $@"C:\trainingData";

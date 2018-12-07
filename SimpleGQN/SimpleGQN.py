@@ -111,7 +111,7 @@ def product(iterable):
 
 
 
-def get_gqn_encoder(picture_input_shape, coordinate_input_shape, num_layers=6, num_neurons_layer=1024, num_state_neurons=None, masking=True):
+def get_gqn_encoder(picture_input_shape, coordinate_input_shape, num_layers, num_neurons_layer=1024, num_state_neurons=None, masking=True):
     num_state_neurons = num_state_neurons if num_state_neurons else num_neurons_layer
     picture_input = keras.Input(picture_input_shape, name='picture_input')
     coordinates_picture_input = keras.Input(coordinate_input_shape, name='coordinates_picture_input')
@@ -127,7 +127,7 @@ def get_gqn_encoder(picture_input_shape, coordinate_input_shape, num_layers=6, n
     return keras.Model([picture_input, coordinates_picture_input], output, name='gqn_encoder')
 
 
-def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_layers=6, num_neurons_layer=1024):
+def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_layers, num_neurons_layer=1024):
     state_input = keras.Input(state_input_shape, name='picture_input')
     coordinate_input = keras.Input(coordinate_input_shape, name='coordinate_input')
     x = Concatenate()([state_input, coordinate_input])
@@ -138,8 +138,8 @@ def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_l
     return keras.Model(inputs=[state_input, coordinate_input], outputs=predictions, name='gqn_decoder')
 
 
-def get_multi_input_gqn_model(pictures_list_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=6,
-                              num_layers_decoder=None, num_neurons_per_layer=1024, num_state_neurons=1024):
+def get_multi_input_gqn_model(pictures_list_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=8,
+                              num_layers_decoder=8, num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
@@ -150,7 +150,8 @@ def get_multi_input_gqn_model(pictures_list_input_shape, coordinates_input_shape
     coordinates_picture_input = [keras.Input(coordinates_input_shape, name=f'coordinates_picture_input{i}') for i in range(num_input_observations)]
     querry_coordinates = keras.Input(coordinates_input_shape, name='querry_coordinates')
 
-    encoder = get_gqn_encoder(pictures_list_input_shape, coordinates_input_shape)
+    encoder = get_gqn_encoder(pictures_list_input_shape, coordinates_input_shape, num_layers_encoder,
+                              num_neurons_per_layer, num_state_neurons)
 
     encoded = [encoder([o, c]) for o, c in zip(picture_input, coordinates_picture_input)]
     if len(encoded) > 1:
@@ -160,7 +161,8 @@ def get_multi_input_gqn_model(pictures_list_input_shape, coordinates_input_shape
     #max = keras.backend.max(encoded)
     #encoded /= max
 
-    decoder = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_list_input_shape)
+    decoder = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_list_input_shape,
+                              num_layers=num_layers_decoder, num_neurons_layer=num_neurons_per_layer)
     decoded = decoder([encoded, querry_coordinates])
 
     joint_model = keras.Model(inputs=[*picture_input, *coordinates_picture_input, querry_coordinates], outputs=decoded)
@@ -189,20 +191,20 @@ def replace_multiple(str, old, new):
     return str
 
 
-def get_unique_model_save_name(name, version, id):
+def get_unique_model_save_name(name, version, id, env_name):
     def fm(val):
         string = replace_multiple(str(val), ['=', ', ', ' ', '.'], '-')
         return convert_to_valid_os_name(string, substitute_char='-')
     date = datetime.datetime.now().date()
     time = datetime.datetime.now().time()
-    d = {'date': date, 'time': time, 'name': name, 'version': version, 'id': id}
+    d = {'date': date, 'time': time, 'env': env_name, 'name': name, 'version': version, 'id': id}
     return functools.reduce(lambda acc, val: f'{acc}_{val[0]}={fm(val[1])}', d.items(), '')[1:]
 
 
-def get_new_unique_model_save_name():
+def get_new_unique_model_save_name(env_name):
     name = names.get_full_name()
     id = random.randint(1000, 10000)
-    return get_unique_model_save_name(name, 1, id)
+    return get_unique_model_save_name(name, 1, id, env_name)
 
 
 def parse_path_to_params(path, params_seperator='_', key_val_seperator='='):
@@ -216,7 +218,7 @@ def time_int_from_param_dict(params):
 model_file_locations = os.path.dirname(__file__) + '\\models'
 model_file_locations = [model_file_locations + p for p in ['\\final', '\\checkpoints']]
 
-def generate_model_name(previous_name=None):
+def generate_model_name(env_name, previous_name=None):
     if previous_name:
         param_dict = parse_path_to_params(previous_name)
         id = param_dict['id']
@@ -227,9 +229,9 @@ def generate_model_name(previous_name=None):
                 exisiting_param_dict = parse_path_to_params(p)
                 version = max(int(exisiting_param_dict['version']), version)
         version += 1
-        return get_unique_model_save_name(name, version, id)
+        return get_unique_model_save_name(name, version, id, env_name)
     else:
-        return get_new_unique_model_save_name()
+        return get_new_unique_model_save_name(env_name)
 
 
 def get_model_load_path(name, id):
@@ -551,7 +553,8 @@ if __name__ == '__main__':
     unnormalized_environment_data = \
         get_data_for_environments(data_dirs_path, **data_dirs_arg)
 
-    model_save_path = models_dir + generate_model_name(model_load_path)
+    env_name = data_spec['data_dir']
+    model_save_path = models_dir + generate_model_name(env_name, model_load_path)
 
     run_params = {
         'unnormalized_environment_data': unnormalized_environment_data,
@@ -570,11 +573,11 @@ if __name__ == '__main__':
 
     run_params['model_to_train'] = trained_model
     run_params['model_save_file_path'] = models_dir + \
-                                         generate_model_name(run_params['model_save_file_path'])
+                                         generate_model_name(env_name, run_params['model_save_file_path'])
     run_params['train'] = True
 
     while True:
         run(**run_params)
         #save_dict(model_save_path, run_params, ['unnormalized_environment_data'])
         run_params['model_save_file_path'] = models_dir + \
-                                             generate_model_name(run_params['model_save_file_path'])
+                                             generate_model_name(env_name, run_params['model_save_file_path'])
