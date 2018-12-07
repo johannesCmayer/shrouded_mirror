@@ -185,7 +185,7 @@ class CharacterController:
 
         keys = pygame.key.get_pressed()
 
-        mouse_delta = pygame.mouse.get_rel()
+        #mouse_delta = pygame.mouse.get_rel()
         if pygame.mouse.get_focused() and not pygame.event.get_grab():
             pygame.event.set_grab(True)
             pygame.mouse.set_visible(False)
@@ -193,7 +193,7 @@ class CharacterController:
             pygame.event.set_grab(False)
             pygame.mouse.set_visible(True)
 
-        self.current_y_rotation += -mouse_delta[0] * self.mouse_rotate_speed * delta_time
+        #self.current_y_rotation += -mouse_delta[0] * self.mouse_rotate_speed * delta_time
 
         if keys[pygame.K_a]:
             self.current_y_rotation += self.rotate_speed * delta_time

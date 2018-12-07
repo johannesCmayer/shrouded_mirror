@@ -158,19 +158,19 @@ def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_l
     return keras.Model(inputs=[state_input, coordinate_input], outputs=predictions, name='gqn_decoder')
 
 
-def get_multi_input_gqn_model(pictures_list_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=8,
+def get_multi_input_gqn_model(pictures_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=8,
                               num_layers_decoder=8, num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
 
-    number_of_pixels = product(pictures_list_input_shape) * num_input_observations
+    number_of_pixels = product(pictures_input_shape) * num_input_observations
 
-    picture_input = [keras.Input(pictures_list_input_shape, name=f'picture_input{i}') for i in range(num_input_observations)]
+    picture_input = [keras.Input(pictures_input_shape, name=f'picture_input{i}') for i in range(num_input_observations)]
     coordinates_picture_input = [keras.Input(coordinates_input_shape, name=f'coordinates_picture_input{i}') for i in range(num_input_observations)]
     querry_coordinates = keras.Input(coordinates_input_shape, name='querry_coordinates')
 
-    encoder = get_gqn_encoder(pictures_list_input_shape, coordinates_input_shape, num_layers_encoder,
+    encoder = get_gqn_encoder(pictures_input_shape, coordinates_input_shape, num_layers_encoder,
                               num_neurons_per_layer, num_state_neurons)
 
     encoded = [encoder([o, c]) for o, c in zip(picture_input, coordinates_picture_input)]
@@ -181,7 +181,25 @@ def get_multi_input_gqn_model(pictures_list_input_shape, coordinates_input_shape
     #max = keras.backend.max(encoded)
     #encoded /= max
 
-    decoder = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_list_input_shape,
+    decoder = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_input_shape,
+                              num_layers=num_layers_decoder, num_neurons_layer=num_neurons_per_layer)
+    decoded = decoder([encoded, querry_coordinates])
+
+    joint_model = keras.Model(inputs=[*picture_input, *coordinates_picture_input, querry_coordinates], outputs=decoded)
+    joint_model.compile('rmsprop', 'mse')
+    return joint_model
+
+
+def get_embedding_model(pictures_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=8,
+                              num_layers_decoder=8, num_neurons_per_layer=1024, num_state_neurons=1024):
+    print('creating model')
+    picture_input = [keras.Input(pictures_input_shape, name=f'picture_input{i}') for i in range(num_input_observations)]
+    coordinates_picture_input = [keras.Input(coordinates_input_shape, name=f'coordinates_picture_input{i}') for i in
+                                 range(num_input_observations)]
+
+    encoded = keras.backend.variable(np.ones(coordinates_input_shape))
+    querry_coordinates = keras.Input(coordinates_input_shape, name='querry_coordinates')
+    decoder = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_input_shape,
                               num_layers=num_layers_decoder, num_neurons_layer=num_neurons_per_layer)
     decoded = decoder([encoded, querry_coordinates])
 
@@ -217,6 +235,7 @@ def get_unique_model_save_name(name, version, id, env_name):
         return convert_to_valid_os_name(string, substitute_char='-')
     date = datetime.datetime.now().date()
     time = datetime.datetime.now().time()
+    env_name = env_name.replace('_', '-')
     d = {'date': date, 'time': time, 'env': env_name, 'name': name, 'version': version, 'id': id}
     return functools.reduce(lambda acc, val: f'{acc}_{val[0]}={fm(val[1])}', d.items(), '')[1:]
 
@@ -419,6 +438,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     '''
     model_generators = {
         'multi': get_multi_input_gqn_model,
+        'embedding': get_embedding_model,
     }
 
     input_parameters = locals()

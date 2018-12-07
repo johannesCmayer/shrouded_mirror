@@ -12,4 +12,9 @@ public class Util {
             Random.Range(-cs.y / 2, cs.y / 2),
             Random.Range(-cs.z / 2, cs.z / 2));
     }
+
+    public Vector3 GetRandomPointInAxisAlignedCube(Transform cubeTransform, Vector3 offset)
+    {
+        return GetRandomPointInAxisAlignedCube(cubeTransform) + offset;
+    }
 }

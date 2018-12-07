@@ -15,6 +15,7 @@ public class TakeObservation : MonoBehaviour {
     public GameObject[] environments;
 
     public int obsPerEnv = 32;
+    public Vector3 offsetAfterPlacement;
 
     public string overwriteBasePath = $@"C:\trainingData";
 
@@ -136,11 +137,11 @@ public class TakeObservation : MonoBehaviour {
 
     public CaptureData TakeObservationFromVolume(Transform transformVolume, Camera camera)
     {
-        camera.transform.position = new Util().GetRandomPointInAxisAlignedCube(transformVolume);
+        camera.transform.position = new Util().GetRandomPointInAxisAlignedCube(transformVolume, offsetAfterPlacement);
         var randRot = new Vector3(
-            rotateX ? Random.Range(0, 360) : 0,
-            rotateY ? Random.Range(0, 360) : 0,
-            rotateZ ? Random.Range(0, 360) : 0);
+            rotateX ? Random.Range(0, 360) : camera.transform.rotation.eulerAngles.x,
+            rotateY ? Random.Range(0, 360) : camera.transform.rotation.eulerAngles.y,
+            rotateZ ? Random.Range(0, 360) : camera.transform.rotation.eulerAngles.z);
         camera.transform.rotation = Quaternion.Euler(randRot);
         return AdvancedCameraObservation(camera);
     }    
