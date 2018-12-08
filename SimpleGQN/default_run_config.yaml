@@ -23,6 +23,7 @@ data_dirs:
     - &dd_9  GQN_SimpleRoom_sphere_rand_‎pos+rand_sky
     - &dd_10 GQN_SimpleRoom_colorchange-skyandwalls
     - &dd_11 1_GQN_SR_rand_sky+walls(samecolor)
+    - &dd_12 WS-3-ChangingObjectunity
 
 model_paths:
   - &mp_0  ~
@@ -50,13 +51,13 @@ param_spec:
   black_n_white:          false
 
 data_spec:
-  model_load_path:        *mp_10
-  data_dir:               *dd_11
+  model_load_path:        *mp_0
+  data_dir:               *dd_12
   image_resolution:       *ir_32
-  window_resolution:      *uhd
+  window_resolution:      *hdp
 
 run_spec:
-  fast_debug_mode:        true    # load less data and dont save model
+  fast_debug_mode:        false    # load less data and dont save model
 
 
 
