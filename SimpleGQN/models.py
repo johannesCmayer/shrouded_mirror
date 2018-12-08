@@ -84,6 +84,20 @@ def get_multi_input_gqn_model(pictures_input_shape, coordinates_input_shape, num
     return joint_model
 
 
+def simple_conv_model(pictures_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=8,
+                              num_layers_decoder=8, num_neurons_per_layer=1024, num_state_neurons=1024):
+    print('creating model')
+    if not num_layers_decoder:
+        num_layers_decoder = num_layers_encoder
+
+    picture_input = [keras.Input(pictures_input_shape, name=f'picture_input{i}') for i in range(num_input_observations)]
+    coordinates_picture_input = [keras.Input(coordinates_input_shape, name=f'coordinates_picture_input{i}') for i in
+                                 range(num_input_observations)]
+    querry_coordinates = keras.Input(coordinates_input_shape, name='querry_coordinates')
+
+    x = Conv2D(256, (3,3), (2,2), padding='valid')(picture_input)
+
+
 def get_embedding_model(pictures_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=8,
                               num_layers_decoder=8, num_neurons_per_layer=1024, num_state_neurons=1024):
     print('creating model')

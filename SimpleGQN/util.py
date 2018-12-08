@@ -188,7 +188,7 @@ class CharacterController:
         if rot < 0:
             rot += np.pi * (1 + int(rot / np.pi))
         return np.asarray((math.sin(self.rot_time_offset) * 0.2, np.sin(rot),
-                          math.cos(self.rot_time_offset) * 0.2, np.cos(rot)))
+                          math.sin(self.rot_time_offset) * 0.2, np.cos(rot)))
 
     @property
     def current_rotation_quaternion(self):
@@ -216,10 +216,8 @@ class CharacterController:
             self.rot_time_offset = 0
             self.current_position_offset[1] = self.center_pos[1]
 
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key ==pygame.K_KP5:
-                    self.y_move_after_time = not self.y_move_after_time
+        if keys[pygame.K_KP5]:
+            self.y_move_after_time = not self.y_move_after_time
 
 
         if pygame.mouse.get_focused() and not pygame.event.get_grab():
@@ -230,7 +228,7 @@ class CharacterController:
             pygame.mouse.set_visible(True)
 
         # mouse_delta = pygame.mouse.get_rel()
-        #self.current_y_rotation += -mouse_delta[0] * self.mouse_rotate_speed * delta_time
+        # self.current_y_rotation += -mouse_delta[0] * self.mouse_rotate_speed * delta_time
 
         if keys[pygame.K_a]:
             self.current_y_rotation += self.rotate_speed * delta_time

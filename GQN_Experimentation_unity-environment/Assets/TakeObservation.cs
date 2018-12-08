@@ -187,7 +187,9 @@ public class TakeObservation : MonoBehaviour {
 
     public CaptureData AdvancedCameraObservation(Camera camera)
     {
-        return new CaptureData(TakeCameraObservation(camera), camera.transform.position, camera.transform.rotation);
+        var camPos = camera.transform.position;
+        var camRot = camera.transform.rotation;
+        return new CaptureData(TakeCameraObservation(camera), camPos, camRot);
     }
 
     public Texture2D TakeCameraObservation(Camera camera)
