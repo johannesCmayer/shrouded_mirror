@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.layers import Conv2D, UpSampling2D, MaxPooling2D, Dense, Concatenate, Flatten, Reshape
+from tensorflow.keras.layers import Conv2D, UpSampling2D, MaxPooling2D, Dense, Concatenate, Flatten, Reshape, Lambda
 from util import product
 import numpy as np
 
@@ -91,11 +91,39 @@ def simple_conv_model(pictures_input_shape, coordinates_input_shape, num_input_o
         num_layers_decoder = num_layers_encoder
 
     picture_input = [keras.Input(pictures_input_shape, name=f'picture_input{i}') for i in range(num_input_observations)]
+    picture_input_idx0 = picture_input[0]
     coordinates_picture_input = [keras.Input(coordinates_input_shape, name=f'coordinates_picture_input{i}') for i in
                                  range(num_input_observations)]
+    coordinates_picture_input_idx0 = coordinates_picture_input[0]
     querry_coordinates = keras.Input(coordinates_input_shape, name='querry_coordinates')
 
-    x = Conv2D(256, (3,3), (2,2), padding='valid')(picture_input)
+    def expand_coordinates_layer(dims_to_add=(16, 16)):
+        def expand_coordinates(tensor):
+            for e in np.array(dims_to_add):
+                tensor = keras.backend.expand_dims(tensor, axis=-2)
+                tensor = keras.backend.repeat_elements(tensor, e, -2)
+            return tensor
+        return Lambda(expand_coordinates)
+
+    def concat_coordinates(x, coord, x_shape):
+        expanded = expand_coordinates_layer(x_shape)(coord)
+        return keras.layers.Concatenate(axis=-1)([x, expanded])
+
+    def s_conf(x, layers=2):
+        for i in range(layers):
+            x = Conv2D(256, (3, 3), (1, 1), padding='same')(x)
+        return x
+
+    x = s_conf(picture_input_idx0)
+    x = concat_coordinates(x, coordinates_picture_input_idx0, pictures_input_shape[:2])
+    s_conf(x)
+    x = concat_coordinates(x, querry_coordinates, pictures_input_shape[:2])
+    x = s_conf(x)
+    out_img = Conv2D(3, (3,3), (1,1), padding='same')(x)
+
+    joint_model = keras.Model(inputs=[*picture_input, *coordinates_picture_input, querry_coordinates], outputs=out_img)
+    joint_model.compile('rmsprop', 'mse')
+    return joint_model
 
 
 def get_embedding_model(pictures_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=8,

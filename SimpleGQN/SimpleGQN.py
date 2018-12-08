@@ -28,7 +28,8 @@ import gqn
 import yaml
 import models
 from util import product
-from models import get_multi_input_gqn_model
+from models import get_multi_input_gqn_model, simple_conv_model
+import gc
 
 
 print(f'started execution at {datetime.datetime.now()}')
@@ -254,10 +255,11 @@ def generate_data(network_inputs, num_input_observations, data_composition_multi
 
     total_number_of_compositions = 0
     number_of_compositions = 0
-    for _ in range(data_composition_multiplier):
-        for img_input_list, coordinate_input_list in network_inputs:
-            total_number_of_compositions += len(coordinate_input_list)
-    for _ in range(data_composition_multiplier):
+    for img_input_list, coordinate_input_list in network_inputs:
+        total_number_of_compositions += len(coordinate_input_list)
+    total_number_of_compositions *= data_composition_multiplier
+    abort = False
+    for _ in range(math.ceil(data_composition_multiplier)):
         for img_input_list, coordinate_input_list in network_inputs:
             for img_list, coord_list in zip(images_1, coordinates_1):
                 take = random.randint(0, 1)
@@ -268,8 +270,13 @@ def generate_data(network_inputs, num_input_observations, data_composition_multi
             coordinates_2.extend(coordinate_input_list)
 
             number_of_compositions += len(coordinate_input_list)
+            if number_of_compositions >= total_number_of_compositions:
+                abort = True
+                break
             print(f'\r{number_of_compositions}/{total_number_of_compositions} - '
                   f'{int(100 * number_of_compositions/total_number_of_compositions)}% data points composed', end='')
+        if abort:
+            break
     print('\nconverting to numpy arrays')
     images_1 = [np.asarray(x) for x in images_1]
     coordinates_1 = [np.asarray(x) for x in coordinates_1]
@@ -301,6 +308,9 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
                                     keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
                                     #keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
                 ])
+            for e in images_1, image_coordinates_1, images_2, image_coordinates_2:
+                del(e)
+            gc.collect()
             if kc.key_was_pressed():
                 break
     if save_model:
@@ -336,6 +346,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     '''
     model_generators = {
         'multi': get_multi_input_gqn_model,
+        'conf': simple_conv_model,
     }
 
     input_parameters = locals()
@@ -346,8 +357,8 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     _, max_pos_val, max_rot_val = get_max_env_data_values(unnormalized_environment_data)
     orig_img_data_shape = np.shape(unnormalized_environment_data[0][0][0])
     network_inputs = unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=black_n_white,
-                                                    flatten_images=False if
-                                                    any([model_to_generate == x for x in ['conv', 'multi']]) else True)
+                                                    flatten_images=False) #if
+                                                    #any([model_to_generate == x for x in ['conv', 'multi']]) else True)
     img_data_shape = orig_img_data_shape[0], orig_img_data_shape[1]
     if not black_n_white:
         img_data_shape = img_data_shape + (3,)

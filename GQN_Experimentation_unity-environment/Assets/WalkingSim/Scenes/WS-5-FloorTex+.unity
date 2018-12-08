@@ -4461,6 +4461,11 @@ Prefab:
     - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
         type: 2}
       propertyPath: captureSettings.Array.data[2].execute
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 2}
+      propertyPath: captureSettings.Array.data[4].execute
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
