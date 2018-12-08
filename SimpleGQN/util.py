@@ -4,6 +4,7 @@ import numpy as np
 import pygame
 from scipy import misc
 import time
+import math
 
 
 def product(iterable):
@@ -162,20 +163,32 @@ class AsyncKeyChecker:
 class CharacterController:
     def __init__(self, center_pos=(0, 1.5, 0)):
         self.center_pos = np.asarray(center_pos)
-        self.current_position = np.array(self.center_pos)
+        self.raw_current_position = np.array(self.center_pos)
+        self.current_position_offset = np.asarray((0,0,0))
         self.current_y_rotation = 0
         self.prev_time = 0
         self.move_speed = 0.8
         self.rotate_speed = 0.8
         self.mouse_rotate_speed = 0.001
 
-    @staticmethod
-    def y_rot_to_quaternion(rot):
+        self.y_move_after_time = True
+        self.current_y_move_speed = 0
+        self.y_move_countdown = 4
+        self.y_move_timer = 0
+
+        self.rot_time_offset = 0
+
+    @property
+    def current_position(self):
+        return np.asarray(self.raw_current_position) + np.asarray(self.current_position_offset)
+
+    def y_rot_to_quaternion(self, rot):
         if rot > np.pi:
             rot -= np.pi * (int(rot / np.pi))
         if rot < 0:
             rot += np.pi * (1 + int(rot / np.pi))
-        return np.asarray([0, np.sin(rot), 0, np.cos(rot)])
+        return np.asarray((math.sin(self.rot_time_offset) * 0.2, np.sin(rot),
+                          math.cos(self.rot_time_offset) * 0.2, np.cos(rot)))
 
     @property
     def current_rotation_quaternion(self):
@@ -192,7 +205,23 @@ class CharacterController:
 
         keys = pygame.key.get_pressed()
 
-        #mouse_delta = pygame.mouse.get_rel()
+        self.y_move_timer += delta_time
+        if self.y_move_timer > self.y_move_countdown and self.y_move_after_time:
+            self.current_y_move_speed += 1 * delta_time
+            self.current_position_offset[1] = math.sin(self.current_y_move_speed) * 0.1
+            self.rot_time_offset += 2 * delta_time
+        if keys[pygame.K_KP4]:
+            self.current_y_move_speed = 0
+            self.y_move_timer = 0
+            self.rot_time_offset = 0
+            self.current_position_offset[1] = self.center_pos[1]
+
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key ==pygame.K_KP5:
+                    self.y_move_after_time = not self.y_move_after_time
+
+
         if pygame.mouse.get_focused() and not pygame.event.get_grab():
             pygame.event.set_grab(True)
             pygame.mouse.set_visible(False)
@@ -200,6 +229,7 @@ class CharacterController:
             pygame.event.set_grab(False)
             pygame.mouse.set_visible(True)
 
+        # mouse_delta = pygame.mouse.get_rel()
         #self.current_y_rotation += -mouse_delta[0] * self.mouse_rotate_speed * delta_time
 
         if keys[pygame.K_a]:
@@ -208,15 +238,15 @@ class CharacterController:
             self.current_y_rotation -= self.rotate_speed * delta_time
 
         if keys[pygame.K_UP]:
-            self.current_position += self.move_speed * delta_time * forward_vec
+            self.raw_current_position += self.move_speed * delta_time * forward_vec
         if keys[pygame.K_DOWN]:
-            self.current_position += self.move_speed * delta_time * -forward_vec
+            self.raw_current_position += self.move_speed * delta_time * -forward_vec
         if keys[pygame.K_LEFT]:
-            self.current_position += self.move_speed * delta_time * -right_vec
+            self.raw_current_position += self.move_speed * delta_time * -right_vec
         if keys[pygame.K_RIGHT]:
-            self.current_position += self.move_speed * delta_time * right_vec
+            self.raw_current_position += self.move_speed * delta_time * right_vec
 
         if keys[pygame.K_KP2]:
-            self.current_position = np.array(self.center_pos)
+            self.raw_current_position = np.array(self.center_pos)
         if keys[pygame.K_KP3]:
             self.current_y_rotation = 0
