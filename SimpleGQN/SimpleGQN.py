@@ -28,7 +28,7 @@ import gqn
 import yaml
 import models
 from util import product
-from models import get_multi_input_gqn_model, simple_conv_model
+from models import get_multi_input_gqn_model, simple_conv_model, get_latent_variable_gqn_model
 import gc
 
 
@@ -347,6 +347,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     model_generators = {
         'multi': get_multi_input_gqn_model,
         'conf': simple_conv_model,
+        'lv_gqn': get_latent_variable_gqn_model,
     }
 
     input_parameters = locals()

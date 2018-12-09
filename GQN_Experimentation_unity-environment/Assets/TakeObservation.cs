@@ -22,7 +22,7 @@ public class TakeObservation : MonoBehaviour {
 
     public List<EnvironmentGroup> environmentGroups;
 
-    public int obsPerEnv = 32;
+    public int obsPerEnvGroup = 32;
     public Vector3 offsetAfterPlacement;
 
     public string overwriteBasePath = $@"C:\trainingData";
@@ -73,22 +73,28 @@ public class TakeObservation : MonoBehaviour {
         throw new System.Exception("No return value");
     }
 
-    Transform GetRandomObserveAreaAndSetActiveations()
+    EnvironmentGroup GetRandomEnvironmentGroupAndActivate()
     {
         foreach (var envGroup in environmentGroups)
             foreach (var env in envGroup.environments)
                 env.gameObject.SetActive(false);
+
+        var environmentGroup = environmentGroups[GetRandomWeightedIndex(environmentGroups.Select(x => x.weightToBeChosen).ToList())];
+        foreach (var env in environmentGroup.environments)
+            env.gameObject.SetActive(true);
+        return environmentGroup;
+    }
+
+    Transform GetRandomObserveArea(EnvironmentGroup envGroup)
+    {
         var observeAreas = new List<Transform>();
         for (int i = 0; observeAreas.Count == 0; i++)
         {
             if (i > 1000)
                 throw new System.Exception("No env found with Observe Area");
-
-            var environmentGroup = environmentGroups[GetRandomWeightedIndex(environmentGroups.Select(x => x.weightToBeChosen).ToList())];
-
-            foreach (var env in environmentGroup.environments)
+            
+            foreach (var env in envGroup.environments)
             {
-                env.gameObject.SetActive(true);
                 foreach (Transform child in env.transform)
                 {
                     if (child.CompareTag("observeArea"))
@@ -122,35 +128,33 @@ public class TakeObservation : MonoBehaviour {
             {                
                 cam.targetTexture = new RenderTexture(cs.renderWidth, cs.renderHeight, 1);
 
-                for (int i = 0; i < cs.numImagesToMake; i++)
+                for (int i = 0; i < Mathf.Ceil(cs.numImagesToMake / obsPerEnvGroup); i++)
                 {
-                    var sceneName = SceneManager.GetActiveScene().name;
-                    var savePath = DefaultSavePath(sceneName, cs);                    
+                    var currentEnvGroup = GetRandomEnvironmentGroupAndActivate();
+                    for (int j = 0; j < obsPerEnvGroup; j++)
+                    {
+                        var sceneName = SceneManager.GetActiveScene().name;
+                        var savePath = DefaultSavePath(sceneName, cs);
 
-                    var capture = TakeObservationFromVolume(GetRandomObserveAreaAndSetActiveations(), cam);
-                    SaveImage(capture, savePath, GetFileName(capture));
-                    TookObservation();
-                    totalImages++;
-                    if (i % Mathf.Max(obsPerEnv, 1000) == 0)
-                    {
-                        print($"{(int)(((float)totalImages / totalImagesToMake) * 100)}% - " +
-                            $"{(int)(totalImages / (Time.time - startTime))} images per second - " +
-                            $"{totalImages}/{totalImagesToMake} are captured - " +
-                            $"capturing now {cs.renderWidth}x{cs.renderHeight} images");                        
+                        var capture = TakeObservationFromVolume(GetRandomObserveArea(currentEnvGroup), cam);
+                        SaveImage(capture, savePath, GetFileName(capture));
+                        TookObservation();
+                        totalImages++;
                     }
-                    if (i % obsPerEnv == 0)
-                    {
-                        environmentGenerator.RandomizeEnv(cam);
-                        yield return null;
-                    }
-                        
+                    print($"{(int)(((float)totalImages / totalImagesToMake) * 100)}% - " +
+                        $"{(int)(totalImages / (Time.time - startTime))} images per second - " +
+                        $"{totalImages}/{totalImagesToMake} are captured - " +
+                        $"capturing now {cs.renderWidth}x{cs.renderHeight} images");
+
+                    environmentGenerator.RandomizeEnv(cam);
+                    yield return null;
                 }
             }
         }
         print($"Capture completed, {totalImages} images generated in {Time.time - startTime}s");
-        for (int i = 0; i < 8; i++)        
+        for (int i = 0; i < 8; i++)
         {
-            myAS.Play();            
+            myAS.Play();
             yield return new WaitForSeconds(0.2f);
         }
         UnityEditor.EditorApplication.isPlaying = false;
