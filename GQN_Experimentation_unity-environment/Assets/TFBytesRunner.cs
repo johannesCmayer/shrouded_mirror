@@ -14,7 +14,7 @@ public class TFBytesRunner : MonoBehaviour {
         var session = new TFSession(graph);
         var runner = session.GetRunner();
         runner.Run()[0].GetValue();
-	}
+    }
 	
 	void Update ()
     {

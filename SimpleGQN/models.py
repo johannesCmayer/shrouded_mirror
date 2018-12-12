@@ -6,14 +6,14 @@ from util import product
 import numpy as np
 
 
-def get_gqn_encoder(picture_input_shape, coordinate_input_shape, num_layers, num_neurons_layer=1024, num_state_neurons=None, masking=True):
+def get_dc_gqn_encoder(picture_input_shape, coordinate_input_shape, num_layers, num_neurons_layer=1024, num_state_neurons=None, masking=True):
     num_state_neurons = num_state_neurons if num_state_neurons else num_neurons_layer
     picture_input = keras.Input(picture_input_shape, name='picture_input')
     coordinates_picture_input = keras.Input(coordinate_input_shape, name='coordinates_picture_input')
 
     x = Flatten()(picture_input)
     c = Flatten()(coordinates_picture_input)
-    x = Concatenate()([x, c])
+    x = Concatenate(name='encoder_dc_concat')([x, c])
     if masking:
         x = keras.layers.Masking(mask_value=0.0)(x)
     for _ in range(num_layers):
@@ -22,7 +22,7 @@ def get_gqn_encoder(picture_input_shape, coordinate_input_shape, num_layers, num
     return keras.Model([picture_input, coordinates_picture_input], output, name='gqn_encoder')
 
 
-def get_gqn_conv_encoder(picture_input_shape, coordinate_input_shape, num_layers, num_neurons_layer=1024, num_state_neurons=None, masking=True):
+def get_conv_gqn_encoder(picture_input_shape, coordinate_input_shape, num_layers, num_neurons_layer=1024, num_state_neurons=None, masking=True):
     num_state_neurons = num_state_neurons if num_state_neurons else num_neurons_layer
     picture_input = keras.Input(picture_input_shape, name='picture_input')
     coordinates_picture_input = keras.Input(coordinate_input_shape, name='coordinates_picture_input')
@@ -40,6 +40,7 @@ def get_gqn_conv_encoder(picture_input_shape, coordinate_input_shape, num_layers
     x = Concatenate()([x, expanded_coord])
     out_x = Conv2D(128, (3,3), (1,1), padding='same')(x)
     x = keras.layers.Add()([x, out_x])
+    # TODO Not implemented
 
 
 def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_layers, num_neurons_layer=1024):
@@ -53,8 +54,8 @@ def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_l
     return keras.Model(inputs=[state_input, coordinate_input], outputs=predictions, name='gqn_decoder')
 
 
-def get_multi_input_gqn_model(pictures_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=8,
-                              num_layers_decoder=6, num_neurons_per_layer=1024, num_state_neurons=512):
+def get_multi_input_gqn_model(pictures_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=6,
+                              num_layers_decoder=6, num_neurons_per_layer=2048, num_state_neurons=1024):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder
@@ -65,8 +66,8 @@ def get_multi_input_gqn_model(pictures_input_shape, coordinates_input_shape, num
     coordinates_picture_input = [keras.Input(coordinates_input_shape, name=f'coordinates_picture_input{i}') for i in range(num_input_observations)]
     querry_coordinates = keras.Input(coordinates_input_shape, name='querry_coordinates')
 
-    encoder = get_gqn_encoder(pictures_input_shape, coordinates_input_shape, num_layers_encoder,
-                              num_neurons_per_layer, num_state_neurons)
+    encoder = get_dc_gqn_encoder(pictures_input_shape, coordinates_input_shape, num_layers_encoder,
+                                 num_neurons_per_layer, num_state_neurons)
 
     encoded = [encoder([o, c]) for o, c in zip(picture_input, coordinates_picture_input)]
     if len(encoded) > 1:
@@ -88,7 +89,7 @@ def get_multi_input_gqn_model(pictures_input_shape, coordinates_input_shape, num
 def get_vae_loss(z_mean, z_log_sigma):
     def vae_loss(x, x_decoded_mean):
         xent_loss = keras.losses.binary_crossentropy(x, x_decoded_mean)
-        kl_loss = -0.5 * K.mean(1 + z_log_sigma - K.square(z_mean) - K.exp(z_log_sigma), axis=-1)
+        kl_loss = 0 # -0.5 * K.mean(1 + z_log_sigma - K.square(z_mean) - K.exp(z_log_sigma), axis=-1)
         return xent_loss + kl_loss
     return vae_loss
 
@@ -105,8 +106,8 @@ def get_latent_variable_gqn_model(pictures_input_shape, coordinates_input_shape,
     coordinates_picture_input = [keras.Input(coordinates_input_shape, name=f'coordinates_picture_input{i}') for i in range(num_input_observations)]
     querry_coordinates = keras.Input(coordinates_input_shape, name='querry_coordinates')
 
-    encoder = get_gqn_encoder(pictures_input_shape, coordinates_input_shape, num_layers_encoder,
-                              num_neurons_per_layer, num_state_neurons)
+    encoder = get_dc_gqn_encoder(pictures_input_shape, coordinates_input_shape, num_layers_encoder,
+                                 num_neurons_per_layer, num_state_neurons)
 
     encoded = [encoder([o, c]) for o, c in zip(picture_input, coordinates_picture_input)]
     if len(encoded) > 1:

@@ -19,8 +19,10 @@ run_config.yaml
 /models
 /summaries
 python/models
+/SimpleGQN/models
 python/summaries
 *events.out.tfevents.*
+\GQN_Experimentation_unity-environment\Assets\Graphs\LocalGraphs
 
 # Models
 *.hdf5

@@ -889,6 +889,47 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4806910494699766, guid: 53a46a102dd9eb043a6386e045572a2c,
     type: 2}
   m_PrefabInternal: {fileID: 1029645365}
+--- !u!1 &1246197386
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1246197388}
+  - component: {fileID: 1246197387}
+  m_Layer: 0
+  m_Name: Runner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1246197387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1246197386}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d339be2fcdc58534c9790131bc555534, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bytesGraph: {fileID: 4900000, guid: 1ec213f31f9957145a3c0561fe546f1a, type: 3}
+--- !u!4 &1246197388
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1246197386}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 318.56482, y: -402.21637, z: 675.75745}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 6
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1310930891 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,

@@ -30,7 +30,7 @@ import models
 from util import product
 from models import get_multi_input_gqn_model, simple_conv_model, get_latent_variable_gqn_model
 import gc
-
+from tensorflow.python.tools import freeze_graph
 
 print(f'started execution at {datetime.datetime.now()}')
 
@@ -286,6 +286,35 @@ def generate_data(network_inputs, num_input_observations, data_composition_multi
     return images_1, coordinates_1, image_2, coordinates_2
 
 
+def freeze_session(session, keep_var_names=None, output_names=None, clear_devices=True):
+    """
+    Freezes the state of a session into a pruned computation graph.
+
+    Creates a new computation graph where variable nodes are replaced by
+    constants taking their current value in the session. The new graph will be
+    pruned so subgraphs that are not necessary to compute the requested
+    outputs are removed.
+    @param session The TensorFlow session to be frozen.
+    @param keep_var_names A list of variable names that should not be frozen,
+                          or None to freeze all the variables in the graph.
+    @param output_names Names of the relevant graph outputs.
+    @param clear_devices Remove the device directives from the graph for better portability.
+    @return The frozen graph definition.
+    """
+    graph = session.graph
+    with graph.as_default():
+        freeze_var_names = list(set(v.op.name for v in tf.global_variables()).difference(keep_var_names or []))
+        output_names = output_names or []
+        output_names += [v.op.name for v in tf.global_variables()]
+        input_graph_def = graph.as_graph_def()
+        if clear_devices:
+            for node in input_graph_def.node:
+                node.device = ""
+        frozen_graph = tf.graph_util.convert_variables_to_constants(
+            session, input_graph_def, output_names, freeze_var_names)
+        return frozen_graph
+
+
 def train_model_pregen(network_inputs, num_input_observations, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
                        data_composition_multiplier=10, data_recomposition_frequency=1, log_frequency=10,
                        save_frequency = 30):
@@ -295,6 +324,8 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
     checkpoint_save_path = return_mkdir(f'{model_dir}\\checkpoints') + f'\\{model_name}.checkpoint'
     final_save_path = return_mkdir(f'{model_dir}\\final') + f'\\{model_name}.hdf5'
     meta_data_save_path = return_mkdir(f'{model_dir}\\meta_data\\') + f'{model_name}.modelmeta'
+    pb_save_path_base_dir = return_mkdir(f'{model_dir}\\pb_models\\')
+    pb_model_name = f'{model_name}' + '.bytes'
 
     print(f'model name: {model_name}')
     with AsyncKeyChecker('q') as kc:
@@ -318,6 +349,9 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
         model_to_train.save(final_save_path)
         with open(meta_data_save_path, 'w') as f:
             json.dump(model_to_train.to_json(), f)
+
+        f_graph = freeze_session(keras.backend.get_session(), output_names=[out.op.name for out in model_to_train.outputs])
+        tf.train.write_graph(f_graph, pb_save_path_base_dir, pb_model_name, as_text=False)
     winsound.Beep(280, 300)
     return model_to_train
 
@@ -497,7 +531,7 @@ if __name__ == '__main__':
         model_load_path = get_model_load_path(name_parameters['name'], name_parameters['id'])
     data_dirs_arg = {'num_envs_to_load': None, 'num_data_from_env': None}
     if run_spec['fast_debug_mode']:
-        data_dirs_arg = {'num_envs_to_load': 10, 'num_data_from_env': 10}
+        data_dirs_arg = {'num_envs_to_load': 100, 'num_data_from_env': 100}
 
     unnormalized_environment_data = \
         get_data_for_environments(data_dirs_path, **data_dirs_arg)

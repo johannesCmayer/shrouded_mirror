@@ -164,11 +164,11 @@ class CharacterController:
     def __init__(self, center_pos=(0, 1.5, 0)):
         self.center_pos = np.asarray(center_pos)
         self.raw_current_position = np.array(self.center_pos)
-        self.current_position_offset = np.asarray((0,0,0))
+        self.current_position_offset = np.asarray((0, 0, 0))
         self.current_y_rotation = 0
         self.prev_time = 0
-        self.move_speed = 0.8
-        self.rotate_speed = 0.8
+        self.move_speed = 0.3
+        self.rotate_speed = 0.4
         self.mouse_rotate_speed = 0.001
 
         self.y_move_after_time = True
