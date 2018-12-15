@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Net;
+using System.Net.Sockets;
 
 public class Util {
 
@@ -16,5 +18,18 @@ public class Util {
     public Vector3 GetRandomPointInAxisAlignedCube(Transform cubeTransform, Vector3 offset)
     {
         return GetRandomPointInAxisAlignedCube(cubeTransform) + offset;
+    }
+
+    public static Socket GetLocalUDPReceiverSocket(int port)
+    {
+        var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+        receiver.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+        IPHostEntry ipHostEntry = Dns.GetHostByName("localhost");
+        IPAddress iPAddress = ipHostEntry.AddressList[1];
+        IPEndPoint endpoint = new IPEndPoint(iPAddress, port);
+
+        receiver.Bind(endpoint);
+        return receiver;
     }
 }

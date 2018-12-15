@@ -23,21 +23,10 @@ public class ImageReceiver : MonoBehaviour {
     {
         streamTexture = new Texture2D(64, 64, TextureFormat.RGBA32, false);
         matToStreamTo.mainTexture = streamTexture;
-        receiver = GetLocalUDPSocket(port);
+        receiver = Util.GetLocalUDPReceiverSocket(port);
 	}
 
-    Socket GetLocalUDPSocket(int port)
-    {
-        var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        receiver.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-
-        IPHostEntry ipHostEntry = Dns.GetHostByName("localhost");
-        IPAddress iPAddress = ipHostEntry.AddressList[1];
-        IPEndPoint endpoint = new IPEndPoint(iPAddress, port);
-
-        receiver.Bind(endpoint);
-        return receiver;
-    }
+    
 	
 	// Update is called once per frame
 	void Update ()
@@ -53,7 +42,7 @@ public class ImageReceiver : MonoBehaviour {
             {
                 var item = pix[i];
                 var combPixVal = item.a + item.g + item.b;
-                if (combPixVal < 400)
+                if (combPixVal < 10)
                     newPix[i] = new Color32(255, 255, 255, 0);
                 else
                     newPix[i] = pix[i];

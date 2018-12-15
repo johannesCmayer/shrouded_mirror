@@ -214,6 +214,7 @@
     <Compile Include="Assets\Scripts\IntVector.cs" />
     <Compile Include="Assets\Scripts\ObserveArea.cs" />
     <Compile Include="Assets\Scripts\QuaternionVisualiserCube.cs" />
+    <Compile Include="Assets\Scripts\SendPositonToPython.cs" />
     <Compile Include="Assets\Scripts\SetScaleAxisToZeroIfClose.cs" />
     <Compile Include="Assets\Scripts\TakeObservation.cs" />
     <Compile Include="Assets\Scripts\TFBytesRunner.cs" />

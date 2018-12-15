@@ -260,6 +260,8 @@ namespace UnityStandardAssets.Characters.FirstPerson
             {
                 m_Jumping = false;
             }
+            m_Jumping = false;
+            m_IsGrounded = true;
         }
     }
 }

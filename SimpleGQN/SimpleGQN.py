@@ -432,12 +432,33 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     observation_inputs = get_random_observation_input_list()
     masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
 
-    character_controller = CharacterController(center_pos=(0, 1.5, 0) / max_pos_val)
+    def get_unity_position():
+        UDP_IP = '127.0.0.1'
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(1)
+        sock.bind((UDP_IP, 9797))
+        pos = (0,0,0)
+        rot = (1,0,0,0)
+        try:
+            data, _ = sock.recvfrom(1024)
+            data = data.decode('UTF-8')
+            pos, rot = data.split('_')
+            pos = [float(x) for x in pos.split(', ')]
+            rot = [float(x) for x in rot.split(', ')]
+        except socket.timeout:
+            print('socket timed out, no coordinates received')
+        return pos, rot
+
     if (run_pygame):
         img_drawer = ImgDrawer(window_size)
+        character_controller = CharacterController(center_pos=(0, 1.5, 0) / max_pos_val)
     for i in music.infinity():
-        coordinate_input = np.asarray([network_inputs_from_coordinates_single(character_controller.current_position,
-                                                                   character_controller.current_rotation_quaternion)])
+        if (run_pygame):
+            pos, rot = character_controller.current_position, character_controller.current_rotation_quaternion
+        else:
+            pos, rot = get_unity_position()
+
+        coordinate_input = np.asarray([network_inputs_from_coordinates_single(pos, rot)])
         output_img = model.predict([*masked_observation_inputs[0], *masked_observation_inputs[1], coordinate_input])
         output_img = np.reshape(output_img[0], img_data_shape)
 
