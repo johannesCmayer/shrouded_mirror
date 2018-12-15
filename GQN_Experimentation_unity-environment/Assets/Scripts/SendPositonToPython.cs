@@ -4,10 +4,19 @@ using UnityEngine;
 using System.Net.Sockets;
 using System.Text;
 using System.Net;
+using System.Linq;
+using System;
+using System.Globalization;
 
 public class SendPositonToPython : MonoBehaviour {
 
     public int port = 9797;
+
+    public string readPosRotFromThis;
+    string prevReadPosRotFromThis;
+
+    public string sendDataPos;
+    public string sendDataRot;
 
     Socket sendSock;
     IPEndPoint endpoint;
@@ -21,11 +30,25 @@ public class SendPositonToPython : MonoBehaviour {
         IPAddress iPAddress = ipHostEntry.AddressList[1];
         endpoint = new IPEndPoint(iPAddress, port);
     }
-	
-	// Update is called once per frame
-	void Update ()
+
+    // Update is called once per frame
+    void Update()
     {
-        var data = transform.position.ToPreciseString() + "_" + transform.rotation.ToPreciseString();
-        sendSock.SendTo(Encoding.UTF8.GetBytes(data), endpoint);
+        if (prevReadPosRotFromThis != readPosRotFromThis && readPosRotFromThis != "")
+        {
+            var posRot = readPosRotFromThis.Split('_');
+            var pos = posRot[0].Split(new[] { ", " }, StringSplitOptions.None)
+                .Select(x => float.Parse(x, CultureInfo.InvariantCulture.NumberFormat)).ToArray().ArrayToVector3();
+            var rot = posRot[1].Split(new[] { ", " }, StringSplitOptions.None)
+                .Select(x => float.Parse(x, CultureInfo.InvariantCulture.NumberFormat));
+        }
+
+        sendDataPos = transform.position.ToPreciseString();        
+        sendDataRot = Util.JoinToString(Util.RotationEncoding(transform.rotation));
+
+        var sendData = Encoding.UTF8.GetBytes(sendDataPos + "_" + sendDataRot);
+        sendSock.SendTo(sendData, endpoint);
     }
+
+    
 }

@@ -181,7 +181,7 @@ public class TakeObservation : MonoBehaviour {
     public string GetFileName(CaptureData obs)
     {
         var currentUTCTime = System.DateTime.UtcNow.ToString("yyyy-MM-dd-hh-mm-ss-fffffff-(zz)");
-        return $@"{ obs.position.ToPreciseString()}_{ obs.rotation.ToPreciseString()}_{ currentUTCTime}.png";
+        return $@"{ obs.position.ToPreciseString()}_{Util.JoinToString(Util.RotationEncoding(obs.rotation))}_{ currentUTCTime}.png";
     }
 
     public void SaveImage(CaptureData obs, string saveDir, string fileName)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 public class Util {
 
@@ -31,5 +32,34 @@ public class Util {
 
         receiver.Bind(endpoint);
         return receiver;
+    }
+
+    public static float[] RotationEncoding(Quaternion rotation)
+    {
+        var eulerAngles = rotation;
+        var data = new[] {
+            Mathf.Sin(eulerAngles.x), Mathf.Cos(eulerAngles.x),
+            Mathf.Sin(eulerAngles.y), Mathf.Cos(eulerAngles.y),
+            Mathf.Sin(eulerAngles.z), Mathf.Cos(eulerAngles.z)
+        };
+        return data;
+    }
+
+    public static Quaternion RotationDecoding(IList list)
+    {
+        return Quaternion.identity;
+    }
+
+    public static string JoinToString(IList list, string seperator = ", ")
+    {
+        var sb = new StringBuilder();
+        for (int i = 0; i < list.Count; i++)
+        {
+            var dp = list[i];
+            sb.Append(dp.ToString());
+            if (i < list.Count - 1)
+                sb.Append(seperator);
+        }
+        return sb.ToString();
     }
 }

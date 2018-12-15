@@ -56,6 +56,8 @@ public class ImageReceiver : MonoBehaviour {
     {
         if (Event.current.type.Equals(EventType.Repaint))
         {
+            streamTexture.anisoLevel = 0;
+            streamTexture.filterMode = FilterMode.Point;
             Graphics.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), streamTexture, drawTextureMaterial);
         }
     }

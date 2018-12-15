@@ -215,35 +215,38 @@ def rgba_to_black_n_white(img):
 def get_random_observation_inputs(network_inputs, number_of_observations=1):
     return random.choices(random.choice(network_inputs)[0], k=number_of_observations)
 
+class EnvDataNormalizer:
+    def __init__(self, unnormalized_environment_data):
+        self.img_max, self.pos_max, self.rot_max = self._get_max_env_data_values(unnormalized_environment_data)
 
-def get_max_env_data_values(environment_data):
-    max_img, max_pos, max_rot = 0, 0, 0
-    for e in environment_data:
-        im, pos, rot = e
-        max_img = max(np.max(im), max_img)
-        max_pos = max(np.max(pos), max_pos)
-        max_rot = max(np.max(rot), max_rot)
-    return max_img, max_pos, max_rot
+    def _get_max_env_data_values(self, environment_data):
+        max_img, max_pos, max_rot = 0, 0, 0
+        for e in environment_data:
+            im, pos, rot = e
+            max_img = max(np.max(im), max_img)
+            max_pos = max(np.max(pos), max_pos)
+            max_rot = max(np.max(rot), max_rot)
+        return max_img, max_pos, max_rot
 
+    def normalize_envirenment_data_sigle(self, pos, rot):
+        return pos / self.pos_max, rot / self.rot_max
 
-def normalize_environment_data(environment_data):
-    max_img, max_pos, max_rot = get_max_env_data_values(environment_data)
-    return [(img / max_img, pos / max_pos, rot / max_rot) for img, pos, rot in environment_data]
+    def normalize_environment_data(self, environment_data):
+        return [(img / self.img_max, pos / self.pos_max, rot / self.rot_max) for img, pos, rot in environment_data]
 
-
-def unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=False, flatten_images=True):
-    envs_data = []
-    for env in normalize_environment_data(unnormalized_environment_data):
-        images, poss, rots = env
-        if black_n_white:
-            images = [rgba_to_black_n_white(img) for img in images]
-        else:
-            images = [rgba_to_rgb(img) for img in images]
-        if flatten_images:
-            images = [np.reshape(img, product(np.shape(img))) for img in images]
-        coordinates = [network_inputs_from_coordinates_single(pos, rot) for pos, rot in zip(poss, rots)]
-        envs_data.append((np.asarray(images), np.asarray(coordinates)))
-    return envs_data
+    def unnormal_data_to_network_input(self, unnormalized_environment_data, black_n_white=False, flatten_images=True):
+        envs_data = []
+        for env in self.normalize_environment_data(unnormalized_environment_data):
+            images, poss, rots = env
+            if black_n_white:
+                images = [rgba_to_black_n_white(img) for img in images]
+            else:
+                images = [rgba_to_rgb(img) for img in images]
+            if flatten_images:
+                images = [np.reshape(img, product(np.shape(img))) for img in images]
+            coordinates = [network_inputs_from_coordinates_single(pos, rot) for pos, rot in zip(poss, rots)]
+            envs_data.append((np.asarray(images), np.asarray(coordinates)))
+        return envs_data
 
 
 def return_mkdir(path):
@@ -395,9 +398,9 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         x=int(window_size[0] * window_size_coef),
         y=int(window_size[1] * window_size_coef))
 
-    _, max_pos_val, max_rot_val = get_max_env_data_values(unnormalized_environment_data)
+    normalizer = EnvDataNormalizer(unnormalized_environment_data)
     orig_img_data_shape = np.shape(unnormalized_environment_data[0][0][0])
-    network_inputs = unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=black_n_white,
+    network_inputs = normalizer.unnormal_data_to_network_input(unnormalized_environment_data, black_n_white=black_n_white,
                                                     flatten_images=False) #if
                                                     #any([model_to_generate == x for x in ['conv', 'multi']]) else True)
     img_data_shape = orig_img_data_shape[0], orig_img_data_shape[1]
@@ -432,31 +435,39 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     observation_inputs = get_random_observation_input_list()
     masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
 
-    def get_unity_position():
+    def get_unity_position(env_data_normalizer):
         UDP_IP = '127.0.0.1'
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.settimeout(1)
+        sock.settimeout(10)
         sock.bind((UDP_IP, 9797))
         pos = (0,0,0)
         rot = (1,0,0,0)
-        try:
-            data, _ = sock.recvfrom(1024)
-            data = data.decode('UTF-8')
-            pos, rot = data.split('_')
-            pos = [float(x) for x in pos.split(', ')]
-            rot = [float(x) for x in rot.split(', ')]
-        except socket.timeout:
-            print('socket timed out, no coordinates received')
+        while True:
+            try:
+                data, _ = sock.recvfrom(1024)
+                data = data.decode('UTF-8')
+                pos, rot = data.split('_')
+                pos = [float(x) for x in pos.split(', ')]
+                rot = [float(x) for x in rot.split(', ')]
+                break
+            except socket.timeout:
+                print('socket timed out, no coordinates received, restarting receive')
+        pos, rot = env_data_normalizer.normalize_envirenment_data_sigle(pos, rot)
         return pos, rot
 
+    #with AsyncKeyChecker('q') as ac:
     if (run_pygame):
         img_drawer = ImgDrawer(window_size)
-        character_controller = CharacterController(center_pos=(0, 1.5, 0) / max_pos_val)
+        #character_controller = CharacterController(center_pos=(0, 1.5, 0) / max_pos_val)
     for i in music.infinity():
+        # if ac.key_was_pressed:
+        #     return model
+
         if (run_pygame):
-            pos, rot = character_controller.current_position, character_controller.current_rotation_quaternion
+            print('Character controller needs to be updated new rot format')
+            #pos, rot = character_controller.current_position, character_controller.current_rotation_quaternion
         else:
-            pos, rot = get_unity_position()
+            pos, rot = get_unity_position(normalizer)
 
         coordinate_input = np.asarray([network_inputs_from_coordinates_single(pos, rot)])
         output_img = model.predict([*masked_observation_inputs[0], *masked_observation_inputs[1], coordinate_input])
@@ -483,6 +494,8 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
 
         print("send img")
         send_udp_local(get_jpeg_bytes(), udp_image_send_port)
+
+
 
         if run_pygame:
             img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
