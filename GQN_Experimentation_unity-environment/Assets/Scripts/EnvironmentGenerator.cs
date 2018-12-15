@@ -98,8 +98,9 @@ public class EnvironmentGenerator : MonoBehaviour {
                     if (randEnvObjRotation)
                         newEnvObj.transform.rotation = Random.rotation;
                     if (randEnvObjScale)
-                        newEnvObj.transform.localScale = GetRandomVec3(environmentObjectsMinScale, environmentObjectsMaxScale)
-                                                        .CompWiseMult(newEnvObj.transform.localScale);
+                        throw new System.Exception("NEEDS FIX");
+                        //newEnvObj.transform.localScale = GetRandomVec3(environmentObjectsMinScale, environmentObjectsMaxScale)
+                        //                                .CompWiseMult(newEnvObj.transform.localScale);
                     if (randEnvObjColor)
                         SetRandomColor(newEnvObj);
                     environmentalObjects.Add(newEnvObj);

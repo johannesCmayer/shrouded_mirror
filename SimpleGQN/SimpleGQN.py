@@ -1,36 +1,41 @@
-import os
+import os, io
 import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.layers import Conv2D, UpSampling2D, MaxPooling2D, Dense, Concatenate, Flatten, Reshape
 import numpy as np
-from scipy import misc
 import glob
-import matplotlib.pyplot as plt
-from util import ImgDrawer, Spinner, AsyncKeyChecker, CharacterController
 import ntpath
 import pygame
 import datetime
-import time
 import random
-from typing import Dict
 import collections
-import keyboard
 import winsound
 import names
 import json
 import pprint
 import math
-import logging
 import functools
-import multiprocessing
-import music
-import gqn
-import yaml
-import models
-from util import product
-from models import get_multi_input_gqn_model, simple_conv_model, get_latent_variable_gqn_model
 import gc
+import yaml
+import socket
+from PIL import Image
+from tensorflow import keras
 from tensorflow.python.tools import freeze_graph
+from scipy import misc
+from typing import Dict
+
+import music
+from util import (
+    ImgDrawer,
+    Spinner,
+    AsyncKeyChecker,
+    CharacterController,
+    product
+)
+from models import (
+    get_multi_input_gqn_model,
+    simple_conv_model,
+    get_latent_variable_gqn_model,
+)
+
 
 print(f'started execution at {datetime.datetime.now()}')
 
@@ -368,7 +373,8 @@ def mask_observation_inputs(obs_inputs, num_to_mask):
 def run(unnormalized_environment_data, num_input_observations, model_save_file_path, model_to_generate,
         model_to_train=None, model_load_file_path=None, train=True, epochs=100, batch_size=None,
         data_multiplier=10, log_frequency=10, save_frequency = 30, run_environment=True, black_n_white=True,
-        window_size=(1200, 600), window_size_coef=1, additional_meta_data={}, save_model=True):
+        window_size=(1200, 600), window_size_coef=1, additional_meta_data={}, save_model=True, fast_debug_mode=False,
+        run_pygame=False, udp_image_send_port=None):
     '''
     Run the main Programm
     :param data_dirs: the directory containing the training data.
@@ -415,9 +421,6 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     if not run_environment:
         return
 
-    character_controller = CharacterController(center_pos=(0,1.5,0) / max_pos_val)
-    img_drawer = ImgDrawer(window_size)
-
     def get_random_observation_input_list():
         env_idx = random.choice(np.arange(len(network_inputs)))
         env = network_inputs[env_idx]
@@ -428,7 +431,11 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     num_unmask_inputs = 1
     observation_inputs = get_random_observation_input_list()
     masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
-    while True:
+
+    character_controller = CharacterController(center_pos=(0, 1.5, 0) / max_pos_val)
+    if (run_pygame):
+        img_drawer = ImgDrawer(window_size)
+    for i in music.infinity():
         coordinate_input = np.asarray([network_inputs_from_coordinates_single(character_controller.current_position,
                                                                    character_controller.current_rotation_quaternion)])
         output_img = model.predict([*masked_observation_inputs[0], *masked_observation_inputs[1], coordinate_input])
@@ -441,37 +448,53 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
             output_img = 255 * output_img / np.max(output_img)
             image_inputs_drawable = [np.reshape(obs_input, img_data_shape) * 255 for obs_input in masked_observation_inputs[0]]
 
-        img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
-        for i, o in enumerate(image_inputs_drawable):
-            size = (window_size.x // 8, window_size.y // 4)
-            origin_pos = (window_size.x // 2, 0)
-            image_columns = 4
-            offset = (size[0] * (i % image_columns), size[1]*(i // image_columns))
-            pos = (origin_pos[0] + offset[0], origin_pos[1] + offset[1])
-            img_drawer.draw_image(o, size=size, position=pos)
+        def get_jpeg_bytes():
+            im = Image.fromarray(np.uint8(output_img))
+            buffer = io.BytesIO()
+            im.save(buffer, 'jpeg')
+            return buffer.getvalue()
 
-        text_orig_pos = (window_size.x // 2 + 10, window_size.y // 2 + 10)
-        img_drawer.draw_text_auto_pos(f'{str(character_controller.current_position * max_pos_val)} '
-                             f'max position {max_pos_val}', text_orig_pos)
-        img_drawer.draw_text_auto_pos(str(character_controller.current_rotation_quaternion), text_orig_pos)
-        img_drawer.draw_text_auto_pos(os.path.basename(model_save_file_path), text_orig_pos)
+        def send_udp_local(msg, port):
+            UDP_IP = '127.0.0.1'
+            MESSAGE = msg
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.sendto(MESSAGE, (UDP_IP, port))
 
-        img_drawer.execute()
-        character_controller.movement_update()
+        print("send img")
+        send_udp_local(get_jpeg_bytes(), udp_image_send_port)
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                pygame.quit()
-                return model
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_MINUS:
-                num_unmask_inputs = max(num_unmask_inputs - 1, 0)
-                masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_PLUS:
-                num_unmask_inputs = min(num_unmask_inputs + 1, num_input_observations)
-                masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_ENTER:
-                observation_inputs = get_random_observation_input_list()
-                masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
+        if run_pygame:
+            img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
+            for i, o in enumerate(image_inputs_drawable):
+                size = (window_size.x // 8, window_size.y // 4)
+                origin_pos = (window_size.x // 2, 0)
+                image_columns = 4
+                offset = (size[0] * (i % image_columns), size[1]*(i // image_columns))
+                pos = (origin_pos[0] + offset[0], origin_pos[1] + offset[1])
+                img_drawer.draw_image(o, size=size, position=pos)
+
+            text_orig_pos = (window_size.x // 2 + 10, window_size.y // 2 + 10)
+            img_drawer.draw_text_auto_pos(f'{str(character_controller.current_position * max_pos_val)} '
+                                 f'max position {max_pos_val}', text_orig_pos)
+            img_drawer.draw_text_auto_pos(str(character_controller.current_rotation_quaternion), text_orig_pos)
+            img_drawer.draw_text_auto_pos(os.path.basename(model_save_file_path), text_orig_pos)
+
+            img_drawer.execute()
+            character_controller.movement_update()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                    pygame.quit()
+                    return model
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_MINUS:
+                    num_unmask_inputs = max(num_unmask_inputs - 1, 0)
+                    masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_PLUS:
+                    num_unmask_inputs = min(num_unmask_inputs + 1, num_input_observations)
+                    masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_ENTER:
+                    observation_inputs = get_random_observation_input_list()
+                    masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
 
 
 def get_data_dir(data_dir_name, resolution_string):
@@ -545,14 +568,14 @@ if __name__ == '__main__':
         'model_save_file_path': model_save_path,
         'window_size': data_spec['window_resolution'],
         'save_model': not run_spec['fast_debug_mode'],
-        **param_spec
+        **param_spec,
+        **run_spec
     }
     print('\nparams')
     pprint.pprint(run_params, depth=1, compact=True)
     print()
 
     trained_model = run(**run_params)
-    #save_dict(model_save_path, run_params, ['unnormalized_environment_data', 'model_to_train'])
 
     run_params['model_to_train'] = trained_model
     run_params['model_save_file_path'] = models_dir + \
@@ -561,6 +584,5 @@ if __name__ == '__main__':
 
     while True:
         run(**run_params)
-        #save_dict(model_save_path, run_params, ['unnormalized_environment_data'])
         run_params['model_save_file_path'] = models_dir + \
                                              generate_model_name(env_name, run_params['model_save_file_path'])

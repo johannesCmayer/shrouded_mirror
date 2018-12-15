@@ -19,7 +19,7 @@ public class StateObject
 public class DQN_Screen : MonoBehaviour {
 
     public Texture2D testTex;
-    public int port = 5005;
+    public int port = 6005;
 
     StateObject state = new StateObject();
 
