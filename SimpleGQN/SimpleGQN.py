@@ -462,7 +462,8 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
             #character_controller = CharacterController(center_pos=(0, 1.5, 0) / max_pos_val)
         for i in music.infinity():
             if ac.key_was_pressed:
-                print('async keychecker triggered')
+                pass
+                #print('async keychecker triggered')
 
             if (run_pygame):
                 print('Character controller needs to be updated new rot format')

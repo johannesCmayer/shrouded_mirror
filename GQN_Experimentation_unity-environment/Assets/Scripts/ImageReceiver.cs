@@ -99,13 +99,13 @@ public class ImageReceiver : MonoBehaviour {
         {
             for (int xpos = 0; xpos < newXDim; xpos++)
             {
-                var pixIdx = ypos * width * (width / newXDim) + xpos * (height / newYDim);
+                var pixIdx = ypos * width * (height / newYDim) + xpos * (width / newXDim);
                 var newPixIdex = ypos * newXDim + xpos;
                 var combPixVal = currentPixels[pixIdx].r + currentPixels[pixIdx].g + currentPixels[pixIdx].b;
                 if (combPixVal < 1 || 
                     currentPixels[pixIdx].r > redCutoffValue &&
-                    currentPixels[pixIdx].r == 0 &&
-                    currentPixels[pixIdx].r == 0)
+                    currentPixels[pixIdx].g < 10 &&
+                    currentPixels[pixIdx].b < 10)
                 {
                     newPixels[newPixIdex] = new Color32(0, 255, 0, 0);
                 }
@@ -122,13 +122,6 @@ public class ImageReceiver : MonoBehaviour {
         newTex.Apply();
         return newTex;
     }
-
-    private void OnPreRender()
-    {
-        
-        renderTexture.filterMode = FilterMode.Point;
-    }
-
 
     private void OnPostRender()
     {
