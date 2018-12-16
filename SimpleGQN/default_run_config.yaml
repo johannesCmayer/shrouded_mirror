@@ -24,6 +24,12 @@ data_dirs:
     - &dd_10 GQN_SimpleRoom_colorchange-skyandwalls
     - &dd_11 1_GQN_SR_rand_sky+walls(samecolor)
     - &dd_12 WS-3-ChangingObjectunity
+    - &dd_13 WS-4-goodTextures
+    - &dd_14 WS-5-FloorTex+
+    - &dd_15 ObjectInvariance_1
+    - &dd_16 ObjectInvariance_2_moreSticks
+    - &dd_17 WS-6-Ceaner
+    - &dd_18 WS-6-Ceaner_NF
 
 model_paths:
   - &mp_0  ~
@@ -37,30 +43,33 @@ model_paths:
   - &mp_8  date=2018-11-11_time=08-29-17-546315_name=Nina-Flores_version=1_id=7394.hdf5
   - &mp_9  date=2018-11-11_time=08-53-34-708542_name=Darin-Brown_version=2_id=1107.hdf5
   - &mp_10 date=2018-11-11_time=19-13-35-540088_name=Joseph-Howell_version=1_id=9420.hdf5
+  - &mp_11 date=2018-12-08_time=16-30-40-306150_env=WS-3-ChangingObjectunity_name=Ruth-Baron_version=1_id=9170
+  - &mp_12 date=2018-12-08_time=22-03-09-435703_env=WS-5-FloorTex+_name=Jesse-Mcwethy_version=5_id=6807
+  - &mp_13 date=2018-12-09_time=00-15-02-616311_env=WS-5-FloorTex+_name=Herbert-Rodriguez_version=2_id=3434
+  - &mp_14 date=2018-12-10_time=17-01-00-586787_env=WS-6-Ceaner_name=Dana-Guffey_version=4_id=8459
+  - &mp_15 date=2018-12-15_time=20-08-25-512816_env=WS-6-Ceaner-NF_name=Jerry-Higgins_version=1_id=1818
 
 param_spec:
   model_to_generate:      multi    # to generate if no model loaded
   num_input_observations: 4
-  epochs:                 6
+  epochs:                 1
   batch_size:             32
-  data_multiplier:        1
+  data_multiplier:        0.3
   log_frequency:          10
   save_frequency:         30
-  run_environment:        true
   train:                  true
   black_n_white:          false
 
 data_spec:
   model_load_path:        *mp_0
-  data_dir:               *dd_12
+  data_dir:               *dd_18
   image_resolution:       *ir_32
   window_resolution:      *hdp
 
 run_spec:
   fast_debug_mode:        false    # load less data and dont save model
-
-
-
-
+  run_environment:        true
+  run_pygame:             false
+  udp_image_send_port:    8686
 
 
