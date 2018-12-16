@@ -26,12 +26,11 @@ public class SendPositonToPython : MonoBehaviour {
         sendSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         sendSock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-        IPHostEntry ipHostEntry = Dns.GetHostByName("localhost");
-        IPAddress iPAddress = ipHostEntry.AddressList[1];
-        endpoint = new IPEndPoint(iPAddress, port);
+        IPHostEntry hostEntry = Dns.GetHostEntry("localhost");
+        IPAddress ipAddress = hostEntry.AddressList[1];
+        endpoint = new IPEndPoint(ipAddress, port);
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (prevReadPosRotFromThis != readPosRotFromThis && readPosRotFromThis != "")

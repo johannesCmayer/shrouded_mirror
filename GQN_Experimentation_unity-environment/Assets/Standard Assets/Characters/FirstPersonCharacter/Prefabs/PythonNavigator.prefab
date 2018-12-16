@@ -110,8 +110,8 @@ Camera:
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
   m_TargetEye: 3
-  m_HDR: 0
-  m_AllowMSAA: 1
+  m_HDR: 1
+  m_AllowMSAA: 0
   m_AllowDynamicResolution: 0
   m_ForceIntoRT: 0
   m_OcclusionCulling: 1
@@ -220,8 +220,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   port: 8686
+  nnScreenSize: {x: 32, y: 32}
   matToStreamTo: {fileID: 2100000, guid: 9e650a38ba7a3ec4885a176f872a4fe9, type: 2}
-  drawTextureMaterial: {fileID: 2100000, guid: d4f615b57c101ae438ec3ecadcdaef6f, type: 2}
+  cutAwayMaterial: {fileID: 2100000, guid: 92b9b558c16f0dd409cea2e74f9e8651, type: 2}
+  blitMaterial: {fileID: 2100000, guid: 49ec36929f2f6fc45a127b0f6e137258, type: 2}
 --- !u!114 &114396978677436150
 MonoBehaviour:
   m_ObjectHideFlags: 1

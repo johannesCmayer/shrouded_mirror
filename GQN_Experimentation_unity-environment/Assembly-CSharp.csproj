@@ -60,6 +60,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\ApplyCutAwayMaterial.cs" />
     <Compile Include="Assets\ML-Agents\Examples\3DBall\Scripts\Ball3DAcademy.cs" />
     <Compile Include="Assets\ML-Agents\Examples\3DBall\Scripts\Ball3DAgent.cs" />
     <Compile Include="Assets\ML-Agents\Examples\3DBall\Scripts\Ball3DDecision.cs" />
@@ -206,6 +207,7 @@
     <Compile Include="Assets\SampleScenes\Scripts\PlaceTargetWithMouse.cs" />
     <Compile Include="Assets\SampleScenes\Scripts\SlowMoButton.cs" />
     <Compile Include="Assets\Scripts\ColorManager.cs" />
+    <Compile Include="Assets\Scripts\CultureSetter.cs" />
     <Compile Include="Assets\Scripts\DeactivateMeshAtRuntime.cs" />
     <Compile Include="Assets\Scripts\DQN_Screen.cs" />
     <Compile Include="Assets\Scripts\Environment.cs" />

@@ -5,6 +5,7 @@ using System.IO;
 using UnityEngine.SceneManagement;
 using System.Linq;
 using System.Threading;
+using System.Globalization;
 
 [System.Serializable]
 public class EnvironmentGroup
@@ -87,11 +88,6 @@ public class TakeObservation : MonoBehaviour {
             basePath = overwriteBasePath;
         return CreateDirectoryIfNotExists($@"{basePath}\trainingData\{sceneName}\" +
                                           $@"{cs.renderWidth}x{cs.renderHeight}\{environmentGenerator.EnvironmentID}");
-    }
-
-    private void Awake()
-    {
-        Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
     }
 
     void Start()

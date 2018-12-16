@@ -6,29 +6,29 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
+using UnityEngine.Rendering;
 
 public class ImageReceiver : MonoBehaviour {
 
-    public int port = 8686;
+    public int streamReceivePort = 8686;
+    public bool updateNNScreenSizeToMatchStream = true;
+    public int nnScreenSizeX = 32;
+    public int nnScreenSizeY = 32;
 
-    public Material matToStreamTo;
-    public Material drawTextureMaterial;
+    [Range(0, 255)]
+    public int redCutoffValue = 250;
+    public Material blitMaterial;
     Texture2D streamTexture;
     Socket receiver;
-
-    RenderTexture mainSceneRT;
-    RenderTexture streamRenderTexture;
-
+    
     void Start ()
     {
-        streamTexture = new Texture2D(64, 64, TextureFormat.RGBA32, false);
-        matToStreamTo.mainTexture = streamTexture;
-        receiver = Util.GetLocalUDPReceiverSocket(port);
+        streamTexture = new Texture2D(nnScreenSizeX, nnScreenSizeY, TextureFormat.RGBA32, false);
+        streamTexture.filterMode = FilterMode.Point;
+        receiver = Util.GetLocalUDPReceiverSocket(streamReceivePort);
+        Screen.SetResolution(nnScreenSizeX, nnScreenSizeY, false);
 	}
-
     
-	
-	// Update is called once per frame
 	void Update ()
     {
         if (receiver.Poll(100, SelectMode.SelectRead))
@@ -37,42 +37,45 @@ public class ImageReceiver : MonoBehaviour {
             var msg = receiver.Receive(buffer);
             streamTexture.LoadImage(buffer);
             var pix = streamTexture.GetPixels32();
-            var newPix = new Color32[pix.Length];
             for (int i = 0; i < pix.Length; i++)
             {
                 var item = pix[i];
                 var combPixVal = item.a + item.g + item.b;
                 if (combPixVal < 10)
-                    newPix[i] = new Color32(255, 255, 255, 0);
+                    pix[i] = new Color32(255, 255, 255, 0);
                 else
-                    newPix[i] = pix[i];
+                    pix[i] = pix[i];
             }
-            streamTexture.SetPixels32(newPix);
+            streamTexture.SetPixels32(pix);
+            if (updateNNScreenSizeToMatchStream && Screen.height != streamTexture.height || Screen.width != streamTexture.width)
+                Screen.SetResolution(streamTexture.height, streamTexture.width, false);
+               
             streamTexture.Apply();
         }
     }
 
-    void OnGUI()
+    Texture2D GetUnityEnvTexture()
     {
-        if (Event.current.type.Equals(EventType.Repaint))
+        var unityEnvTex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, false);
+        unityEnvTex.filterMode = FilterMode.Point;
+        unityEnvTex.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+
+        var pixels = unityEnvTex.GetPixels32();
+        for (int i = 0; i < pixels.Length; i++)
         {
-            streamTexture.anisoLevel = 0;
-            streamTexture.filterMode = FilterMode.Point;
-            Graphics.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), streamTexture, drawTextureMaterial);
+            var combPixVal = pixels[i].r + pixels[i].g + pixels[i].b;
+            if (combPixVal < 1 || pixels[i].r > redCutoffValue)
+                pixels[i] = new Color32(0, 200, 0, 0);
         }
+        unityEnvTex.SetPixels32(pixels);
+        unityEnvTex.Apply();
+        return unityEnvTex;
     }
 
-    void OnPreRender()
+    private void OnPostRender()
     {
-        Camera.main.targetTexture = mainSceneRT;
-        // this ensures that w/e the camera sees is rendered to the above RT
-    }
-
-    void OnPostrender()
-    {
-        Graphics.Blit(streamTexture, mainSceneRT);
-        // You have to set target texture to null for the Blit below to work
-        Camera.main.targetTexture = null;
-        Graphics.Blit(mainSceneRT, null as RenderTexture);
+        var unityTex = GetUnityEnvTexture();
+        Graphics.Blit(streamTexture, blitMaterial);
+        Graphics.Blit(unityTex, blitMaterial);
     }
 }
