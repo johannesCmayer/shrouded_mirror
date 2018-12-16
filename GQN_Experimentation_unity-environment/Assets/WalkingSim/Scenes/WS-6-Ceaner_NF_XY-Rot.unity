@@ -2412,12 +2412,22 @@ Prefab:
     - target: {fileID: 114200394547936782, guid: 076e5389d0e062941b316391a62ea4ac,
         type: 2}
       propertyPath: nnScreenSizeX
-      value: 128
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 114200394547936782, guid: 076e5389d0e062941b316391a62ea4ac,
         type: 2}
       propertyPath: nnScreenSizeY
-      value: 128
+      value: 32
+      objectReference: {fileID: 0}
+    - target: {fileID: 20499698974861360, guid: 076e5389d0e062941b316391a62ea4ac,
+        type: 2}
+      propertyPath: m_projectionMatrixMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 20499698974861360, guid: 076e5389d0e062941b316391a62ea4ac,
+        type: 2}
+      propertyPath: field of view
+      value: 60
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 076e5389d0e062941b316391a62ea4ac, type: 2}

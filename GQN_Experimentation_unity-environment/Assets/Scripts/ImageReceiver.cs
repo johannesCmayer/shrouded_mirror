@@ -28,9 +28,8 @@ public class ImageReceiver : MonoBehaviour {
         streamTexture.filterMode = FilterMode.Point;
         receiver = Util.GetLocalUDPReceiverSocket(streamReceivePort);
         renderTexture = new RenderTexture(nnScreenSizeX, nnScreenSizeY, 0);
-        renderTexture.Create();
-        
-        //Screen.SetResolution(nnScreenSizeX, nnScreenSizeY, false);
+        renderTexture.filterMode = FilterMode.Point;
+        renderTexture.Create();        
 	}
     
 	void Update ()
@@ -40,29 +39,37 @@ public class ImageReceiver : MonoBehaviour {
             byte[] buffer = new byte[2048];
             var msg = receiver.Receive(buffer);
             streamTexture.LoadImage(buffer);
-            var pix = streamTexture.GetPixels32();
-            for (int i = 0; i < pix.Length; i++)
+            ProcessStreamTexture(streamTexture);
+
+            if (updateNNScreenSizeToMatchStream)
             {
-                var item = pix[i];
-                var combPixVal = item.a + item.g + item.b;
-                if (combPixVal < 10)
-                    pix[i] = new Color32(255, 255, 255, 0);
-                else
-                    pix[i] = pix[i];
-            }
-            streamTexture.SetPixels32(pix);
-            //if (updateNNScreenSizeToMatchStream && Screen.height != streamTexture.height || Screen.width != streamTexture.width)
-            //    Screen.SetResolution(streamTexture.height, streamTexture.width, false);
-               
-            streamTexture.Apply();
+                nnScreenSizeX = streamTexture.width;
+                nnScreenSizeY = streamTexture.width;
+            }            
         }
     }
 
-    Texture2D GetUnityEnvTexture()
+    void ProcessStreamTexture(Texture2D texture)
     {
-        var unityEnvTex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, false);
+        var pix = texture.GetPixels32();
+        for (int i = 0; i < pix.Length; i++)
+        {
+            var item = pix[i];
+            var combPixVal = item.a + item.g + item.b;
+            if (combPixVal < 10)
+                pix[i] = new Color32(255, 255, 255, 0);
+            else
+                pix[i] = pix[i];
+        }
+        texture.SetPixels32(pix);
+        texture.Apply();
+    }
+
+    Texture2D GetUnityEnvTexture(int xSize, int ySize)
+    {
+        var unityEnvTex = new Texture2D(xSize, ySize, TextureFormat.RGBA32, false);
         unityEnvTex.filterMode = FilterMode.Point;
-        unityEnvTex.ReadPixels(new Rect(0, 0, nnScreenSizeX, nnScreenSizeY), 0, 0);
+        unityEnvTex.ReadPixels(new Rect(0, 0, xSize, ySize), 0, 0);
 
         var pixels = unityEnvTex.GetPixels32();
         for (int i = 0; i < pixels.Length; i++)
@@ -76,14 +83,21 @@ public class ImageReceiver : MonoBehaviour {
         return unityEnvTex;
     }
 
+    private void OnPreRender()
+    {
+        Camera.main.targetTexture = renderTexture;
+        renderTexture.filterMode = FilterMode.Point;
+    }
+
+
     private void OnPostRender()
     {
-        Camera.main.targetTexture = renderTexture;        
-        var unityTex = GetUnityEnvTexture();
-        Camera.main.targetTexture = null;
-
+        var unityTex = GetUnityEnvTexture(renderTexture.width, renderTexture.height);
+        streamTexture.filterMode = FilterMode.Point;
+        unityTex.filterMode = FilterMode.Point;
 
         Graphics.Blit(streamTexture, blitMaterial);
         Graphics.Blit(unityTex, blitMaterial);
+        Camera.main.targetTexture = null;
     }
 }

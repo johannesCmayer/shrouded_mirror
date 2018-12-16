@@ -272,6 +272,7 @@
     <None Include="Assets\PostProcessing\Resources\Shaders\ScreenSpaceRaytrace.cginc" />
     <None Include="Assets\_MK\MKToonFree\Shader\Inc\Forward\MKToonForwardBaseSetup.cginc" />
     <None Include="Assets\_MK\MKToonFree\Shader\Inc\Common\MKToonLight.cginc" />
+    <None Include="Assets\Materials\UnlitPointCutout.shader" />
     <None Include="Assets\PostProcessing\Resources\Shaders\Bloom.shader" />
     <None Include="Assets\_MK\MKToonFree\Shader\MKToonFree.shader" />
     <None Include="Assets\_MK\MKToonFree\Shader\Inc\Forward\MKToonForward.cginc" />

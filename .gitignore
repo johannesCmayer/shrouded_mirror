@@ -58,6 +58,7 @@ GQN_Experimentation_unity-environment/Assets/Graphs/LocalGraphs
 /GQN_Experimentation_unity-environment/sysinfo.txt
 
 # Builds
+/GQN_Experimentation_unity-environment/Builds
 *.apk
 *.unitypackage
 *.app
