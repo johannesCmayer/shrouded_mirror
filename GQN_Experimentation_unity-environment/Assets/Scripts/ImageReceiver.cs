@@ -18,16 +18,21 @@ public class ImageReceiver : MonoBehaviour {
     [Range(0, 255)]
     public int redCutoffValue = 250;
     public Material blitMaterial;
-    Texture2D streamTexture;
+
+    public Texture2D streamTexture;
     Socket receiver;
-    RenderTexture renderTexture;
+
+    public RenderTexture renderTexture;
+    
+
 
     void Start ()
     {
         streamTexture = new Texture2D(nnScreenSizeX, nnScreenSizeY, TextureFormat.RGBA32, false);
         streamTexture.filterMode = FilterMode.Point;
+
         receiver = Util.GetLocalUDPReceiverSocket(streamReceivePort);
-        renderTexture = new RenderTexture(nnScreenSizeX, nnScreenSizeY, 0);
+        renderTexture = new RenderTexture(Screen.width, Screen.height, 0);
         renderTexture.filterMode = FilterMode.Point;
         renderTexture.Create();        
 	}
@@ -67,37 +72,68 @@ public class ImageReceiver : MonoBehaviour {
 
     Texture2D GetUnityEnvTexture(int xSize, int ySize)
     {
-        var unityEnvTex = new Texture2D(xSize, ySize, TextureFormat.RGBA32, false);
-        unityEnvTex.filterMode = FilterMode.Point;
-        unityEnvTex.ReadPixels(new Rect(0, 0, xSize, ySize), 0, 0);
+        //unityTexture = new Texture2D(xSize, ySize, TextureFormat.RGBA32, false);
+        //unityTexture.filterMode = FilterMode.Point;
 
-        var pixels = unityEnvTex.GetPixels32();
-        for (int i = 0; i < pixels.Length; i++)
+        Camera.main.targetTexture = renderTexture;
+        var unityTexture = new Texture2D(Screen.width, Screen.height);
+        unityTexture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+        Camera.main.targetTexture = null;
+
+        return ProcessUnityTexture(unityTexture, xSize, ySize);
+    }
+
+    Color32 NextCol(int i)
+    {
+        return new Color32((byte)(i % 255), 0, 0, 255);
+    }
+    int i = 0;
+    Texture2D ProcessUnityTexture(Texture2D toProcess, int newXDim, int newYDim)
+    {
+        var currentPixels = toProcess.GetPixels32(0);
+                
+        var width = toProcess.width;
+        var height = toProcess.height;
+        var newPixels = new Color32[newXDim * newYDim];
+        for (int ypos = 0; ypos < newYDim; ypos += 1)
         {
-            var combPixVal = pixels[i].r + pixels[i].g + pixels[i].b;
-            if (combPixVal < 1 || pixels[i].r > redCutoffValue)
-                pixels[i] = new Color32(0, 200, 0, 0);
+            for (int xpos = 0; xpos < newXDim; xpos++)
+            {
+                var pixIdx = ypos * newXDim * (width / newXDim) + xpos * (height / newYDim);
+                var newPixIdex = ypos * newXDim + xpos;
+                var combPixVal = currentPixels[pixIdx].r + currentPixels[pixIdx].g + currentPixels[pixIdx].b;
+                if (combPixVal < 1 || currentPixels[pixIdx].r > redCutoffValue)
+                {
+                    newPixels[newPixIdex] = new Color32(0, 255, 0, 0);
+                }
+                else
+                {
+                    newPixels[newPixIdex] = currentPixels[pixIdx];
+                }
+                //print(pixIdx);
+                //print(newPixIdex);
+            }
         }
-        unityEnvTex.SetPixels32(pixels);
-        unityEnvTex.Apply();
-        return unityEnvTex;
+        var newTex = new Texture2D(newXDim, newYDim, TextureFormat.RGBA32, false);
+        newTex.filterMode = FilterMode.Point;
+
+        newTex.SetPixels32(newPixels);
+        newTex.Apply();
+        return newTex;
     }
 
     private void OnPreRender()
     {
-        Camera.main.targetTexture = renderTexture;
+        
         renderTexture.filterMode = FilterMode.Point;
     }
 
 
     private void OnPostRender()
     {
-        var unityTex = GetUnityEnvTexture(renderTexture.width, renderTexture.height);
-        streamTexture.filterMode = FilterMode.Point;
-        unityTex.filterMode = FilterMode.Point;
+        var unityTex = GetUnityEnvTexture(nnScreenSizeX, nnScreenSizeY);
 
         Graphics.Blit(streamTexture, blitMaterial);
         Graphics.Blit(unityTex, blitMaterial);
-        Camera.main.targetTexture = null;
     }
 }
