@@ -102,7 +102,10 @@ public class ImageReceiver : MonoBehaviour {
                 var pixIdx = ypos * width * (width / newXDim) + xpos * (height / newYDim);
                 var newPixIdex = ypos * newXDim + xpos;
                 var combPixVal = currentPixels[pixIdx].r + currentPixels[pixIdx].g + currentPixels[pixIdx].b;
-                if (combPixVal < 1 || currentPixels[pixIdx].r > redCutoffValue)
+                if (combPixVal < 1 || 
+                    currentPixels[pixIdx].r > redCutoffValue &&
+                    currentPixels[pixIdx].r == 0 &&
+                    currentPixels[pixIdx].r == 0)
                 {
                     newPixels[newPixIdex] = new Color32(0, 255, 0, 0);
                 }
@@ -110,8 +113,6 @@ public class ImageReceiver : MonoBehaviour {
                 {
                     newPixels[newPixIdex] = currentPixels[pixIdx];
                 }
-                //print(pixIdx);
-                //print(newPixIdex);
             }
         }
         var newTex = new Texture2D(newXDim, newYDim, TextureFormat.RGBA32, false);
