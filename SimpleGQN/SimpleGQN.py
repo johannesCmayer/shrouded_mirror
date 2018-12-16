@@ -378,7 +378,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         data_multiplier=10, log_frequency=10, save_frequency=30, run_environment=True, black_n_white=True,
         window_size=(1200, 600), window_size_coef=1, additional_meta_data={}, save_model=True, fast_debug_mode=False,
         run_pygame=False, udp_image_send_port=None, num_layers_encoder=6, num_layers_decoder=6,
-        num_neurons_per_layer=1024):
+        num_neurons_per_layer=1024, num_state_neurons=1024):
     '''
     Run the main Programm
     :param data_dirs: the directory containing the training data.
@@ -420,8 +420,8 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     if train:
         model = train_model_pregen(network_inputs, num_input_observations, model_save_file_path, model, epochs=epochs,
                                    batch_size=batch_size, save_model=save_model,
-                                   data_composition_multiplier=data_multiplier,
-                                   log_frequency=log_frequency, save_frequency = save_frequency)
+                                   data_composition_multiplier=data_multiplier, log_frequency=log_frequency,
+                                   save_frequency = save_frequency, num_state_neurons=num_state_neurons)
     if not run_environment:
         return
 

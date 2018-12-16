@@ -33,6 +33,11 @@ namespace UnityStandardAssets.Characters.FirstPerson
             float yRot = CrossPlatformInputManager.GetAxis("Mouse X") * XSensitivity;
             float xRot = CrossPlatformInputManager.GetAxis("Mouse Y") * YSensitivity;
 
+            if (Input.GetKey(KeyCode.Q))
+                yRot += -2.5f;
+            if (Input.GetKey(KeyCode.E))
+                yRot += 2.5f;
+
             m_CharacterTargetRot *= Quaternion.Euler (0f, yRot, 0f);
             m_CameraTargetRot *= Quaternion.Euler (-xRot, 0f, 0f);
 

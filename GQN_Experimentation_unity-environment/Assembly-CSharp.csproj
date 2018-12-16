@@ -285,16 +285,16 @@
     <None Include="Assets\PostProcessing\Editor Resources\Monitors\WaveformCompute.compute" />
     <None Include="Assets\_MK\MKToonFree\Shader\Inc\ShadowCaster\MKToonShadowCaster.cginc" />
     <Reference Include="UnityEditor.StandardEvents">
-      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
+      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro.Editor">
-      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
+      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.PackageManagerUI.Editor">
-      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
+      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
+      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AIModule">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2018.2.13f1/Editor/Data/Managed/UnityEngine/UnityEngine.AIModule.dll</HintPath>
@@ -495,28 +495,28 @@
       <HintPath>C:/Program Files/Unity/Hub/Editor/2018.2.13f1/Editor/Data/UnityExtensions/Unity/UnitySpatialTracking/RuntimeEditor/UnityEngine.SpatialTracking.dll</HintPath>
     </Reference>
     <Reference Include="System.Numerics">
-      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/System.Numerics.dll</HintPath>
+      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/System.Numerics.dll</HintPath>
     </Reference>
     <Reference Include="System.ValueTuple">
-      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/System.ValueTuple.dll</HintPath>
-    </Reference>
-    <Reference Include="TensorFlowSharp">
-      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/Computer/TensorFlowSharp.dll</HintPath>
+      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="Google.Protobuf">
-      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/ProtoBuffer/Google.Protobuf.dll</HintPath>
+      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/ProtoBuffer/Google.Protobuf.dll</HintPath>
     </Reference>
     <Reference Include="Grpc.Core">
-      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/ProtoBuffer/Grpc.Core.dll</HintPath>
+      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/ProtoBuffer/Grpc.Core.dll</HintPath>
     </Reference>
     <Reference Include="System.Interactive.Async">
-      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/ProtoBuffer/System.Interactive.Async.dll</HintPath>
+      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/ProtoBuffer/System.Interactive.Async.dll</HintPath>
+    </Reference>
+    <Reference Include="TensorFlowSharp">
+      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/Computer/TensorFlowSharp.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.Analytics">
-      <HintPath>C:/Users/Johannes/AppData/Local/Unity/cache/packages/packages.unity.com/com.unity.analytics@2.0.16/UnityEngine.Analytics.dll</HintPath>
+      <HintPath>C:/Users/s0553087/AppData/Local/Unity/cache/packages/packages.unity.com/com.unity.analytics@2.0.16/UnityEngine.Analytics.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.StandardEvents">
-      <HintPath>C:/Users/Johannes/AppData/Local/Unity/cache/packages/packages.unity.com/com.unity.standardevents@1.0.13/UnityEngine.StandardEvents.dll</HintPath>
+      <HintPath>C:/Users/s0553087/AppData/Local/Unity/cache/packages/packages.unity.com/com.unity.standardevents@1.0.13/UnityEngine.StandardEvents.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2018.2.13f1/Editor/Data/MonoBleedingEdge/lib/mono/4.7.1-api/mscorlib.dll</HintPath>
