@@ -36,7 +36,7 @@ public class Util {
 
     public static float[] RotationEncoding(Quaternion rotation)
     {
-        var eulerAngles = rotation;
+        var eulerAngles = rotation.eulerAngles * Mathf.Deg2Rad;
         var data = new[] {
             Mathf.Sin(eulerAngles.x), Mathf.Cos(eulerAngles.x),
             Mathf.Sin(eulerAngles.y), Mathf.Cos(eulerAngles.y),

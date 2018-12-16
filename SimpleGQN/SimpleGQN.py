@@ -455,80 +455,80 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         pos, rot = env_data_normalizer.normalize_envirenment_data_sigle(pos, rot)
         return pos, rot
 
-    #with AsyncKeyChecker('q') as ac:
-    if (run_pygame):
-        img_drawer = ImgDrawer(window_size)
-        #character_controller = CharacterController(center_pos=(0, 1.5, 0) / max_pos_val)
-    for i in music.infinity():
-        # if ac.key_was_pressed:
-        #     return model
-
+    with AsyncKeyChecker("'") as ac:
         if (run_pygame):
-            print('Character controller needs to be updated new rot format')
-            #pos, rot = character_controller.current_position, character_controller.current_rotation_quaternion
-        else:
-            pos, rot = get_unity_position(normalizer)
+            img_drawer = ImgDrawer(window_size)
+            #character_controller = CharacterController(center_pos=(0, 1.5, 0) / max_pos_val)
+        for i in music.infinity():
+            if ac.key_was_pressed:
+                print('async keychecker triggered')
 
-        coordinate_input = np.asarray([network_inputs_from_coordinates_single(pos, rot)])
-        output_img = model.predict([*masked_observation_inputs[0], *masked_observation_inputs[1], coordinate_input])
-        output_img = np.reshape(output_img[0], img_data_shape)
+            if (run_pygame):
+                print('Character controller needs to be updated new rot format')
+                #pos, rot = character_controller.current_position, character_controller.current_rotation_quaternion
+            else:
+                pos, rot = get_unity_position(normalizer)
 
-        if black_n_white:
-            output_img = black_n_white_1_to_rgb_255(output_img)
-            #observation_input_drawable = black_n_white_1_to_rgb_255(np.reshape(observation_inputs, img_data_shape))
-        else:
-            output_img = 255 * output_img / np.max(output_img)
-            image_inputs_drawable = [np.reshape(obs_input, img_data_shape) * 255 for obs_input in masked_observation_inputs[0]]
+            coordinate_input = np.asarray([network_inputs_from_coordinates_single(pos, rot)])
+            output_img = model.predict([*masked_observation_inputs[0], *masked_observation_inputs[1], coordinate_input])
+            output_img = np.reshape(output_img[0], img_data_shape)
 
-        def get_jpeg_bytes():
-            im = Image.fromarray(np.uint8(output_img))
-            buffer = io.BytesIO()
-            im.save(buffer, 'jpeg')
-            return buffer.getvalue()
+            if black_n_white:
+                output_img = black_n_white_1_to_rgb_255(output_img)
+                #observation_input_drawable = black_n_white_1_to_rgb_255(np.reshape(observation_inputs, img_data_shape))
+            else:
+                output_img = 255 * output_img / np.max(output_img)
+                image_inputs_drawable = [np.reshape(obs_input, img_data_shape) * 255 for obs_input in masked_observation_inputs[0]]
 
-        def send_udp_local(msg, port):
-            UDP_IP = '127.0.0.1'
-            MESSAGE = msg
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.sendto(MESSAGE, (UDP_IP, port))
+            def get_jpeg_bytes():
+                im = Image.fromarray(np.uint8(output_img))
+                buffer = io.BytesIO()
+                im.save(buffer, 'jpeg')
+                return buffer.getvalue()
 
-        print("send img")
-        send_udp_local(get_jpeg_bytes(), udp_image_send_port)
+            def send_udp_local(msg, port):
+                UDP_IP = '127.0.0.1'
+                MESSAGE = msg
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.sendto(MESSAGE, (UDP_IP, port))
+
+            print("send img")
+            send_udp_local(get_jpeg_bytes(), udp_image_send_port)
 
 
 
-        if run_pygame:
-            img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
-            for i, o in enumerate(image_inputs_drawable):
-                size = (window_size.x // 8, window_size.y // 4)
-                origin_pos = (window_size.x // 2, 0)
-                image_columns = 4
-                offset = (size[0] * (i % image_columns), size[1]*(i // image_columns))
-                pos = (origin_pos[0] + offset[0], origin_pos[1] + offset[1])
-                img_drawer.draw_image(o, size=size, position=pos)
+            if run_pygame:
+                img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
+                for i, o in enumerate(image_inputs_drawable):
+                    size = (window_size.x // 8, window_size.y // 4)
+                    origin_pos = (window_size.x // 2, 0)
+                    image_columns = 4
+                    offset = (size[0] * (i % image_columns), size[1]*(i // image_columns))
+                    pos = (origin_pos[0] + offset[0], origin_pos[1] + offset[1])
+                    img_drawer.draw_image(o, size=size, position=pos)
 
-            text_orig_pos = (window_size.x // 2 + 10, window_size.y // 2 + 10)
-            img_drawer.draw_text_auto_pos(f'{str(character_controller.current_position * max_pos_val)} '
-                                 f'max position {max_pos_val}', text_orig_pos)
-            img_drawer.draw_text_auto_pos(str(character_controller.current_rotation_quaternion), text_orig_pos)
-            img_drawer.draw_text_auto_pos(os.path.basename(model_save_file_path), text_orig_pos)
+                text_orig_pos = (window_size.x // 2 + 10, window_size.y // 2 + 10)
+                img_drawer.draw_text_auto_pos(f'{str(character_controller.current_position * max_pos_val)} '
+                                     f'max position {max_pos_val}', text_orig_pos)
+                img_drawer.draw_text_auto_pos(str(character_controller.current_rotation_quaternion), text_orig_pos)
+                img_drawer.draw_text_auto_pos(os.path.basename(model_save_file_path), text_orig_pos)
 
-            img_drawer.execute()
-            character_controller.movement_update()
+                img_drawer.execute()
+                character_controller.movement_update()
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                    pygame.quit()
-                    return model
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_MINUS:
-                    num_unmask_inputs = max(num_unmask_inputs - 1, 0)
-                    masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_PLUS:
-                    num_unmask_inputs = min(num_unmask_inputs + 1, num_input_observations)
-                    masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_ENTER:
-                    observation_inputs = get_random_observation_input_list()
-                    masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                        pygame.quit()
+                        return model
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_MINUS:
+                        num_unmask_inputs = max(num_unmask_inputs - 1, 0)
+                        masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_PLUS:
+                        num_unmask_inputs = min(num_unmask_inputs + 1, num_input_observations)
+                        masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_KP_ENTER:
+                        observation_inputs = get_random_observation_input_list()
+                        masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
 
 
 def get_data_dir(data_dir_name, resolution_string):

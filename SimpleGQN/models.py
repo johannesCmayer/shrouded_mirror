@@ -55,7 +55,7 @@ def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_l
 
 
 def get_multi_input_gqn_model(pictures_input_shape, coordinates_input_shape, num_input_observations, num_layers_encoder=6,
-                              num_layers_decoder=6, num_neurons_per_layer=1024, num_state_neurons=1024):
+                              num_layers_decoder=6, num_neurons_per_layer=2048, num_state_neurons=1024):
     print('creating model')
     if not num_layers_decoder:
         num_layers_decoder = num_layers_encoder

@@ -43,7 +43,7 @@ public class SendPositonToPython : MonoBehaviour {
                 .Select(x => float.Parse(x, CultureInfo.InvariantCulture.NumberFormat));
         }
 
-        sendDataPos = transform.position.ToPreciseString();        
+        sendDataPos = transform.position.ToPreciseString();
         sendDataRot = Util.JoinToString(Util.RotationEncoding(transform.rotation));
 
         var sendData = Encoding.UTF8.GetBytes(sendDataPos + "_" + sendDataRot);

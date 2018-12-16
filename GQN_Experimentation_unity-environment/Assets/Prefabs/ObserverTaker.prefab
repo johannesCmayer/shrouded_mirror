@@ -38,6 +38,7 @@ GameObject:
   - component: {fileID: 4782432037549656}
   - component: {fileID: 20159692649184960}
   - component: {fileID: 114067067181193240}
+  - component: {fileID: 114661417756098076}
   m_Layer: 0
   m_Name: ObserverCamera
   m_TagString: Untagged
@@ -51,13 +52,13 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1304295327731832}
-  m_LocalRotation: {x: -0.1564345, y: 0, z: 0, w: 0.98768836}
-  m_LocalPosition: {x: -35.7, y: 0, z: -1.2}
+  m_LocalRotation: {x: -0.0014836092, y: 0, z: 0, w: 0.9999989}
+  m_LocalPosition: {x: 0, y: 1.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 4992419080448776}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: -18, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -0.17, y: 0, z: 0}
 --- !u!4 &4992419080448776
 Transform:
   m_ObjectHideFlags: 1
@@ -65,7 +66,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1213990375562744}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 22.6, y: 1.5, z: -35}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 4782432037549656}
@@ -219,6 +220,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   profile: {fileID: 11400000, guid: da807c6f5781a244699877df86ea5d1f, type: 2}
+--- !u!114 &114661417756098076
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1304295327731832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c596a389955c6740b7100d8e50ec553, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &114899689589406162
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -245,34 +257,50 @@ MonoBehaviour:
   - weightToBeChosen: 1
     environments:
     - {fileID: 0}
-  obsPerEnv: 32
+  obsPerEnvGroup: 32
   offsetAfterPlacement: {x: 0, y: 0, z: 0}
   overwriteBasePath: C:\
-  rotateX: 0
-  rotateY: 1
-  rotateZ: 0
+  rotationSettings:
+    rotateX: 1
+    xRotRange0Offset:
+      x: -90
+      y: 90
+    rotateY: 0
+    yRotRange0Offset:
+      x: 0
+      y: 360
+    rotateZ: 0
+    zRotRange0Offset:
+      x: 0
+      y: 360
   captureSettings:
-  - execute: 0
+  - name: 8x8 - for 20000
+    execute: 0
     renderWidth: 8
     renderHeight: 8
     numImagesToMake: 60000
-  - execute: 0
+  - name: 16x16 - for 20000
+    execute: 0
     renderWidth: 16
     renderHeight: 16
     numImagesToMake: 20000
-  - execute: 1
+  - name: 32x32 - for 20000
+    execute: 1
     renderWidth: 32
     renderHeight: 32
     numImagesToMake: 20000
-  - execute: 1
+  - name: 64x64 - for 20000
+    execute: 0
     renderWidth: 64
     renderHeight: 64
     numImagesToMake: 20000
-  - execute: 0
+  - name: 128x128 - for 20000
+    execute: 0
     renderWidth: 128
     renderHeight: 128
     numImagesToMake: 20000
-  - execute: 0
+  - name: 256x256 - for 20000
+    execute: 0
     renderWidth: 256
     renderHeight: 256
     numImagesToMake: 20000

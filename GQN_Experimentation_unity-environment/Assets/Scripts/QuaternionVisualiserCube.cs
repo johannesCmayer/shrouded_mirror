@@ -13,6 +13,6 @@ public class QuaternionVisualiserCube : MonoBehaviour {
 	
 	void Update () {
         myRotation = transform.rotation;
-        print(transform.rotation);
+        Debug.DrawLine(transform.position, transform.position + new Vector3(myRotation.x, myRotation.y, myRotation.z).normalized * 5, Color.red);
 	}
 }

@@ -13,6 +13,46 @@ public class EnvironmentGroup
     public List<Environment> environments = new List<Environment>();
 }
 
+[System.Serializable]
+public class Offset
+{
+    public float x, y;
+    public float this[int index]
+    {
+        get
+        {
+            if (index == 0)
+                return x;
+            else
+                return y;
+        }
+        set
+        {
+            if (index == 0)
+                x = value;
+            else
+                y = value;
+        }
+    }
+
+    public Offset(float x, float y)
+    {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+[System.Serializable]
+public class RotationSettings
+{
+    public bool rotateX = true;
+    public Offset xRotRange0Offset = new Offset(-90, 90);
+    public bool rotateY = true;
+    public Offset yRotRange0Offset = new Offset(0, 360);
+    public bool rotateZ = false;
+    public Offset zRotRange0Offset = new Offset(0, 360);
+}
+
 public class TakeObservation : MonoBehaviour {
 
     public event System.Action TookObservation = delegate { };
@@ -27,11 +67,8 @@ public class TakeObservation : MonoBehaviour {
 
     public string overwriteBasePath = $@"C:\trainingData";
 
-    [Header("Camera Settings")]
-    public bool rotateX = true;
-    public bool rotateY = true;
-    public bool rotateZ = false;
-    
+    public RotationSettings rotationSettings = new RotationSettings();
+
     public CaptureSettings[] captureSettings = new CaptureSettings[] {
         new CaptureSettings(8,8,20000),
         new CaptureSettings(16,16,20000),
@@ -170,13 +207,19 @@ public class TakeObservation : MonoBehaviour {
     public CaptureData TakeObservationFromVolume(Transform transformVolume, Camera camera)
     {
         camera.transform.position = new Util().GetRandomPointInAxisAlignedCube(transformVolume, offsetAfterPlacement);
+        var rs = rotationSettings;
         var randRot = new Vector3(
-            rotateX ? Random.Range(0, 360) : camera.transform.rotation.eulerAngles.x,
-            rotateY ? Random.Range(0, 360) : camera.transform.rotation.eulerAngles.y,
-            rotateZ ? Random.Range(0, 360) : camera.transform.rotation.eulerAngles.z);
+            rs.rotateX ? RandRot(rs.xRotRange0Offset) : camera.transform.rotation.eulerAngles.x,
+            rs.rotateY ? RandRot(rs.yRotRange0Offset) : camera.transform.rotation.eulerAngles.y,
+            rs.rotateZ ? RandRot(rs.zRotRange0Offset) : camera.transform.rotation.eulerAngles.z);
         camera.transform.rotation = Quaternion.Euler(randRot);
         return AdvancedCameraObservation(camera);
     }    
+
+    float RandRot(Offset minMax)
+    {
+        return Random.Range(minMax[0], minMax[1]);
+    }
 
     public string GetFileName(CaptureData obs)
     {
@@ -230,6 +273,7 @@ public struct CaptureData
 [System.Serializable]
 public class CaptureSettings
 {
+    public string name = "NotNamed";
     public bool execute = true;
     public int renderWidth = 128;
     public int renderHeight = 128;
@@ -239,15 +283,17 @@ public class CaptureSettings
     {
     }
 
-    public CaptureSettings(int renderWidth, int renderHeight, int number_of_img)
+    public CaptureSettings(int renderWidth, int renderHeight, int numImagesToMake)
     {
+        name = $"{renderWidth}x{renderHeight}";
         this.renderWidth = renderWidth;
         this.renderHeight = renderHeight;
-        this.numImagesToMake = number_of_img;
+        this.numImagesToMake = numImagesToMake;
     }
 
     public CaptureSettings(bool execute, int renderWidth, int renderHeight, int numImagesToMake)
     {
+        name = $"{renderWidth}x{renderHeight}";
         this.execute = execute;
         this.renderWidth = renderWidth;
         this.renderHeight = renderHeight;
