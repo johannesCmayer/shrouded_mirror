@@ -421,7 +421,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         model = train_model_pregen(network_inputs, num_input_observations, model_save_file_path, model, epochs=epochs,
                                    batch_size=batch_size, save_model=save_model,
                                    data_composition_multiplier=data_multiplier, log_frequency=log_frequency,
-                                   save_frequency = save_frequency, num_state_neurons=num_state_neurons)
+                                   save_frequency = save_frequency)
     if not run_environment:
         return
 
