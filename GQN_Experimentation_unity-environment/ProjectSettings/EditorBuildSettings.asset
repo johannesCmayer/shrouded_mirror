@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/WalkingSim/Scenes/WS-6-Ceaner_NF_XY-Rot.unity
+    guid: f1869b8eed4d9544b859ab350d57321a
   m_configObjects: {}

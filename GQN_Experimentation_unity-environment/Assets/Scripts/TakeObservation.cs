@@ -195,7 +195,9 @@ public class TakeObservation : MonoBehaviour {
             myAS.Play();
             yield return new WaitForSeconds(0.2f);
         }
+#if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
+#endif
     }
 
     public string CreateDirectoryIfNotExists(string path)

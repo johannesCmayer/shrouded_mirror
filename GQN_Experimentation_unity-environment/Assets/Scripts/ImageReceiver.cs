@@ -20,13 +20,17 @@ public class ImageReceiver : MonoBehaviour {
     public Material blitMaterial;
     Texture2D streamTexture;
     Socket receiver;
-    
+    RenderTexture renderTexture;
+
     void Start ()
     {
         streamTexture = new Texture2D(nnScreenSizeX, nnScreenSizeY, TextureFormat.RGBA32, false);
         streamTexture.filterMode = FilterMode.Point;
         receiver = Util.GetLocalUDPReceiverSocket(streamReceivePort);
-        Screen.SetResolution(nnScreenSizeX, nnScreenSizeY, false);
+        renderTexture = new RenderTexture(nnScreenSizeX, nnScreenSizeY, 0);
+        renderTexture.Create();
+        
+        //Screen.SetResolution(nnScreenSizeX, nnScreenSizeY, false);
 	}
     
 	void Update ()
@@ -47,8 +51,8 @@ public class ImageReceiver : MonoBehaviour {
                     pix[i] = pix[i];
             }
             streamTexture.SetPixels32(pix);
-            if (updateNNScreenSizeToMatchStream && Screen.height != streamTexture.height || Screen.width != streamTexture.width)
-                Screen.SetResolution(streamTexture.height, streamTexture.width, false);
+            //if (updateNNScreenSizeToMatchStream && Screen.height != streamTexture.height || Screen.width != streamTexture.width)
+            //    Screen.SetResolution(streamTexture.height, streamTexture.width, false);
                
             streamTexture.Apply();
         }
@@ -58,7 +62,7 @@ public class ImageReceiver : MonoBehaviour {
     {
         var unityEnvTex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, false);
         unityEnvTex.filterMode = FilterMode.Point;
-        unityEnvTex.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+        unityEnvTex.ReadPixels(new Rect(0, 0, nnScreenSizeX, nnScreenSizeY), 0, 0);
 
         var pixels = unityEnvTex.GetPixels32();
         for (int i = 0; i < pixels.Length; i++)
@@ -74,7 +78,11 @@ public class ImageReceiver : MonoBehaviour {
 
     private void OnPostRender()
     {
+        Camera.main.targetTexture = renderTexture;        
         var unityTex = GetUnityEnvTexture();
+        Camera.main.targetTexture = null;
+
+
         Graphics.Blit(streamTexture, blitMaterial);
         Graphics.Blit(unityTex, blitMaterial);
     }

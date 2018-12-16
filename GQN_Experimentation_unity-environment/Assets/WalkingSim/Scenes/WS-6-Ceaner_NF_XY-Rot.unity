@@ -2402,7 +2402,22 @@ Prefab:
     - target: {fileID: 20499698974861360, guid: 076e5389d0e062941b316391a62ea4ac,
         type: 2}
       propertyPath: m_AllowDynamicResolution
-      value: 1
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114200394547936782, guid: 076e5389d0e062941b316391a62ea4ac,
+        type: 2}
+      propertyPath: updateNNScreenSizeToMatchStream
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114200394547936782, guid: 076e5389d0e062941b316391a62ea4ac,
+        type: 2}
+      propertyPath: nnScreenSizeX
+      value: 128
+      objectReference: {fileID: 0}
+    - target: {fileID: 114200394547936782, guid: 076e5389d0e062941b316391a62ea4ac,
+        type: 2}
+      propertyPath: nnScreenSizeY
+      value: 128
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 076e5389d0e062941b316391a62ea4ac, type: 2}
@@ -4941,7 +4956,7 @@ Prefab:
     - target: {fileID: 20159692649184960, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
         type: 2}
       propertyPath: m_AllowDynamicResolution
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 2}
