@@ -219,11 +219,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06ecc9e744e461c40b994578ddeb73a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  port: 8686
-  nnScreenSize: {x: 32, y: 32}
-  matToStreamTo: {fileID: 2100000, guid: 9e650a38ba7a3ec4885a176f872a4fe9, type: 2}
-  cutAwayMaterial: {fileID: 2100000, guid: 92b9b558c16f0dd409cea2e74f9e8651, type: 2}
+  streamReceivePort: 8686
+  updateNNScreenSizeToMatchStream: 1
+  nnScreenSizeX: 32
+  nnScreenSizeY: 32
+  redCutoffValue: 250
   blitMaterial: {fileID: 2100000, guid: 49ec36929f2f6fc45a127b0f6e137258, type: 2}
+  streamTexture: {fileID: 0}
+  renderTexture: {fileID: 0}
 --- !u!114 &114396978677436150
 MonoBehaviour:
   m_ObjectHideFlags: 1
