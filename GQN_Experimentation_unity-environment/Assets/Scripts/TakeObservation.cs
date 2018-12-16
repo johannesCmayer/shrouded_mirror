@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using UnityEngine.SceneManagement;
-using UnityEditor;
 using System.Linq;
+using System.Threading;
 
 [System.Serializable]
 public class EnvironmentGroup
@@ -87,8 +87,13 @@ public class TakeObservation : MonoBehaviour {
             basePath = overwriteBasePath;
         return CreateDirectoryIfNotExists($@"{basePath}\trainingData\{sceneName}\" +
                                           $@"{cs.renderWidth}x{cs.renderHeight}\{environmentGenerator.EnvironmentID}");
-    } 
-    
+    }
+
+    private void Awake()
+    {
+        Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+    }
+
     void Start()
     {
         myAS = GetComponent<AudioSource>();

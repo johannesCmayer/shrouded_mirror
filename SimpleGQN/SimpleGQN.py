@@ -375,9 +375,10 @@ def mask_observation_inputs(obs_inputs, num_to_mask):
 # TODO clean up and split up run method
 def run(unnormalized_environment_data, num_input_observations, model_save_file_path, model_to_generate,
         model_to_train=None, model_load_file_path=None, train=True, epochs=100, batch_size=None,
-        data_multiplier=10, log_frequency=10, save_frequency = 30, run_environment=True, black_n_white=True,
+        data_multiplier=10, log_frequency=10, save_frequency=30, run_environment=True, black_n_white=True,
         window_size=(1200, 600), window_size_coef=1, additional_meta_data={}, save_model=True, fast_debug_mode=False,
-        run_pygame=False, udp_image_send_port=None):
+        run_pygame=False, udp_image_send_port=None, num_layers_encoder=6, num_layers_decoder=6,
+        num_neurons_per_layer=1024):
     '''
     Run the main Programm
     :param data_dirs: the directory containing the training data.
@@ -412,9 +413,9 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         if model_load_file_path:
             model = keras.models.load_model(model_load_file_path)
         else:
-            model = model_generators[model_to_generate](np.shape(network_inputs[0][0][0]),
-                                                        np.shape(network_inputs[0][1][0]),
-                                                        num_input_observations)
+            model = model_generators[model_to_generate](
+                np.shape(network_inputs[0][0][0]), np.shape(network_inputs[0][1][0]), num_input_observations,
+                num_layers_encoder=6, num_layers_decoder=6, num_neurons_per_layer=2048, num_state_neurons=1024)
     model.summary()
     if train:
         model = train_model_pregen(network_inputs, num_input_observations, model_save_file_path, model, epochs=epochs,
@@ -492,10 +493,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.sendto(MESSAGE, (UDP_IP, port))
 
-            print("send img")
             send_udp_local(get_jpeg_bytes(), udp_image_send_port)
-
-
 
             if run_pygame:
                 img_drawer.draw_image(output_img, size=(window_size.x // 2, window_size.y))
@@ -579,7 +577,7 @@ spinner = Spinner()
 
 # TODO create training schedule manager, to manage sequential training of networks
 if __name__ == '__main__':
-    data_spec, param_spec, run_spec = specs()['data_spec'], specs()['param_spec'], specs()['run_spec']
+    data_spec, param_spec, run_spec, network_spec = specs()['data_spec'], specs()['param_spec'], specs()['run_spec'], specs()['network_spec']
 
     data_dirs_path = get_data_dir(data_spec['data_dir'], data_spec['image_resolution'])
     model_load_path = data_spec['model_load_path']
@@ -603,7 +601,8 @@ if __name__ == '__main__':
         'window_size': data_spec['window_resolution'],
         'save_model': not run_spec['fast_debug_mode'],
         **param_spec,
-        **run_spec
+        **run_spec,
+        **network_spec,
     }
     print('\nparams')
     pprint.pprint(run_params, depth=1, compact=True)

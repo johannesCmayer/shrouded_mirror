@@ -48,12 +48,9 @@ model_paths:
   - &mp_13 date=2018-12-09_time=00-15-02-616311_env=WS-5-FloorTex+_name=Herbert-Rodriguez_version=2_id=3434
   - &mp_14 date=2018-12-10_time=17-01-00-586787_env=WS-6-Ceaner_name=Dana-Guffey_version=4_id=8459
   - &mp_15 date=2018-12-15_time=20-08-25-512816_env=WS-6-Ceaner-NF_name=Jerry-Higgins_version=1_id=1818
+  - &mp_16 date=2018-12-16_time=08-26-14-566818_env=WS-6-Ceaner-NF_name=Paul-Bivins_version=1_id=1566
 
 param_spec:
-  model_to_generate:      multi    # to generate if no model loaded
-  num_input_observations: 4
-  epochs:                 1
-  batch_size:             32
   data_multiplier:        0.3
   log_frequency:          10
   save_frequency:         30
@@ -61,7 +58,7 @@ param_spec:
   black_n_white:          false
 
 data_spec:
-  model_load_path:        *mp_0
+  model_load_path:        *mp_16
   data_dir:               *dd_18
   image_resolution:       *ir_32
   window_resolution:      *hdp
@@ -72,4 +69,11 @@ run_spec:
   run_pygame:             false
   udp_image_send_port:    8686
 
-
+network_spec:
+  model_to_generate:      multi
+  num_layers_encoder:     6
+  num_layers_decoder:     6
+  num_neurons_per_layer:  1024
+  num_input_observations: 4
+  epochs:                 1
+  batch_size:             32
