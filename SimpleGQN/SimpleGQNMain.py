@@ -1,5 +1,6 @@
 import os, io
 import tensorflow as tf
+from tensorflow import keras
 import numpy as np
 import glob
 import ntpath
@@ -17,20 +18,18 @@ import gc
 import yaml
 import socket
 from PIL import Image
-from tensorflow import keras
-from tensorflow.python.tools import freeze_graph
 from scipy import misc
 from typing import Dict
 
-import music
-from util import (
+from SimpleGQN.music import infinity
+from SimpleGQN.util import (
     ImgDrawer,
     Spinner,
     AsyncKeyChecker,
     CharacterController,
     product
 )
-from models import (
+from SimpleGQN.models import (
     get_multi_input_gqn_model,
     simple_conv_model,
     get_latent_variable_gqn_model,
@@ -337,7 +336,7 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
 
     print(f'model name: {model_name}')
     with AsyncKeyChecker('q') as kc:
-        for i in music.infinity():
+        for i in infinity():
             if i % data_recomposition_frequency == 0:
                 images_1, image_coordinates_1, images_2, image_coordinates_2 = \
                     generate_data(network_inputs, num_input_observations, data_composition_multiplier)
@@ -463,7 +462,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         if (run_pygame):
             img_drawer = ImgDrawer(window_size)
             #character_controller = CharacterController(center_pos=(0, 1.5, 0) / max_pos_val)
-        for i in music.infinity():
+        for i in infinity():
             if ac.key_was_pressed:
                 pass
                 #print('async keychecker triggered')
