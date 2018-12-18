@@ -211,6 +211,7 @@
     <Compile Include="Assets\ResonanceAudio\Scripts\ResonanceAudioRoom.cs" />
     <Compile Include="Assets\ResonanceAudio\Scripts\ResonanceAudioRoomManager.cs" />
     <Compile Include="Assets\ResonanceAudio\Scripts\ResonanceAudioSource.cs" />
+    <Compile Include="Assets\Rotate.cs" />
     <Compile Include="Assets\SampleScenes\Menu\Scripts\MenuSceneLoader.cs" />
     <Compile Include="Assets\SampleScenes\Menu\Scripts\PauseMenu.cs" />
     <Compile Include="Assets\SampleScenes\Menu\Scripts\SceneAndURLLoader.cs" />
