@@ -149,6 +149,7 @@ GameObject:
   - component: {fileID: 124242238411559018}
   - component: {fileID: 114588370697893292}
   - component: {fileID: 114200394547936782}
+  - component: {fileID: 270899117}
   m_Layer: 0
   m_Name: MainCamera
   m_TagString: MainCamera
@@ -336,3 +337,16 @@ MonoBehaviour:
   nnScreenSizeY: 32
   cutRed: {fileID: 2100000, guid: 1e0962b69d78835499d6e58a209f3dcf, type: 2}
   pixelate: {fileID: 2100000, guid: 50feba392be9b114fb642cf90609529c, type: 2}
+--- !u!114 &270899117
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1744030300471286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff26db721962cdf4a8edcdfa9a767d2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  profile: {fileID: 11400000, guid: b617422f6c0e49f4b9a1705d8e35b46d, type: 2}
