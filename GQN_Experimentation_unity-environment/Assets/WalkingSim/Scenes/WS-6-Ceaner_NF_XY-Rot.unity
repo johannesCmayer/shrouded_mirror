@@ -534,25 +534,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 197050967}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &270899109 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1744030300471286, guid: 076e5389d0e062941b316391a62ea4ac,
-    type: 3}
-  m_PrefabInstance: {fileID: 1063143631}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &270899117
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 270899109}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff26db721962cdf4a8edcdfa9a767d2a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  profile: {fileID: 11400000, guid: b617422f6c0e49f4b9a1705d8e35b46d, type: 2}
 --- !u!1 &287584565
 GameObject:
   m_ObjectHideFlags: 0
@@ -5344,6 +5325,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1186288162}
     m_Modifications:
+    - target: {fileID: 1213990375562744, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
+      propertyPath: m_Name
+      value: ObserverTaker
+      objectReference: {fileID: 0}
     - target: {fileID: 4992419080448776, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2.3574514
@@ -5376,6 +5361,18 @@ PrefabInstance:
       propertyPath: m_RootOrder
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 4992419080448776, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4992419080448776, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4992419080448776, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
         type: 3}
       propertyPath: environmentGenerator
@@ -5401,11 +5398,6 @@ PrefabInstance:
       propertyPath: environmentGroups.Array.data[3].environments.Array.data[0]
       value: 
       objectReference: {fileID: 1217548962}
-    - target: {fileID: 20159692649184960, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
-        type: 3}
-      propertyPath: m_AllowDynamicResolution
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
 --- !u!1 &2098610592
