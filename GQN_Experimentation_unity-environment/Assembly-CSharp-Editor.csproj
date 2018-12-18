@@ -101,6 +101,14 @@
     <Compile Include="Assets\PostProcessing\Editor\Utils\EditorResources.cs" />
     <Compile Include="Assets\PostProcessing\Editor\Utils\FxStyles.cs" />
     <Compile Include="Assets\PostProcessing\Editor\Utils\ReflectionUtils.cs" />
+    <Compile Include="Assets\ResonanceAudio\Editor\ResonanceAudioBuildProcessor.cs" />
+    <Compile Include="Assets\ResonanceAudio\Editor\ResonanceAudioListenerEditor.cs" />
+    <Compile Include="Assets\ResonanceAudio\Editor\ResonanceAudioMaterialMapEditor.cs" />
+    <Compile Include="Assets\ResonanceAudio\Editor\ResonanceAudioReverbBakingWindow.cs" />
+    <Compile Include="Assets\ResonanceAudio\Editor\ResonanceAudioReverbComputer.cs" />
+    <Compile Include="Assets\ResonanceAudio\Editor\ResonanceAudioReverbProbeEditor.cs" />
+    <Compile Include="Assets\ResonanceAudio\Editor\ResonanceAudioRoomEditor.cs" />
+    <Compile Include="Assets\ResonanceAudio\Editor\ResonanceAudioSourceEditor.cs" />
     <Compile Include="Assets\WalkingSim\Editor\StickForestGeneratorEditor.cs" />
     <Reference Include="Unity.TextMeshPro.Editor">
       <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
