@@ -350,6 +350,9 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
             for e in images_1, image_coordinates_1, images_2, image_coordinates_2:
                 del(e)
             gc.collect()
+            if i != 1 and i % save_frequency == 0:
+                print(f'saving model as {final_save_path}')
+                model_to_train.save(final_save_path)
             if kc.key_was_pressed():
                 break
     if save_model:
