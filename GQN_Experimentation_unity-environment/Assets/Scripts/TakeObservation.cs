@@ -92,6 +92,7 @@ public class TakeObservation : MonoBehaviour {
 
     void Start()
     {
+        ApplyCutAwayMaterial.instance.Deaktivate();
         myAS = GetComponent<AudioSource>();
         environmentGenerator.RandomizeEnv(cam);
         StartCoroutine(Capture());
