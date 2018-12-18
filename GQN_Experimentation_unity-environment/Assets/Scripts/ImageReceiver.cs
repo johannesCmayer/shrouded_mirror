@@ -29,6 +29,9 @@ public class ImageReceiver : MonoBehaviour {
     
     bool useJob = false;
 
+    static Color32[] shaderInput;
+    static Color32[] shaderResult;
+
     void Start ()
     {
         streamTexture = new Texture2D(nnScreenSizeX, nnScreenSizeY, TextureFormat.RGBA32, false);
@@ -89,8 +92,8 @@ public class ImageReceiver : MonoBehaviour {
         unityTexture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
         Camera.main.targetTexture = null;
 
-        
 
+        return unityTexture;
         if (useJob)        
             return StartCullRedAndRezizeJob(unityTexture, redCutoffValue, xSize, ySize);
         else
@@ -143,30 +146,28 @@ public class ImageReceiver : MonoBehaviour {
     struct CullRedAndRezizeJob : IJobParallelFor
     {
         public int redCutoffValue;
+        public int origYDim;
+        public int origXDim;
         public int yDim;
         public int xDim;
-        public NativeArray<byte> pixelsR,
-                                pixelsG,
-                                pixelsB,
-                                pixelsA;
         public readonly int Length;
-
+        
         public void Execute(int i)
         {
-            var combPixVal = pixelsR[i] + pixelsG[i] + pixelsB[i];
+            var x = origXDim % i * (origXDim / xDim);
+            var y = origYDim / i * (origYDim / yDim);
+            var inputIdx = x * y;
+            var combPixVal = shaderInput[inputIdx].r + shaderInput[inputIdx].g + shaderInput[inputIdx].b;
             if (combPixVal < 1 ||
-                pixelsR[i] > redCutoffValue &&
-                pixelsG[i] < 10 &&
-                pixelsB[i] < 10)
+                shaderInput[inputIdx].r > redCutoffValue &&
+                shaderInput[inputIdx].g < 10 &&
+                shaderInput[inputIdx].b < 10)
             {
-                pixelsR[i] = 0;
-                pixelsG[i] = 255;
-                pixelsB[i] = 0;
-                pixelsA[i] = 0;
+                shaderResult[i] = new Color32(0, 255, 0, 0);
             }
             else
             {
-                pixelsA[i] = 255;
+                shaderResult[i] = new Color32(shaderResult[i].r, shaderResult[i].g, shaderResult[i].b, 255);
             }
         }
     }
@@ -178,59 +179,27 @@ public class ImageReceiver : MonoBehaviour {
         var width = inputTex.width;
         var height = inputTex.height;
         var newTexSize = newXDim * newYDim;
-        NativeArray<byte> pixelsR = new NativeArray<byte>(newTexSize, Allocator.Temp);
-        NativeArray<byte> pixelsG = new NativeArray<byte>(newTexSize, Allocator.Temp);
-        NativeArray<byte> pixelsB = new NativeArray<byte>(newTexSize, Allocator.Temp);
-        NativeArray<byte> pixelsA = new NativeArray<byte>(newTexSize, Allocator.Temp);
-
-        for (int ypos = 0; ypos < newYDim; ypos += 1)
-        {
-            for (int xpos = 0; xpos < newXDim; xpos++)
-            {
-                var pixIdx = ypos * width * (height / newYDim) + xpos * (width / newXDim);
-                var newPixIdex = ypos * newXDim + xpos;
-
-                pixelsR[newPixIdex] = pixels[pixIdx].r;
-                pixelsG[newPixIdex] = pixels[pixIdx].g;
-                pixelsB[newPixIdex] = pixels[pixIdx].b;
-                pixelsA[newPixIdex] = pixels[pixIdx].a;
-            }
-        }
 
         CullRedAndRezizeJob jobData = new CullRedAndRezizeJob
         {
             redCutoffValue = redCutoffValue,
-            yDim = inputTex.height,
-            xDim = inputTex.width,
-            pixelsR = pixelsR,
-            pixelsG = pixelsG,
-            pixelsB = pixelsB,
-            pixelsA = pixelsA,
+            origYDim = height,
+            origXDim = width,
+            yDim = newYDim,
+            xDim = newXDim,
         };
 
-        JobHandle handle = jobData.Schedule(newTexSize, 1000);
-        handle.Complete();
-
+        shaderInput = pixels;
+        shaderResult = new Color32[newTexSize];
+        JobHandle handle = jobData.Schedule(newTexSize, newTexSize / 8);
+        
         var newTex = new Texture2D(newXDim, newYDim);
+        newTex.filterMode = FilterMode.Point;
         var newColors = new Color32[newTexSize];
 
-        for (int i = 0; i < newTexSize; i++)
-        {
-            newColors[i] = new Color32()
-            {
-                r = pixelsR[i],
-                g = pixelsG[i],
-                b = pixelsB[i],
-                a = pixelsA[i]
-            };
-        }
+        handle.Complete();
 
-        pixelsR.Dispose();
-        pixelsG.Dispose();
-        pixelsB.Dispose();
-        pixelsA.Dispose();
-
-        newTex.SetPixels32(newColors);
+        newTex.SetPixels32(shaderResult);
         newTex.Apply();
 
         return newTex;
