@@ -24,6 +24,8 @@ public class ImageReceiver : MonoBehaviour {
     Texture2D streamTexture;
     Socket receiver;
 
+    float timeToLastReceive;
+
     void Start ()
     {
         streamTexture = new Texture2D(0, 0, TextureFormat.RGBA32, false);
@@ -49,10 +51,11 @@ public class ImageReceiver : MonoBehaviour {
             {
                 UpdateBlitMaterial();
             }
-
+            timeToLastReceive = 0;
             //blitMaterial.SetInt("_PixelResX", (int)(Mathf.Sin(Time.time) * nnScreenSizeX));
             //blitMaterial.SetInt("_PixelResY", (int)(Mathf.Cos(Time.time) * nnScreenSizeY));
         }
+        timeToLastReceive += Time.deltaTime;
     }
 
     void UpdateBlitMaterial()
@@ -63,11 +66,21 @@ public class ImageReceiver : MonoBehaviour {
 
     private void OnRenderImage(RenderTexture src, RenderTexture dest)
     {
-        Graphics.Blit(streamTexture, dest);
+        if (timeToLastReceive < 2)
+        {
+            //ApplyCutAwayMaterial.instance.Activate();
 
-        var temp = new RenderTexture(src.width, src.height, 0);        
-        Graphics.Blit(src, temp, cutRed);
-        Graphics.Blit(temp, dest, pixelate);
-        temp.Release();
+            Graphics.Blit(streamTexture, dest);
+
+            var temp = new RenderTexture(src.width, src.height, 0);
+            Graphics.Blit(src, temp, cutRed);
+            Graphics.Blit(temp, dest, pixelate);
+            temp.Release();
+        }
+        else
+        {
+            //ApplyCutAwayMaterial.instance.Deactivate();
+            Graphics.Blit(src, dest);            
+        }
     }
 }

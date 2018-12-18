@@ -92,9 +92,9 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4196394252205997719}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 4196394251332987839}
   - {fileID: 4192053844554139601}
@@ -108,10 +108,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 4196394252205997716}
     m_Modifications:
-    - target: {fileID: 1213990375562744, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
-      propertyPath: m_Name
-      value: ObserverTaker
-      objectReference: {fileID: 0}
     - target: {fileID: 4992419080448776, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -156,6 +152,26 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4992419080448776, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4992419080448776, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4992419080448776, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1213990375562744, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
+      propertyPath: m_Name
+      value: ObserverTaker
+      objectReference: {fileID: 0}
+    - target: {fileID: 1213990375562744, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
         type: 3}
       propertyPath: environmentGenerator
@@ -163,23 +179,13 @@ PrefabInstance:
       objectReference: {fileID: 4196394251332987838}
     - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
         type: 3}
-      propertyPath: environmentGroups.Array.data[0].environments.Array.data[0]
-      value: 
+      propertyPath: rotationSettings.xRotRange0Offset.x
+      value: -20
       objectReference: {fileID: 0}
     - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
         type: 3}
-      propertyPath: environmentGroups.Array.data[1].environments.Array.data[0]
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
-        type: 3}
-      propertyPath: environmentGroups.Array.data[2].environments.Array.data[0]
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
-        type: 3}
-      propertyPath: environmentGroups.Array.data[3].environments.Array.data[0]
-      value: 
+      propertyPath: rotationSettings.xRotRange0Offset.y
+      value: 20
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}

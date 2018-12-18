@@ -7,8 +7,10 @@ public class ApplyCutAwayMaterial : MonoBehaviour {
     public static ApplyCutAwayMaterial instance;
 
     public Material cutAwayMaterial;
-
-    bool applyOnStart = true;
+    bool isActive;
+    bool overwriteSetting = false;
+    bool manualDeactivate = false;
+    bool applyOnStart = true;    
     Renderer[] renderers;
     List<Material> origMaterials = new List<Material>();
 
@@ -17,8 +19,11 @@ public class ApplyCutAwayMaterial : MonoBehaviour {
         instance = this;
     }
 
-    public void Deaktivate()
+    public void Deactivate()
     {
+        if (!isActive && !applyOnStart)
+            return;
+        isActive = false;
         applyOnStart = false;
         if (renderers == null)
             return;
@@ -30,6 +35,9 @@ public class ApplyCutAwayMaterial : MonoBehaviour {
 
     public void Activate()
     {
+        if (isActive)
+            return;
+        isActive = true;
         renderers = FindObjectsOfType<Renderer>();
         foreach (var renderer in renderers)
         {
@@ -48,4 +56,17 @@ public class ApplyCutAwayMaterial : MonoBehaviour {
             Activate();
         }
 	}
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            manualDeactivate = !manualDeactivate;
+            overwriteSetting = true;
+        }
+        if (manualDeactivate && overwriteSetting)
+            Deactivate();
+        else if (overwriteSetting)
+            Activate();
+    }
 }

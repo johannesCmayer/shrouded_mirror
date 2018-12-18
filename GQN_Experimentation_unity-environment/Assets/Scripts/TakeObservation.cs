@@ -7,52 +7,6 @@ using System.Linq;
 using System.Threading;
 using System.Globalization;
 
-[System.Serializable]
-public class EnvironmentGroup
-{
-    public float weightToBeChosen = 1.0f;
-    public List<Environment> environments = new List<Environment>();
-}
-
-[System.Serializable]
-public class Offset
-{
-    public float x, y;
-    public float this[int index]
-    {
-        get
-        {
-            if (index == 0)
-                return x;
-            else
-                return y;
-        }
-        set
-        {
-            if (index == 0)
-                x = value;
-            else
-                y = value;
-        }
-    }
-
-    public Offset(float x, float y)
-    {
-        this.x = x;
-        this.y = y;
-    }
-}
-
-[System.Serializable]
-public class RotationSettings
-{
-    public bool rotateX = true;
-    public Offset xRotRange0Offset = new Offset(-90, 90);
-    public bool rotateY = true;
-    public Offset yRotRange0Offset = new Offset(0, 360);
-    public bool rotateZ = false;
-    public Offset zRotRange0Offset = new Offset(0, 360);
-}
 
 public class TakeObservation : MonoBehaviour {
 
@@ -92,7 +46,7 @@ public class TakeObservation : MonoBehaviour {
 
     void Start()
     {
-        ApplyCutAwayMaterial.instance.Deaktivate();
+        ApplyCutAwayMaterial.instance.Deactivate();
         myAS = GetComponent<AudioSource>();
         environmentGenerator.RandomizeEnv(cam);
         StartCoroutine(Capture());
@@ -303,4 +257,51 @@ public class CaptureSettings
         this.renderHeight = renderHeight;
         this.numImagesToMake = numImagesToMake;
     }
+}
+
+[System.Serializable]
+public class EnvironmentGroup
+{
+    public float weightToBeChosen = 1.0f;
+    public List<Environment> environments = new List<Environment>();
+}
+
+[System.Serializable]
+public class Offset
+{
+    public float x, y;
+    public float this[int index]
+    {
+        get
+        {
+            if (index == 0)
+                return x;
+            else
+                return y;
+        }
+        set
+        {
+            if (index == 0)
+                x = value;
+            else
+                y = value;
+        }
+    }
+
+    public Offset(float x, float y)
+    {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+[System.Serializable]
+public class RotationSettings
+{
+    public bool rotateX = true;
+    public Offset xRotRange0Offset = new Offset(-90, 90);
+    public bool rotateY = true;
+    public Offset yRotRange0Offset = new Offset(0, 360);
+    public bool rotateZ = false;
+    public Offset zRotRange0Offset = new Offset(0, 360);
 }
