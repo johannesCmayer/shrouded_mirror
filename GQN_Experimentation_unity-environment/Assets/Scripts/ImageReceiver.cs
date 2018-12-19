@@ -49,7 +49,9 @@ public class ImageReceiver : MonoBehaviour {
 
             if (updateNNScreenSizeToMatchStream)
             {
-                UpdateBlitMaterial();
+                nnScreenSizeX = streamTexture.width;
+                nnScreenSizeY = streamTexture.height;
+                UpdateBlitMaterial(nnScreenSizeX, nnScreenSizeY);
             }
             timeToLastReceive = 0;
             //blitMaterial.SetInt("_PixelResX", (int)(Mathf.Sin(Time.time) * nnScreenSizeX));
@@ -58,15 +60,15 @@ public class ImageReceiver : MonoBehaviour {
         timeToLastReceive += Time.deltaTime;
     }
 
-    void UpdateBlitMaterial()
+    void UpdateBlitMaterial(int newX, int newY)
     {
-        pixelate.SetInt("_PixelResX", nnScreenSizeX);
-        pixelate.SetInt("_PixelResY", nnScreenSizeY);
+        pixelate.SetInt("_PixelResX", newX);
+        pixelate.SetInt("_PixelResY", newY);
     }
 
     private void OnRenderImage(RenderTexture src, RenderTexture dest)
     {
-        if (timeToLastReceive < 2)
+        if (timeToLastReceive < 2000)
         {
             //ApplyCutAwayMaterial.instance.Activate();
 

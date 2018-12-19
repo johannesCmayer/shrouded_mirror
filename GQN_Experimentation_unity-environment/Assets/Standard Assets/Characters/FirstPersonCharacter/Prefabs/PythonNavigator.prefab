@@ -150,6 +150,7 @@ GameObject:
   - component: {fileID: 114588370697893292}
   - component: {fileID: 114200394547936782}
   - component: {fileID: 270899117}
+  - component: {fileID: 798504549290996686}
   m_Layer: 0
   m_Name: MainCamera
   m_TagString: MainCamera
@@ -350,3 +351,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   profile: {fileID: 11400000, guid: b617422f6c0e49f4b9a1705d8e35b46d, type: 2}
+--- !u!114 &798504549290996686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1744030300471286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 113e4aa2cd3db44d1ac0cb7e9794964b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  globalGainDb: 0
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  stereoSpeakerModeEnabled: 0
+  recorderSeamless: 0
+  recorderSourceTag: Untagged
+  recorderFoldout: 0
