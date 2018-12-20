@@ -5,7 +5,9 @@
 		_MainTex("Albedo Texture", 2D) = "black" {}
 		_CC1("Keyout color 1", Color) = (1,0,0,1)
 		_CC2("Keyout color 2", Color) = (0,0,0,1)
+		_NTC("Not Transparent color", Color) = (1, 0, 0, 1)
 		_Trans("Transparency of output", Float) = 0.5
+		_Tol("Tolerance", Float) = 0.01
 	}
 
 		SubShader
@@ -42,6 +44,8 @@
 		float4 _CC1;
 		float4 _CC2;
 		float1 _Trans;
+		float _Tol;
+		float4 _NTC;
 
 		v2f vert(appdata v)
 		{
@@ -53,9 +57,9 @@
 
 		float cull(float3 col, float3 culCol)
 		{
-			if (col.r == culCol.r &&
-				col.g == culCol.g &&
-				col.b == culCol.b)
+			if (col.r <= culCol.r + _Tol && col.r >= culCol.r - _Tol &&
+				col.g <= culCol.g + _Tol && col.g >= culCol.g - _Tol &&
+				col.b <= culCol.b + _Tol && col.b >= culCol.b - _Tol)
 			{
 				return 1;
 			}
@@ -71,6 +75,13 @@
 			if (cull(col.rgb, _CC1.rgb) + cull(col.rgb, _CC2.rgb) > 0)
 			{
 				col.a = 0;
+			}
+			else if (
+				abs(col.r - _NTC.r) < _Tol,
+				abs(col.g - _NTC.g) < _Tol,
+				abs(col.b - _NTC.b) < _Tol)
+			{
+				col.a = 1;
 			}
 			else
 			{

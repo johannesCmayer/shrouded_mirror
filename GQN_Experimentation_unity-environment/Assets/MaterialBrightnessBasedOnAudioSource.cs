@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BeepCube : MonoBehaviour
+[RequireComponent(typeof(AudioSource))]
+public class MaterialBrightnessBasedOnAudioSource : MonoBehaviour
 {
+    public float brightnessCoef = 2;
+
     AudioSource myAudiosource;
     Renderer myRenderer;
     Color origColor;
     float spectrumMax;
-
+    float currentCombinedSpectrum;
     // Start is called before the first frame update
     void Start()
     {
@@ -30,17 +33,13 @@ public class BeepCube : MonoBehaviour
         }
         if (combinedSpectrum > spectrumMax)
             spectrumMax = combinedSpectrum;
+        if (combinedSpectrum > currentCombinedSpectrum)
+            currentCombinedSpectrum = combinedSpectrum;
+        else
+            currentCombinedSpectrum = Mathf.Lerp(currentCombinedSpectrum, combinedSpectrum, 1f * Time.deltaTime);
 
-        var newCol = origColor * (combinedSpectrum / spectrumMax);
+        var newCol = origColor * (currentCombinedSpectrum / (spectrumMax / brightnessCoef));
 
         myRenderer.material.color =newCol;
-
-        //for (int i = 1; i < spectrum.Length - 1; i++)
-        //{
-        //    Debug.DrawLine(new Vector3(i - 1, spectrum[i] + 10, 0), new Vector3(i, spectrum[i + 1] + 10, 0), Color.red);
-        //    Debug.DrawLine(new Vector3(i - 1, Mathf.Log(spectrum[i - 1]) + 10, 2), new Vector3(i, Mathf.Log(spectrum[i]) + 10, 2), Color.cyan);
-        //    Debug.DrawLine(new Vector3(Mathf.Log(i - 1), spectrum[i - 1] - 10, 1), new Vector3(Mathf.Log(i), spectrum[i] - 10, 1), Color.green);
-        //    Debug.DrawLine(new Vector3(Mathf.Log(i - 1), Mathf.Log(spectrum[i - 1]), 3), new Vector3(Mathf.Log(i), Mathf.Log(spectrum[i]), 3), Color.blue);
-        //}
     }
 }

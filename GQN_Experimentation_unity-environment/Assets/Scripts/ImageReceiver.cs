@@ -75,6 +75,7 @@ public class ImageReceiver : MonoBehaviour {
         if (timeToLastReceive < 2000)
         {
             var temp = RenderTexture.GetTemporary(src.width, src.height);
+            Graphics.Blit(blackFill, temp);
             Graphics.Blit(streamTexture, temp);
             Graphics.Blit(src, temp, cutRed);
             Graphics.Blit(temp, dest, pixelate);
