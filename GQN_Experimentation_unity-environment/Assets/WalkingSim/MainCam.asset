@@ -73,7 +73,7 @@ MonoBehaviour:
     m_Enabled: 0
     m_Settings:
       focusDistance: 10
-      aperture: 5.6
+      aperture: 8.4
       focalLength: 50
       useCameraFov: 0
       kernelSize: 1
@@ -110,7 +110,7 @@ MonoBehaviour:
         texture: {fileID: 0}
         intensity: 3
   colorGrading:
-    m_Enabled: 1
+    m_Enabled: 0
     m_Settings:
       tonemapping:
         tonemapper: 0
@@ -122,21 +122,21 @@ MonoBehaviour:
         neutralWhiteClip: 10
       basic:
         postExposure: 0
-        temperature: 0
-        tint: 0
-        hueShift: 0
-        saturation: 1
-        contrast: 1
+        temperature: -2
+        tint: -3
+        hueShift: -10
+        saturation: 0.93
+        contrast: 0.94
       channelMixer:
-        red: {x: 1, y: 0, z: 0}
+        red: {x: -0.14, y: 0, z: 0}
         green: {x: 0, y: 1, z: 0}
         blue: {x: 0, y: 0, z: 1}
         currentEditingChannel: 0
       colorWheels:
         mode: 1
         log:
-          slope: {r: 1, g: 1, b: 1, a: 0}
-          power: {r: 1, g: 1, b: 1, a: 0}
+          slope: {r: 0.90903294, g: 0.8771295, b: 1, a: -0.048826236}
+          power: {r: 1, g: 0.9479908, b: 0.9577946, a: 0}
           offset: {r: 1, g: 1, b: 1, a: 0}
         linear:
           lift: {r: 0, g: 0, b: 0, a: 0}
@@ -150,7 +150,7 @@ MonoBehaviour:
             - serializedVersion: 3
               time: 0
               value: 0
-              inSlope: 1
+              inSlope: 0
               outSlope: 1
               tangentMode: 0
               weightedMode: 0
@@ -160,7 +160,7 @@ MonoBehaviour:
               time: 1
               value: 1
               inSlope: 1
-              outSlope: 1
+              outSlope: 0
               tangentMode: 0
               weightedMode: 0
               inWeight: 0
@@ -180,6 +180,15 @@ MonoBehaviour:
               value: 0
               inSlope: 1
               outSlope: 1
+              tangentMode: 0
+              weightedMode: 0
+              inWeight: 0
+              outWeight: 0
+            - serializedVersion: 3
+              time: 0.59125966
+              value: 0.548913
+              inSlope: 2.8516173
+              outSlope: 2.8516173
               tangentMode: 0
               weightedMode: 0
               inWeight: 0
@@ -258,7 +267,34 @@ MonoBehaviour:
         hueVShue:
           curve:
             serializedVersion: 2
-            m_Curve: []
+            m_Curve:
+            - serializedVersion: 3
+              time: 0.24164525
+              value: 0.4456522
+              inSlope: 0
+              outSlope: 0
+              tangentMode: 0
+              weightedMode: 0
+              inWeight: 0
+              outWeight: 0
+            - serializedVersion: 3
+              time: 0.3958869
+              value: 0.45108694
+              inSlope: 0
+              outSlope: 0
+              tangentMode: 0
+              weightedMode: 0
+              inWeight: 0
+              outWeight: 0
+            - serializedVersion: 3
+              time: 0.8663239
+              value: 0.6032609
+              inSlope: 0
+              outSlope: 0
+              tangentMode: 0
+              weightedMode: 0
+              inWeight: 0
+              outWeight: 0
             m_PreInfinity: 2
             m_PostInfinity: 2
             m_RotationOrder: 4
@@ -295,7 +331,7 @@ MonoBehaviour:
           m_Loop: 0
           m_ZeroValue: 0.5
           m_Range: 1
-        e_CurrentEditingCurve: 0
+        e_CurrentEditingCurve: 1
         e_CurveY: 1
         e_CurveR: 0
         e_CurveG: 0
@@ -323,9 +359,9 @@ MonoBehaviour:
       mode: 0
       color: {r: 0.03934998, g: 0.008454963, b: 0.09433961, a: 1}
       center: {x: 0.5, y: 0.5}
-      intensity: 0.387
-      smoothness: 0.2
-      roundness: 1
+      intensity: 0.582
+      smoothness: 1
+      roundness: 0
       mask: {fileID: 0}
       opacity: 1
       rounded: 0
