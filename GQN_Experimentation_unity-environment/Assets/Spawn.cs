@@ -8,6 +8,7 @@ public class Spawn : MonoBehaviour
 
     public float minIntervall=1;
     public float maxIntervall = 2;
+    public Vector3 randomOffset;
 
     float currentIntervall;
     float timer;
@@ -25,7 +26,9 @@ public class Spawn : MonoBehaviour
     void SpawnRandomObject()
     {
         if (spawnObjects.Length != 0)
-            Instantiate(spawnObjects[Random.Range(0, spawnObjects.Length)], transform.position, transform.rotation);
+	    {
+            Instantiate(spawnObjects[Random.Range(0, spawnObjects.Length)], transform.position + Util.RandVec(randomOffset), transform.rotation);
+	    }
     }
 
     void Update()

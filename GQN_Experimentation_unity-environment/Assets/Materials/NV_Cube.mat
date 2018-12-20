@@ -7,27 +7,20 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: PixelateBlit
-  m_Shader: {fileID: 4800000, guid: 2c1af1209373c7044ab7bb97a6df3628, type: 3}
-  m_ShaderKeywords: PIXELSNAP_ON
-  m_LightmapFlags: 4
+  m_Name: NV_Cube
+  m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
+  m_ShaderKeywords: _ALPHATEST_ON _EMISSION _SPECULARHIGHLIGHTS_OFF
+  m_LightmapFlags: 1
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
+  m_CustomRenderQueue: 2450
+  stringTagMap:
+    RenderType: TransparentCutout
   disabledShaderPasses: []
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _AlphaTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _BumpMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _CutTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -40,10 +33,6 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailNormalMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _DetailTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -68,47 +57,22 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - PixelSnap: 1
-    - _Amount: 1
-    - _Amplitude: 1
     - _BumpScale: 1
-    - _ColorMask: 15
-    - _CombinedCutoutThresh: 0.028
-    - _Cutoff: 1
-    - _CutoutThresh: 1
+    - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
-    - _Distance: 1
     - _DstBlend: 0
-    - _EnableExternalAlpha: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _InvFade: 1
     - _Metallic: 0
-    - _Mode: 0
+    - _Mode: 1
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _PixelResX: 64
-    - _PixelResY: 64
-    - _RedCutoutThresh: 1
     - _SmoothnessTextureChannel: 0
-    - _SpecularHighlights: 1
-    - _Speed: 1
+    - _SpecularHighlights: 0
     - _SrcBlend: 1
-    - _Stencil: 0
-    - _StencilComp: 0
-    - _StencilOp: 6.15
-    - _StencilReadMask: 255
-    - _StencilWriteMask: 255
-    - _Strength: 0.2
-    - _Transparency: 0.5
     - _UVSec: 0
-    - _UsePixelate: 1
-    - _UseUIAlphaClip: 0
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _Flip: {r: 1, g: 1, b: 1, a: 1}
-    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-    - _TintColor: {r: 0.35429347, g: 1, b: 0.3066038, a: 1}
+    - _Color: {r: 0.025231387, g: 0.5943396, b: 0.55192107, a: 0.8117647}
+    - _EmissionColor: {r: 0.08769164, g: 1.4300478, b: 0.6583363, a: 1}

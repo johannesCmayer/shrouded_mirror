@@ -16,15 +16,12 @@ public class Shoot : MonoBehaviour
         {
             for (int i = 0; i < numBulletsSpawned; i++)
             {
-                Instantiate(bulletPrefab, transform.position + transform.forward + Vector3.up + RandVec(offset),
-                    transform.rotation * Quaternion.Euler(RandVec(rotOffset)));
+                Instantiate(bulletPrefab, transform.position + transform.forward + Vector3.up + Util.RandVec(offset),
+                    transform.rotation * Quaternion.Euler(Util.RandVec(rotOffset)));
             }
         }
 
     }
 
-    Vector3 RandVec(Vector3 offset)
-    {
-        return new Vector3(Random.Range(-offset.x, offset.x), Random.Range(-offset.y, offset.y), Random.Range(-offset.z, offset.z));
-    }
+    
 }

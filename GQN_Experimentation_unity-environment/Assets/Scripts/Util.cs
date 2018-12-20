@@ -64,4 +64,9 @@ public class Util {
         }
         return sb.ToString();
     }
+
+    public static Vector3 RandVec(Vector3 offset)
+    {
+        return new Vector3(Random.Range(-offset.x, offset.x), Random.Range(-offset.y, offset.y), Random.Range(-offset.z, offset.z));
+    }
 }
