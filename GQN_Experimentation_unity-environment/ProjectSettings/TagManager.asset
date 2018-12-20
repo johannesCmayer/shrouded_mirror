@@ -27,6 +27,7 @@ TagManager:
   - switchOn
   - stone
   - observeArea
+  - Enemy
   layers:
   - Default
   - TransparentFX

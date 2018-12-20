@@ -233,6 +233,7 @@
     <Compile Include="Assets\Scripts\TFBytesRunner.cs" />
     <Compile Include="Assets\Scripts\Util.cs" />
     <Compile Include="Assets\ShootLaser.cs" />
+    <Compile Include="Assets\ShrinkAndDestroy.cs" />
     <Compile Include="Assets\Spawn.cs" />
     <Compile Include="Assets\SpawnImpactVisuals.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />

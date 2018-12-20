@@ -17,10 +17,10 @@ GameObject:
   - component: {fileID: 7738063621383884185}
   - component: {fileID: 7738063621383884184}
   - component: {fileID: 119688031}
-  - component: {fileID: 119688023}
+  - component: {fileID: 5074591873716694122}
   m_Layer: 15
   m_Name: NVV_Cube
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -260,7 +260,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   move: {x: 0, y: 0, z: 20}
---- !u!114 &119688023
+--- !u!114 &5074591873716694122
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -269,10 +269,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 7738063621383884178}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7241e502ff2e77e409ae72d5cb4c6d3b, type: 3}
+  m_Script: {fileID: 11500000, guid: dc3cf72345a77c14eb354807a973ac69, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  timeToDestroy: 10
+  timeToStartShrink: 10
+  shrinkDuration: 0.5
 --- !u!1 &7738063622019552398
 GameObject:
   m_ObjectHideFlags: 0

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 2020893612500868591}
   - component: {fileID: 8357982442037046544}
   - component: {fileID: 7033315172710315035}
-  - component: {fileID: 3746917045443992174}
+  - component: {fileID: 2000261647702171731}
   m_Layer: 0
   m_Name: LaserImpactVisuals
   m_TagString: Untagged
@@ -78,7 +78,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
---- !u!114 &3746917045443992174
+--- !u!114 &2000261647702171731
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -87,7 +87,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 5793269438325168136}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7241e502ff2e77e409ae72d5cb4c6d3b, type: 3}
+  m_Script: {fileID: 11500000, guid: dc3cf72345a77c14eb354807a973ac69, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  timeToDestroy: 1
+  timeToStartShrink: 0.5
+  shrinkDuration: 0.1
