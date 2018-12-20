@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Jobs;
 
-[ComputeJobOptimization]
 public struct MovementJob : IJobParallelFor
 {
     public float moveSpeed;
