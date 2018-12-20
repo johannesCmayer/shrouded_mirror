@@ -60,10 +60,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\DestroyAfterTime.cs" />
-    <Compile Include="Assets\DestroyOtherOnContact.cs" />
     <Compile Include="Assets\ECS\Shoot.cs" />
-    <Compile Include="Assets\MaterialBrightnessBasedOnAudioSource.cs" />
     <Compile Include="Assets\ML-Agents\Examples\3DBall\Scripts\Ball3DAcademy.cs" />
     <Compile Include="Assets\ML-Agents\Examples\3DBall\Scripts\Ball3DAgent.cs" />
     <Compile Include="Assets\ML-Agents\Examples\3DBall\Scripts\Ball3DDecision.cs" />
@@ -155,7 +152,6 @@
     <Compile Include="Assets\ML-Agents\Scripts\RpcCommunicator.cs" />
     <Compile Include="Assets\ML-Agents\Scripts\SocketCommunicator.cs" />
     <Compile Include="Assets\ML-Agents\Scripts\UnityAgentsException.cs" />
-    <Compile Include="Assets\Move.cs" />
     <Compile Include="Assets\PostProcessing\Runtime\Attributes\GetSetAttribute.cs" />
     <Compile Include="Assets\PostProcessing\Runtime\Attributes\MinAttribute.cs" />
     <Compile Include="Assets\PostProcessing\Runtime\Attributes\TrackballAttribute.cs" />
@@ -214,29 +210,34 @@
     <Compile Include="Assets\ResonanceAudio\Scripts\ResonanceAudioRoom.cs" />
     <Compile Include="Assets\ResonanceAudio\Scripts\ResonanceAudioRoomManager.cs" />
     <Compile Include="Assets\ResonanceAudio\Scripts\ResonanceAudioSource.cs" />
-    <Compile Include="Assets\ScaleBasedOnDistance.cs" />
     <Compile Include="Assets\Scripts\ApplyCutAwayMaterial.cs" />
     <Compile Include="Assets\Scripts\ColorManager.cs" />
     <Compile Include="Assets\Scripts\CultureSetter.cs" />
     <Compile Include="Assets\Scripts\DeactivateMeshAtRuntime.cs" />
+    <Compile Include="Assets\Scripts\DestroyAfterTime.cs" />
+    <Compile Include="Assets\Scripts\DestroyOtherOnContact.cs" />
     <Compile Include="Assets\Scripts\Environment.cs" />
     <Compile Include="Assets\Scripts\EnvironmentGenerator.cs" />
     <Compile Include="Assets\Scripts\Extensions.cs" />
     <Compile Include="Assets\Scripts\ImageReceiver.cs" />
+    <Compile Include="Assets\Scripts\MaterialBrightnessBasedOnAudioSource.cs" />
+    <Compile Include="Assets\Scripts\Move.cs" />
     <Compile Include="Assets\Scripts\ObserveArea.cs" />
     <Compile Include="Assets\Scripts\PrintTrueTranform.cs" />
     <Compile Include="Assets\Scripts\QuaternionVisualiserCube.cs" />
     <Compile Include="Assets\Scripts\Rotate.cs" />
+    <Compile Include="Assets\Scripts\ScaleBasedOnDistance.cs" />
     <Compile Include="Assets\Scripts\SendPositonToPython.cs" />
     <Compile Include="Assets\Scripts\SetScaleAxisToZeroIfClose.cs" />
+    <Compile Include="Assets\Scripts\ShootLaser.cs" />
+    <Compile Include="Assets\Scripts\ShrinkAndDestroy.cs" />
+    <Compile Include="Assets\Scripts\Spawn.cs" />
+    <Compile Include="Assets\Scripts\SpawnImpactVisuals.cs" />
+    <Compile Include="Assets\Scripts\SplatterCube.cs" />
     <Compile Include="Assets\Scripts\TakeObservation.cs" />
     <Compile Include="Assets\Scripts\TFBytesRunner.cs" />
+    <Compile Include="Assets\Scripts\ThrowSmoke.cs" />
     <Compile Include="Assets\Scripts\Util.cs" />
-    <Compile Include="Assets\ShootLaser.cs" />
-    <Compile Include="Assets\ShrinkAndDestroy.cs" />
-    <Compile Include="Assets\Spawn.cs" />
-    <Compile Include="Assets\SpawnImpactVisuals.cs" />
-    <Compile Include="Assets\SplatterCube.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01_UGUI.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark02.cs" />
@@ -270,7 +271,6 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexShakeB.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexZoom.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\WarpTextExample.cs" />
-    <Compile Include="Assets\ThrowSmoke.cs" />
     <Compile Include="Assets\TMPSampleScenes\Menu\Scripts\MenuSceneLoader.cs" />
     <Compile Include="Assets\TMPSampleScenes\Menu\Scripts\PauseMenu.cs" />
     <Compile Include="Assets\TMPSampleScenes\Menu\Scripts\SceneAndURLLoader.cs" />
