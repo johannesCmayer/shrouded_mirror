@@ -10,6 +10,7 @@
 /GQN_Experimentation_unity-environment/Assets/Gizmos*
 
 /trainingData
+GQN_Experimentation_unity-environment/MemoryCaptures
 
 # local configuration
 run_config.json

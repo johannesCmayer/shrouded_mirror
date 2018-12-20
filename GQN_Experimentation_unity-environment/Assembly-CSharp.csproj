@@ -60,6 +60,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\BeepCube.cs" />
     <Compile Include="Assets\DestroyAfterTime.cs" />
     <Compile Include="Assets\ML-Agents\Examples\3DBall\Scripts\Ball3DAcademy.cs" />
     <Compile Include="Assets\ML-Agents\Examples\3DBall\Scripts\Ball3DAgent.cs" />
@@ -263,6 +264,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexShakeB.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexZoom.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\WarpTextExample.cs" />
+    <Compile Include="Assets\ThrowSmoke.cs" />
     <Compile Include="Assets\TMPSampleScenes\Menu\Scripts\MenuSceneLoader.cs" />
     <Compile Include="Assets\TMPSampleScenes\Menu\Scripts\PauseMenu.cs" />
     <Compile Include="Assets\TMPSampleScenes\Menu\Scripts\SceneAndURLLoader.cs" />
@@ -336,7 +338,7 @@
     <None Include="Assets\_MK\MKToonFree\Shader\Inc\Forward\MKToonForwardBaseSetup.cginc" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMPro_Surface.cginc" />
     <None Include="Assets\_MK\MKToonFree\Shader\Inc\Common\MKToonLight.cginc" />
-    <None Include="Assets\Shaders\RedCutout.shader" />
+    <None Include="Assets\Shaders\KeyOut.shader" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Mobile Overlay.shader" />
     <None Include="Assets\PostProcessing\Resources\Shaders\Bloom.shader" />
     <None Include="Assets\ResonanceAudio\Demos\Environment\ResonanceAudioDemo\CubeRoomUnlitGrayscale.shader" />

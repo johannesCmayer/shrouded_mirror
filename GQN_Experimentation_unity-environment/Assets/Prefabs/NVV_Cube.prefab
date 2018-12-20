@@ -124,7 +124,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 0}
-  getTagObjIfNoTarget: Player
+  TagToGetIfNoTarget: Player
   startScalingAt: 20
   maxSizeAt: 2
 --- !u!82 &7738063621383884185

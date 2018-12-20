@@ -23,6 +23,7 @@ public class ImageReceiver : MonoBehaviour {
 
     Texture2D streamTexture;
     Socket receiver;
+    Texture2D blackFill;
 
     float timeToLastReceive;
 
@@ -30,6 +31,9 @@ public class ImageReceiver : MonoBehaviour {
     {
         streamTexture = new Texture2D(0, 0, TextureFormat.RGBA32, false);
         streamTexture.filterMode = FilterMode.Point;
+
+        blackFill = new Texture2D(1, 1);
+        blackFill.SetPixels(new[] { new Color(0, 0, 0, 1) });
 
         receiver = Util.GetLocalUDPReceiverSocket(streamReceivePort);
 	}
@@ -70,19 +74,16 @@ public class ImageReceiver : MonoBehaviour {
     {
         if (timeToLastReceive < 2000)
         {
-            //ApplyCutAwayMaterial.instance.Activate();
-
-            Graphics.Blit(streamTexture, dest);
-
-            var temp = new RenderTexture(src.width, src.height, 0);
+            var temp = RenderTexture.GetTemporary(src.width, src.height);
+            Graphics.Blit(streamTexture, temp);
             Graphics.Blit(src, temp, cutRed);
             Graphics.Blit(temp, dest, pixelate);
-            temp.Release();
+            RenderTexture.ReleaseTemporary(temp);
         }
         else
         {
-            //ApplyCutAwayMaterial.instance.Deactivate();
-            Graphics.Blit(src, dest);            
+            Graphics.Blit(src, dest);
         }
+        src.Release();
     }
 }

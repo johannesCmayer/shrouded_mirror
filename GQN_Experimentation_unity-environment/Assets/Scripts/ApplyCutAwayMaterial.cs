@@ -38,7 +38,8 @@ public class ApplyCutAwayMaterial : MonoBehaviour {
             return;
         for (int i = 0; i < renderers.Length; i++)
         {
-             renderers[i].material = origMaterials[i];
+            if (renderers[i] != null)
+                renderers[i].material = origMaterials[i];
         }
     }
 
@@ -50,6 +51,8 @@ public class ApplyCutAwayMaterial : MonoBehaviour {
         
         foreach (var renderer in renderers)
         {
+            if (renderer == null)
+                continue;
             if (LayerMask.LayerToName(renderer.gameObject.layer) != ("NVVisible"))
             {
                 origMaterials.Add(renderer.material);
@@ -57,7 +60,6 @@ public class ApplyCutAwayMaterial : MonoBehaviour {
             }
         }
     }
-        
 
     void Start () {
         if (applyOnStart)
