@@ -23,9 +23,15 @@ public class ScaleBasedOnDistance : MonoBehaviour
             var tagedObjs = GameObject.FindGameObjectsWithTag("Player");
             if (tagedObjs.Length > 1)
                 throw new System.Exception("There are multiple objects with that tag");
-            if (target == null)
+            if (tagedObjs.Length != 0)
                 target = tagedObjs[0];
         }
+        if (target == null)
+        {
+            print("No Target Found Removing component");
+            Destroy(this);
+        }
+
     }
 
     private void Update()
