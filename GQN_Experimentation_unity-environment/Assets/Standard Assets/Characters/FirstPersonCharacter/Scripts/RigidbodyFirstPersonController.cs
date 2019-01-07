@@ -173,7 +173,8 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
                 if (!m_Jumping && Mathf.Abs(input.x) < float.Epsilon && Mathf.Abs(input.y) < float.Epsilon && m_RigidBody.velocity.magnitude < 1f)
                 {
-                    m_RigidBody.Sleep();
+                    //m_RigidBody.Sleep();
+                    // removed to enable collision
                 }
             }
             else
