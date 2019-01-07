@@ -154,6 +154,7 @@
     <Compile Include="Assets\ML-Agents\Scripts\RpcCommunicator.cs" />
     <Compile Include="Assets\ML-Agents\Scripts\SocketCommunicator.cs" />
     <Compile Include="Assets\ML-Agents\Scripts\UnityAgentsException.cs" />
+    <Compile Include="Assets\NVVHealth.cs" />
     <Compile Include="Assets\PostProcessing\Runtime\Attributes\GetSetAttribute.cs" />
     <Compile Include="Assets\PostProcessing\Runtime\Attributes\MinAttribute.cs" />
     <Compile Include="Assets\PostProcessing\Runtime\Attributes\TrackballAttribute.cs" />
@@ -282,6 +283,7 @@
     <Compile Include="Assets\TMPSampleScenes\Scripts\ParticleSceneControls.cs" />
     <Compile Include="Assets\TMPSampleScenes\Scripts\PlaceTargetWithMouse.cs" />
     <Compile Include="Assets\TMPSampleScenes\Scripts\SlowMoButton.cs" />
+    <Compile Include="Assets\UIManager.cs" />
     <Compile Include="Assets\WalkingSim\StickForestGenerator.cs" />
     <None Include="Assets\PostProcessing\Resources\Shaders\DepthOfField.shader" />
     <None Include="Assets\Shaders\Pixelate.shader" />

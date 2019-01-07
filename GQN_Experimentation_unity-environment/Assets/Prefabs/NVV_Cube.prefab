@@ -19,6 +19,8 @@ GameObject:
   - component: {fileID: 119688031}
   - component: {fileID: 5074591873716694122}
   - component: {fileID: 5313810999717205026}
+  - component: {fileID: 755904856844809036}
+  - component: {fileID: 2431357212435667143}
   m_Layer: 15
   m_Name: NVV_Cube
   m_TagString: Enemy
@@ -287,6 +289,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c14b95070c52f8c47ba5d8f19a565291, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!54 &755904856844809036
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7738063621383884178}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &2431357212435667143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7738063621383884178}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c09cb15972b1694ab695426c7a54250, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  deathParticalGO: {fileID: 5313511800249737838, guid: 7b0498f3e8bf21643bec4a39587ae51a,
+    type: 3}
 --- !u!1 &7738063622019552398
 GameObject:
   m_ObjectHideFlags: 0
