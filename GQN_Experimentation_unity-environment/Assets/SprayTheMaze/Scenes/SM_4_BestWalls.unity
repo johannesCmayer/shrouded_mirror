@@ -394,12 +394,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 75949647}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &83469294 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4196394252205997719, guid: 7f7f934384cc0c74299098037a7abe3c,
-    type: 3}
-  m_PrefabInstance: {fileID: 4196394251104283830}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &154126586
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11030,18 +11024,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1520414880}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &2017773441 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 114200394547936782, guid: 076e5389d0e062941b316391a62ea4ac,
-    type: 3}
-  m_PrefabInstance: {fileID: 1063143631}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06ecc9e744e461c40b994578ddeb73a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &2063594198
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12051,6 +12033,16 @@ PrefabInstance:
       propertyPath: environmentGroups.Array.data[3].environments.Array.data[0]
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 4297739157581501707, guid: 7f7f934384cc0c74299098037a7abe3c,
+        type: 3}
+      propertyPath: captureSettings.Array.data[2].execute
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4297739157581501707, guid: 7f7f934384cc0c74299098037a7abe3c,
+        type: 3}
+      propertyPath: captureSettings.Array.data[3].execute
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4213972273529049625, guid: 7f7f934384cc0c74299098037a7abe3c,
         type: 3}
       propertyPath: m_CullingMask.m_Bits
@@ -12125,15 +12117,5 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6938547287937372740, guid: 1f50129ca2c0f454a9fba3ddc8524670,
-        type: 3}
-      propertyPath: imageReceiver
-      value: 
-      objectReference: {fileID: 2017773441}
-    - target: {fileID: 6938547287937372740, guid: 1f50129ca2c0f454a9fba3ddc8524670,
-        type: 3}
-      propertyPath: dataGen
-      value: 
-      objectReference: {fileID: 83469294}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1f50129ca2c0f454a9fba3ddc8524670, type: 3}
