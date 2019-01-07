@@ -10,20 +10,18 @@ public class ApplyCutAwayMaterial : MonoBehaviour {
     bool isActive;
     bool overwriteSetting = false;
     bool manualDeactivate = false;
-    bool applyOnStart = true;    
-    Renderer[] renderers;
-    List<Material> origMaterials = new List<Material>();
+    bool applyOnStart = true;
+    Dictionary<Renderer, Material> originals = new Dictionary<Renderer, Material>();
 
     private void Awake()
     {
         instance = this;
-        renderers = FindObjectsOfType<MeshRenderer>();
+        var renderers = FindObjectsOfType<MeshRenderer>();
         foreach (var renderer in renderers)
         {
-
             if (LayerMask.LayerToName(renderer.gameObject.layer) != ("NVVisible"))
             {
-                origMaterials.Add(renderer.material);
+                originals.Add(renderer, renderer.material);
             }
         }
     }
@@ -34,12 +32,10 @@ public class ApplyCutAwayMaterial : MonoBehaviour {
             return;
         isActive = false;
         applyOnStart = false;
-        if (renderers == null)
-            return;
-        for (int i = 0; i < renderers.Length; i++)
+        foreach (var item in originals)
         {
-            if (renderers[i] != null)
-                renderers[i].material = origMaterials[i];
+            if (item.Key != null)
+                item.Key.material = item.Value;
         }
     }
 
@@ -49,19 +45,18 @@ public class ApplyCutAwayMaterial : MonoBehaviour {
             return;
         isActive = true;
         
-        foreach (var renderer in renderers)
+        foreach (var orig in originals)
         {
-            if (renderer == null)
-                continue;
-            if (LayerMask.LayerToName(renderer.gameObject.layer) != ("NVVisible"))
+            if (LayerMask.LayerToName(orig.Key.gameObject.layer) != ("NVVisible") &&
+                orig.Key != null)
             {
-                origMaterials.Add(renderer.material);
-                renderer.material = cutAwayMaterial;
+                orig.Key.material = cutAwayMaterial;
             }
         }
     }
 
-    void Start () {
+    void Start ()
+    {
         if (applyOnStart)
         {
             Activate();
