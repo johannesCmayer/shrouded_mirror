@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NVVHealth : MonoBehaviour
+public class NVVHealth : MonoBehaviour, IKillable
 {
     public GameObject deathParticalGO;
 
-    private void OnDestroy()
+    private void Kill()
     {
         Instantiate(deathParticalGO, transform.position, Quaternion.identity);
+        Destroy(gameObject);
     }
 }
