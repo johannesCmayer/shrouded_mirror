@@ -11958,10 +11958,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PythonNavigator
       objectReference: {fileID: 0}
-    - target: {fileID: 1493819725170790, guid: 076e5389d0e062941b316391a62ea4ac, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 4000663397151202, guid: 076e5389d0e062941b316391a62ea4ac, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -12006,52 +12002,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 54728289117294160, guid: 076e5389d0e062941b316391a62ea4ac,
-        type: 3}
-      propertyPath: m_IsKinematic
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 54728289117294160, guid: 076e5389d0e062941b316391a62ea4ac,
-        type: 3}
-      propertyPath: m_CollisionDetection
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 54728289117294160, guid: 076e5389d0e062941b316391a62ea4ac,
-        type: 3}
-      propertyPath: m_UseGravity
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 136475010856012200, guid: 076e5389d0e062941b316391a62ea4ac,
-        type: 3}
-      propertyPath: m_Radius
-      value: 0.89
-      objectReference: {fileID: 0}
-    - target: {fileID: 136475010856012200, guid: 076e5389d0e062941b316391a62ea4ac,
-        type: 3}
-      propertyPath: m_Height
-      value: 3.89
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 076e5389d0e062941b316391a62ea4ac, type: 3}
---- !u!1 &1063143632 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1493819725170790, guid: 076e5389d0e062941b316391a62ea4ac,
-    type: 3}
-  m_PrefabInstance: {fileID: 1063143631}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1063143633
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1063143632}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cf8d3cf0512049e42a806ea19b4752ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  respawnTime: 2
 --- !u!1 &1072870551
 GameObject:
   m_ObjectHideFlags: 0
@@ -13833,6 +13785,7 @@ GameObject:
   - component: {fileID: 1228809197}
   - component: {fileID: 1228809196}
   - component: {fileID: 1228809195}
+  - component: {fileID: 1228809198}
   m_Layer: 15
   m_Name: Goal Particle System
   m_TagString: Untagged
@@ -17379,7 +17332,7 @@ ParticleSystem:
         m_NumAlphaKeys: 2
     range: {x: 0, y: 1}
   CollisionModule:
-    enabled: 1
+    enabled: 0
     serializedVersion: 3
     type: 1
     collisionMode: 0
@@ -18522,13 +18475,26 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1228809194}
-  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 19.4, y: 9.21, z: 71.17}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 19.4, y: 3.89, z: 57.7}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 934327712}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &1228809198
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1228809194}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 4.73
+  m_Center: {x: 0.33284998, y: -0.11581802, z: 4.5}
 --- !u!1 &1230058202
 GameObject:
   m_ObjectHideFlags: 0
@@ -28805,6 +28771,11 @@ PrefabInstance:
       propertyPath: environmentGroups.Array.data[3].environments.Array.data[0]
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 4297739157581501707, guid: 7f7f934384cc0c74299098037a7abe3c,
+        type: 3}
+      propertyPath: captureSettings.Array.data[3].execute
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7f7f934384cc0c74299098037a7abe3c, type: 3}
 --- !u!1001 &8130024224664168268
@@ -28898,5 +28869,10 @@ PrefabInstance:
       propertyPath: OverlayObjecsRoot
       value: 
       objectReference: {fileID: 934327711}
+    - target: {fileID: 6240815282448192929, guid: 1f50129ca2c0f454a9fba3ddc8524670,
+        type: 3}
+      propertyPath: engineMode
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1f50129ca2c0f454a9fba3ddc8524670, type: 3}
