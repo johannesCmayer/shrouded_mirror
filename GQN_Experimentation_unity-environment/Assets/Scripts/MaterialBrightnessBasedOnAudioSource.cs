@@ -23,14 +23,8 @@ public class MaterialBrightnessBasedOnAudioSource : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        var spectrum = new float[64];
-        myAudiosource.GetSpectrumData(spectrum, 0, FFTWindow.Rectangular);
+        var combinedSpectrum = new SpecrumAnalyser(myAudiosource).GetCombinedSpectrum();
 
-        float combinedSpectrum = 0;
-        foreach (var item in spectrum)
-        {
-            combinedSpectrum += item;
-        }
         if (combinedSpectrum > spectrumMax)
             spectrumMax = combinedSpectrum;
         if (combinedSpectrum > currentCombinedSpectrum)
@@ -40,6 +34,6 @@ public class MaterialBrightnessBasedOnAudioSource : MonoBehaviour
 
         var newCol = origColor * (currentCombinedSpectrum / (spectrumMax / brightnessCoef));
 
-        myRenderer.material.color =newCol;
+        myRenderer.material.color = newCol;
     }
 }

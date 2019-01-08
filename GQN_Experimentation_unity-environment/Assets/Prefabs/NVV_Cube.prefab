@@ -263,6 +263,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   move: {x: 0, y: 0, z: 20}
+  moveToAudisourceOutput: 0
+  audioSource: {fileID: 0}
+  audioFilterSettings:
+    volCutOffLow: 0
+    volCutOffHigh: 3.4028235e+38
+    specCutoffLow: 0
+    specCutoffHigh: 1
+  minSoundStrengthToMove: 10
+  constantMaxMoveCoeff: 1
+  maxMoveCoef: 1
 --- !u!114 &5074591873716694122
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -330,7 +340,6 @@ GameObject:
   - component: {fileID: 7738063622019552399}
   - component: {fileID: 7738063622019552393}
   - component: {fileID: 7738063622019552392}
-  - component: {fileID: 1051418000923761104}
   m_Layer: 15
   m_Name: ASource
   m_TagString: Untagged
@@ -472,16 +481,3 @@ MonoBehaviour:
   occlusionEnabled: 0
   occlusionIntensity: 1
   quality: 2
---- !u!114 &1051418000923761104
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7738063622019552398}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b16e05c3fda0d664ca23c3278f219cfc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  move: {x: 0, y: 0, z: 1}

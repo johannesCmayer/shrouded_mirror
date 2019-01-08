@@ -15,9 +15,9 @@ GameObject:
   - component: {fileID: 7321553508694597289}
   - component: {fileID: 7834126346080368620}
   - component: {fileID: 1824456829851063593}
-  - component: {fileID: 6908209084443926121}
   - component: {fileID: 2971058781417302464}
   - component: {fileID: 666858282220856538}
+  - component: {fileID: 7641798417966075766}
   m_Layer: 0
   m_Name: SmokeBall
   m_TagString: Untagged
@@ -4788,19 +4788,6 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
---- !u!114 &6908209084443926121
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4239632547566076988}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7241e502ff2e77e409ae72d5cb4c6d3b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  timeToDestroy: 10
 --- !u!82 &2971058781417302464
 AudioSource:
   m_ObjectHideFlags: 0
@@ -4921,3 +4908,17 @@ MonoBehaviour:
   occlusionEnabled: 0
   occlusionIntensity: 1
   quality: 2
+--- !u!114 &7641798417966075766
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4239632547566076988}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc3cf72345a77c14eb354807a973ac69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  timeToStartShrink: 10
+  shrinkDuration: 0.5
