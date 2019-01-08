@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1114368918738752393}
   - component: {fileID: 1114368918738752392}
   - component: {fileID: 1114368918738752399}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: WorldGridCube(Clone)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
