@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 2869414880541847630}
   - component: {fileID: 1886201307343128798}
   m_Layer: 0
-  m_Name: EnemyDeathParticle System
+  m_Name: NVVCube1_DeathParticle System
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4790,7 +4790,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: d1ae469d0ec5998489e98cd2e68e5e35, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 61b82fb22cadebe40be695fd615f2c10, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1

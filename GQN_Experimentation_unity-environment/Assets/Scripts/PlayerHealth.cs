@@ -52,8 +52,8 @@ public class PlayerHealth : MonoBehaviour, IKillable
 
     public void TransientPlayer(bool enable)
     {
-        EnableColliders(false);
-        GetComponent<RigidbodyFirstPersonController>().enabled = false;
+        EnableColliders(!enable);
+        GetComponent<RigidbodyFirstPersonController>().enabled = !enable;
     }
 
     public void EnableColliders(bool enabled)

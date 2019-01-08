@@ -6,6 +6,10 @@ using UnityEngine;
 public class MaterialBrightnessBasedOnAudioSource : MonoBehaviour
 {
     public float brightnessCoef = 2;
+    public float lerpSpeed = 1;
+    public bool setToMaxColor;
+
+    public AudioFilterSettings audioFilterSettings;
 
     AudioSource myAudiosource;
     Renderer myRenderer;
@@ -23,17 +27,27 @@ public class MaterialBrightnessBasedOnAudioSource : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        var combinedSpectrum = new SpecrumAnalyser(myAudiosource).GetCombinedSpectrum();
+        var combinedSpectrum = new SpecrumAnalyser(myAudiosource).GetCombinedSpectrum(audioFilterSettings);
 
         if (combinedSpectrum > spectrumMax)
             spectrumMax = combinedSpectrum;
         if (combinedSpectrum > currentCombinedSpectrum)
             currentCombinedSpectrum = combinedSpectrum;
         else
-            currentCombinedSpectrum = Mathf.Lerp(currentCombinedSpectrum, combinedSpectrum, 1f * Time.deltaTime);
+            currentCombinedSpectrum = Mathf.Lerp(currentCombinedSpectrum, combinedSpectrum, lerpSpeed * Time.deltaTime);
 
         var newCol = origColor * (currentCombinedSpectrum / (spectrumMax / brightnessCoef));
-
+        if (setToMaxColor)
+        {
+            if (currentCombinedSpectrum > 0)
+                newCol = origColor * brightnessCoef;
+            else
+            {
+                newCol = origColor * 0;
+            }
+        }
+        
+        newCol.a = 1;
         myRenderer.material.color = newCol;
     }
 }

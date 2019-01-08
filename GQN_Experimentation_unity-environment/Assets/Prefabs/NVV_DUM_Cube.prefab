@@ -76,7 +76,22 @@ PrefabInstance:
         type: 3}
       propertyPath: m_audioClip
       value: 
-      objectReference: {fileID: 8300000, guid: 7b94973054d03a7428435c907559a8ef, type: 3}
+      objectReference: {fileID: 8300000, guid: 70d8a970871f8de40aecbe730ba9c55a, type: 3}
+    - target: {fileID: 7738063621383884184, guid: ba4fcd8c69b14904bb9ea673d1519612,
+        type: 3}
+      propertyPath: gainDb
+      value: 24
+      objectReference: {fileID: 0}
+    - target: {fileID: 7738063621383884184, guid: ba4fcd8c69b14904bb9ea673d1519612,
+        type: 3}
+      propertyPath: directivitySharpness
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7738063621383884184, guid: ba4fcd8c69b14904bb9ea673d1519612,
+        type: 3}
+      propertyPath: directivityAlpha
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 119688031, guid: ba4fcd8c69b14904bb9ea673d1519612, type: 3}
       propertyPath: moveToAudisourceOutput
       value: 1
@@ -87,19 +102,34 @@ PrefabInstance:
       objectReference: {fileID: 5715401894484997938}
     - target: {fileID: 119688031, guid: ba4fcd8c69b14904bb9ea673d1519612, type: 3}
       propertyPath: minSoundStrengthToMove
-      value: 0.3
-      objectReference: {fileID: 0}
-    - target: {fileID: 119688031, guid: ba4fcd8c69b14904bb9ea673d1519612, type: 3}
-      propertyPath: move.z
-      value: 40
-      objectReference: {fileID: 0}
-    - target: {fileID: 119688031, guid: ba4fcd8c69b14904bb9ea673d1519612, type: 3}
-      propertyPath: constantMaxMoveCoeff
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 119688031, guid: ba4fcd8c69b14904bb9ea673d1519612, type: 3}
+      propertyPath: move.z
+      value: 120
+      objectReference: {fileID: 0}
+    - target: {fileID: 119688031, guid: ba4fcd8c69b14904bb9ea673d1519612, type: 3}
+      propertyPath: constantMaxMoveCoeff
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 119688031, guid: ba4fcd8c69b14904bb9ea673d1519612, type: 3}
       propertyPath: maxMoveCoef
-      value: Infinity
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7738063622019552398, guid: ba4fcd8c69b14904bb9ea673d1519612,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7738063622019552393, guid: ba4fcd8c69b14904bb9ea673d1519612,
+        type: 3}
+      propertyPath: m_audioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 70d8a970871f8de40aecbe730ba9c55a, type: 3}
+    - target: {fileID: 7738063622019552392, guid: ba4fcd8c69b14904bb9ea673d1519612,
+        type: 3}
+      propertyPath: gainDb
+      value: 24
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ba4fcd8c69b14904bb9ea673d1519612, type: 3}
