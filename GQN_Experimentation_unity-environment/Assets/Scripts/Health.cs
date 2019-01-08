@@ -28,6 +28,7 @@ public class Health : MonoBehaviour
         var am = AudioManager.instance;
         am.PlayOneShot2D(am.playerDeath);
         dead = true;
+        Time.timeScale = 0;
     }
 
     public IEnumerator DelayedRespawn(float delay)
@@ -41,6 +42,8 @@ public class Health : MonoBehaviour
         transform.position = spawnPosition;
         GetComponent<RigidbodyFirstPersonController>().enabled = true;
         UIManager.instance.EnableDeathScreen(false);
+        UIManager.instance.winScreen.SetActive(false);
+        Time.timeScale = 1;
         dead = false;
     }
 }
