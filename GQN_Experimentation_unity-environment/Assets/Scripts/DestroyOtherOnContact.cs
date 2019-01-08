@@ -11,7 +11,7 @@ public class DestroyOtherOnContact : MonoBehaviour
         foreach (var tag in tagsToDestroy)
         {
             if (other.CompareTag(tag))
-                Destroy(other.gameObject);
+                other.GetComponent<IKillable>().Kill();
         }
     }
 }
