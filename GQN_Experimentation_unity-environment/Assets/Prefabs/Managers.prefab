@@ -408,6 +408,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5e6979e63473e946b37290c82ad71a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerDeath:
+    clip: {fileID: 0}
+    volume: 1
+  wonGame:
+    clip: {fileID: 0}
+    volume: 1
 --- !u!82 &2991276790851441298
 AudioSource:
   m_ObjectHideFlags: 0
@@ -547,7 +553,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69dbe9a5c803870418ea70174d24128e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  engineMode: 0
+  engineMode: 1
   dataGen: {fileID: 0}
   imageReceiver: {fileID: 0}
   OverlayObjecsRoot: {fileID: 0}

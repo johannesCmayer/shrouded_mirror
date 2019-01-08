@@ -2,9 +2,20 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
+public class AudioPlayData
+{
+    public AudioClip clip;
+    public float volume = 1;
+}
+
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager instance;
+
+    public AudioPlayData playerDeath;
+    public AudioPlayData wonGame;
+
     AudioSource myAudiosource;
 
     private void Awake()
@@ -17,8 +28,8 @@ public class AudioManager : MonoBehaviour
         myAudiosource = GetComponent<AudioSource>();
     }
 
-    public void PlayOneShot2D(AudioClip clip, float volume)
+    public void PlayOneShot2D(AudioPlayData playData)
     {
-        myAudiosource.PlayOneShot(clip, volume);
+        myAudiosource.PlayOneShot(playData.clip, playData.volume);
     }
 }

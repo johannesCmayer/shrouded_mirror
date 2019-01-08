@@ -25,6 +25,8 @@ public class Health : MonoBehaviour
     {
         UIManager.instance.EnableDeathScreen(true);
         GetComponent<RigidbodyFirstPersonController>().enabled = false;
+        var am = AudioManager.instance;
+        am.PlayOneShot2D(am.playerDeath);
         dead = true;
     }
 
