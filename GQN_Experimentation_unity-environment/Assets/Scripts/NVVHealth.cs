@@ -6,7 +6,7 @@ public class NVVHealth : MonoBehaviour, IKillable
 {
     public GameObject deathParticalGO;
 
-    private void Kill()
+    public void Kill()
     {
         Instantiate(deathParticalGO, transform.position, Quaternion.identity);
         Destroy(gameObject);

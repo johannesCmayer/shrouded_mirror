@@ -8,7 +8,7 @@ public class KillPlayer : MonoBehaviour
     {
         if (c.gameObject.CompareTag("Player"))
         {
-            c.gameObject.GetComponent<Health>().Die();
+            c.gameObject.GetComponent<IKillable>().Kill();
         }
     }
 }
