@@ -22,6 +22,7 @@ public class MaterialBrightnessBasedOnAudioSource : MonoBehaviour
         myAudiosource = GetComponent<AudioSource>();
         myRenderer = GetComponent<Renderer>();
         origColor = myRenderer.material.color;
+        myRenderer.material.color = new Color(0, 0, 0, 1);
     }
 
     // Update is called once per frame

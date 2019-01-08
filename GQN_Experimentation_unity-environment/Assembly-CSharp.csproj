@@ -60,7 +60,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\ActivateAfterRandomDelay.cs" />
+    <Compile Include="Assets\Checkpoint.cs" />
+    <Compile Include="Assets\CheckpointContainer.cs" />
+    <Compile Include="Assets\EventManager.cs" />
+    <Compile Include="Assets\OffsetPlayTime.cs" />
     <Compile Include="Assets\Scripts\ApplyCutAwayMaterial.cs" />
     <Compile Include="Assets\Scripts\AudioManager.cs" />
     <Compile Include="Assets\Scripts\AudioUtil.cs" />
@@ -101,6 +104,7 @@
     <Compile Include="Assets\Scripts\WorldGrid.cs" />
     <Compile Include="Assets\SubProjects\WalkingSim\StickForestGenerator.cs" />
     <Compile Include="Assets\Synthesiser\Synthesiser.cs" />
+    <Compile Include="Assets\TargetAudio.cs" />
     <None Include="Assets\Shaders\Pixelate.shader" />
     <None Include="Assets\Shaders\KeyOut.shader" />
     <Reference Include="Unity.TextMeshPro.Editor">
