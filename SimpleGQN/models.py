@@ -82,7 +82,7 @@ def get_multi_input_gqn_model(pictures_input_shape, coordinates_input_shape, num
     decoded = decoder([encoded, querry_coordinates])
 
     joint_model = keras.Model(inputs=[*picture_input, *coordinates_picture_input, querry_coordinates], outputs=decoded)
-    joint_model.compile('rmsprop', 'mse')
+    joint_model.compile('adam', 'mse')
     return joint_model
 
 
@@ -140,7 +140,7 @@ def get_latent_variable_gqn_model(pictures_input_shape, coordinates_input_shape,
     #ecoder = keras.Model(inputs=[z_mean, z_log_sigma], outputs=[decoded])
 
     vae_model = keras.Model(inputs=[*picture_input, *coordinates_picture_input, querry_coordinates], outputs=decoded)
-    vae_model.compile('rmsprop', loss=get_vae_loss(z_mean, z_log_sigma))
+    vae_model.compile('adam', loss=get_vae_loss(z_mean, z_log_sigma))
     return vae_model
 
 
@@ -186,7 +186,7 @@ def simple_conv_model(pictures_input_shape, coordinates_input_shape, num_input_o
     out_img = Conv2D(3, (3,3), (1,1), padding='same')(x)
 
     joint_model = keras.Model(inputs=[*picture_input, *coordinates_picture_input, querry_coordinates], outputs=out_img)
-    joint_model.compile('rmsprop', 'mse')
+    joint_model.compile('adam', 'mse')
     return joint_model
 
 
@@ -204,5 +204,5 @@ def get_embedding_model(pictures_input_shape, coordinates_input_shape, num_input
     decoded = decoder([encoded, querry_coordinates])
 
     joint_model = keras.Model(inputs=[*picture_input, *coordinates_picture_input, querry_coordinates], outputs=decoded)
-    joint_model.compile('rmsprop', 'mse')
+    joint_model.compile('adam', 'mse')
     return joint_model
