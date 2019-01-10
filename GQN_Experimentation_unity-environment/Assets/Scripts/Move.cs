@@ -3,31 +3,35 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Jobs;
 
-public struct MovementJob : IJobParallelFor
-{
-    public float moveSpeed;
-    public float deltaTime;
-
-    public void Execute(int index)
-    {
-
-    }
-}
-
 public class Move : MonoBehaviour
 {
     public Vector3 move = Vector3.forward;
+    public bool moveToAudisourceOutput;
+    public AudioSource audioSource;
+    public AudioFilterSettings audioFilterSettings;
+    public float minSoundStrengthToMove = 10;
+    public bool constantMaxMoveCoeff = true;
+    public float maxMoveCoef = 1;
 
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
     void Update()
     {
-        transform.position += (transform.forward * move.z + transform.right * move.x + transform.up * move.y) * Time.deltaTime;
+        var scaledMove = move * GetMoveAudiosourceMagnitude() * Time.deltaTime;
+        transform.position += 
+            transform.forward * scaledMove.z + 
+            transform.right * scaledMove.x + 
+            transform.up * scaledMove.y;
+    }
+
+    float GetMoveAudiosourceMagnitude()
+    {
+        if (!moveToAudisourceOutput || audioSource == null)
+            return 1;
+
+        var combSpectrum = new SpecrumAnalyser(audioSource).GetCombinedSpectrum(audioFilterSettings);
+        combSpectrum = Mathf.Pow(combSpectrum, 1);
+        if (combSpectrum > minSoundStrengthToMove)
+            return Mathf.Min(combSpectrum, maxMoveCoef);
+        else
+            return 0;
     }
 }

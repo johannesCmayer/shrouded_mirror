@@ -30,6 +30,7 @@ public class PlayerHealth : MonoBehaviour, IKillable
         var am = AudioManager.instance;
         am.PlayOneShot2D(am.playerDeath);
         gameOver = true;
+        EventManager.instance.gameOver();
     }   
 
     public void GameWon()
@@ -39,6 +40,7 @@ public class PlayerHealth : MonoBehaviour, IKillable
         var am = AudioManager.instance;
         am.PlayOneShot2D(am.wonGame);
         gameOver = true;
+        EventManager.instance.gameOver();
     }
 
     public void Respawn()
@@ -48,12 +50,13 @@ public class PlayerHealth : MonoBehaviour, IKillable
         UIManager.instance.EnableDeathScreen(false);
         UIManager.instance.winScreen.SetActive(false);
         gameOver = false;
+        EventManager.instance.playerRespawned();
     }
 
     public void TransientPlayer(bool enable)
     {
-        EnableColliders(false);
-        GetComponent<RigidbodyFirstPersonController>().enabled = false;
+        EnableColliders(!enable);
+        GetComponent<RigidbodyFirstPersonController>().enabled = !enable;
     }
 
     public void EnableColliders(bool enabled)

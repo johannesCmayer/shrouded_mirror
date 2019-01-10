@@ -15,6 +15,7 @@ public class AudioManager : MonoBehaviour
 
     public AudioPlayData playerDeath;
     public AudioPlayData wonGame;
+    public AudioPlayData collectedCheckpoint;
 
     AudioSource myAudiosource;
 
