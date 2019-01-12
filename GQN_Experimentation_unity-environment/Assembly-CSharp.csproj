@@ -60,13 +60,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Checkpoint.cs" />
-    <Compile Include="Assets\CheckpointContainer.cs" />
-    <Compile Include="Assets\EventManager.cs" />
-    <Compile Include="Assets\OffsetPlayTime.cs" />
     <Compile Include="Assets\Scripts\ApplyCutAwayMaterial.cs" />
     <Compile Include="Assets\Scripts\AudioManager.cs" />
     <Compile Include="Assets\Scripts\AudioUtil.cs" />
+    <Compile Include="Assets\Scripts\Checkpoint.cs" />
+    <Compile Include="Assets\Scripts\CheckpointContainer.cs" />
     <Compile Include="Assets\Scripts\ColorManager.cs" />
     <Compile Include="Assets\Scripts\CultureSetter.cs" />
     <Compile Include="Assets\Scripts\DeactivateMeshAtRuntime.cs" />
@@ -74,6 +72,7 @@
     <Compile Include="Assets\Scripts\DestroyOtherOnContact.cs" />
     <Compile Include="Assets\Scripts\Environment.cs" />
     <Compile Include="Assets\Scripts\EnvironmentGenerator.cs" />
+    <Compile Include="Assets\Scripts\EventManager.cs" />
     <Compile Include="Assets\Scripts\Extensions.cs" />
     <Compile Include="Assets\Scripts\ImageReceiver.cs" />
     <Compile Include="Assets\Scripts\Interfaces.cs" />
@@ -84,6 +83,7 @@
     <Compile Include="Assets\Scripts\Move.cs" />
     <Compile Include="Assets\Scripts\NVVHealth.cs" />
     <Compile Include="Assets\Scripts\ObserveArea.cs" />
+    <Compile Include="Assets\Scripts\OffsetPlayTime.cs" />
     <Compile Include="Assets\Scripts\PlayerHealth.cs" />
     <Compile Include="Assets\Scripts\PrintTrueTranform.cs" />
     <Compile Include="Assets\Scripts\QuaternionVisualiserCube.cs" />
@@ -97,6 +97,7 @@
     <Compile Include="Assets\Scripts\SpawnImpactVisuals.cs" />
     <Compile Include="Assets\Scripts\SplatterCube.cs" />
     <Compile Include="Assets\Scripts\TakeObservation.cs" />
+    <Compile Include="Assets\Scripts\TargetAudio.cs" />
     <Compile Include="Assets\Scripts\TFBytesRunner.cs" />
     <Compile Include="Assets\Scripts\ThrowSmoke.cs" />
     <Compile Include="Assets\Scripts\UIManager.cs" />
@@ -104,7 +105,6 @@
     <Compile Include="Assets\Scripts\WorldGrid.cs" />
     <Compile Include="Assets\SubProjects\WalkingSim\StickForestGenerator.cs" />
     <Compile Include="Assets\Synthesiser\Synthesiser.cs" />
-    <Compile Include="Assets\TargetAudio.cs" />
     <None Include="Assets\Shaders\Pixelate.shader" />
     <None Include="Assets\Shaders\KeyOut.shader" />
     <Reference Include="Unity.TextMeshPro.Editor">

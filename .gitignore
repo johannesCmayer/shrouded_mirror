@@ -6,7 +6,7 @@
 /GQN_Experimentation_unity-environment/[Pp]ackages/
 /GQN_Experimentation_unity-environment/[Uu]nity[Pp]ackage[Mm]anager/
 /GQN_Experimentation_unity-environment/Assets/AssetStoreTools*
-/GQN_Experimentation_unity-environment/Assets/Plugins*
+#/GQN_Experimentation_unity-environment/Assets/Plugins*
 /GQN_Experimentation_unity-environment/Assets/Gizmos*
 
 /trainingData
@@ -68,10 +68,10 @@ GQN_Experimentation_unity-environment/Assets/Graphs/LocalGraphs
 *.x86
 
 # Tensorflow Sharp Files
-/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/Android*
-/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/iOS*
-/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/Computer*
-/GQN_Experimentation_unity-environment/Assets/ML-Agents/Plugins/System*
+/GQN_Experimentation_unity-environment/Assets/Plugins/ML-Agents/Plugins/Android*
+/GQN_Experimentation_unity-environment/Assets/Plugins/ML-Agents/Plugins/iOS*
+/GQN_Experimentation_unity-environment/Assets/Plugins/ML-Agents/Plugins/Computer*
+/GQN_Experimentation_unity-environment/Assets/Plugins/ML-Agents/Plugins/System*
 
 # Generated doc folders
 /docs/html
