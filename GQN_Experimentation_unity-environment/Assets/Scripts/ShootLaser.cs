@@ -20,6 +20,7 @@ public class ShootLaser : MonoBehaviour
     {
         ResetAmmo();
         EventManager.instance.collectedCheckpoint += ResetAmmo;
+        EventManager.instance.playerRespawned += ResetAmmo;
     }
 
     void ResetAmmo()
