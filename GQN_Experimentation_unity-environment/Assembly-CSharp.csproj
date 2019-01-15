@@ -63,6 +63,7 @@
     <Compile Include="Assets\Scripts\ApplyCutAwayMaterial.cs" />
     <Compile Include="Assets\Scripts\AudioManager.cs" />
     <Compile Include="Assets\Scripts\AudioUtil.cs" />
+    <Compile Include="Assets\Scripts\ChangeColorWithDistance.cs" />
     <Compile Include="Assets\Scripts\Checkpoint.cs" />
     <Compile Include="Assets\Scripts\CheckpointContainer.cs" />
     <Compile Include="Assets\Scripts\ColorManager.cs" />

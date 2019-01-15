@@ -9,6 +9,7 @@ public class EventManager : MonoBehaviour
 
     public Action gameOver = delegate { };
     public Action playerRespawned = delegate { };
+    public Action collectedCheckpoint = delegate { };
 
     void Start()
     {

@@ -17,8 +17,12 @@ def get_dc_gqn_encoder(picture_input_shape, coordinate_input_shape, num_layers, 
     if masking:
         x = keras.layers.Masking(mask_value=0.0)(x)
     for _ in range(num_layers):
-        x = Dense(num_neurons_layer, 'relu', True)(x)
-    output = Dense(num_state_neurons, 'relu', True)(x)
+        x = Dense(num_neurons_layer, 'relu', True,
+                  kernel_regularizer=keras.regularizers.l2(0.01),
+                activity_regularizer=keras.regularizers.l1(0.01))(x)
+    output = Dense(num_state_neurons, 'relu', True,
+                  kernel_regularizer=keras.regularizers.l2(0.01),
+                activity_regularizer=keras.regularizers.l1(0.01))(x)
     return keras.Model([picture_input, coordinates_picture_input], output, name='gqn_encoder')
 
 
@@ -48,8 +52,12 @@ def get_gqn_decoder(state_input_shape, coordinate_input_shape, output_dim, num_l
     coordinate_input = keras.Input(coordinate_input_shape, name='coordinate_input')
     x = Concatenate()([state_input, coordinate_input])
     for _ in range(num_layers - 1):
-        x = Dense(num_neurons_layer, 'relu', True)(x)
-    x = Dense(product(output_dim), 'relu', True)(x)
+        x = Dense(num_neurons_layer, 'relu', True,
+                  kernel_regularizer=keras.regularizers.l2(0.01),
+                activity_regularizer=keras.regularizers.l1(0.01))(x)
+    x = Dense(product(output_dim), 'relu', True,
+              kernel_regularizer=keras.regularizers.l2(0.01),
+              activity_regularizer=keras.regularizers.l1(0.01))(x)
     predictions = Reshape(output_dim)(x)
     return keras.Model(inputs=[state_input, coordinate_input], outputs=predictions, name='gqn_decoder')
 

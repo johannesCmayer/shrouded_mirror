@@ -15,18 +15,22 @@ public class PlayerHealth : MonoBehaviour, IKillable
     {
         spawnPosition = transform.position;
         spawnRotation = transform.rotation;
+
+        UIManager.instance.gameStartScreen.SetActive(true);
     }
 
     private void Update()
     {
-        if (gameOver && Input.anyKeyDown)
+        if (Input.anyKeyDown)
+            UIManager.instance.gameStartScreen.SetActive(false);
+        if (gameOver && Input.anyKeyDown || Input.GetKeyDown(KeyCode.R))
             Respawn();
     }
 
     public void Kill()
     {
         TransientPlayer(true);
-        UIManager.instance.EnableDeathScreen(true);
+        UIManager.instance.deathScreen.SetActive(true);
         var am = AudioManager.instance;
         am.PlayOneShot2D(am.playerDeath);
         gameOver = true;
@@ -47,7 +51,8 @@ public class PlayerHealth : MonoBehaviour, IKillable
     {
         TransientPlayer(false);
         transform.position = spawnPosition;
-        UIManager.instance.EnableDeathScreen(false);
+        UIManager.instance.gameStartScreen.SetActive(true);
+        UIManager.instance.deathScreen.SetActive(false);
         UIManager.instance.winScreen.SetActive(false);
         gameOver = false;
         EventManager.instance.playerRespawned();

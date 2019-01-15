@@ -49,9 +49,11 @@ MonoBehaviour:
     type: 3}
   impactPrefab: {fileID: 5793269438325168136, guid: 6ed8180ce20718c408249ac8fb21ad3c,
     type: 3}
+  noAmmoPrefab: {fileID: 5793269438325168136, guid: 4fb7b729a512ae44bb62ed62d2fa2541,
+    type: 3}
   offset: {x: 0, y: -0.5, z: 0}
-  shootSounds:
-  - {fileID: 8300000, guid: f41d00817fdb7a04dae61fc2fbb0b67b, type: 3}
+  shootSound: {fileID: 8300000, guid: f41d00817fdb7a04dae61fc2fbb0b67b, type: 3}
+  noAmmoSound: {fileID: 8300000, guid: e5151c1b8b64c4e439bbbfbb0b17d06c, type: 3}
 --- !u!82 &9291108
 AudioSource:
   m_ObjectHideFlags: 0
@@ -139,7 +141,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 1
+      value: 0.686
       inSlope: 0
       outSlope: 0
       tangentMode: 0

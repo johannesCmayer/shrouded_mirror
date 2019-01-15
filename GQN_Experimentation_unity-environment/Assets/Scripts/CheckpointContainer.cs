@@ -23,6 +23,7 @@ public class CheckpointContainer : MonoBehaviour
         currentActiveCheckpoint++;
         if (myCheckpoints.Count > currentActiveCheckpoint)
             myCheckpoints[currentActiveCheckpoint].SetActive(true);
+        EventManager.instance.collectedCheckpoint();
     }
 
     public void Reset()
