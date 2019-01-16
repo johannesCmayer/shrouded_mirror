@@ -4,25 +4,34 @@ using UnityEngine;
 
 public class ChangeColorWithDistance : MonoBehaviour
 {
-    public GameObject target;
-    public float colorDistCoef = 0.2f;
-    public float maxColorMult = 1;
+    Renderer[] myRends;
+    Color[] origColors;
 
-
-    Renderer myRend;
-    Color origColor;
+    ChangeColorWithDistanceGlobalSettings settings;
 
     void Start()
     {
-        myRend = GetComponent<Renderer>();
-        origColor = myRend.material.color;
+        settings = ChangeColorWithDistanceGlobalSettings.instance;
+        settings.UpdateColors += UpdateColors;
+
+        myRends = GetComponentsInChildren<Renderer>();
+        origColors = new Color[myRends.Length];
+        for (int i = 0; i < myRends.Length; i++)
+            origColors[i] = myRends[i].material.color;
     }
 
-    void Update()
+    void UpdateColors()
     {
         if (ModeManager.instance.engineMode == EngineMode.RenderingNetwork)
             return;
-        var distTarget = (transform.position - target.transform.position).magnitude;
-        myRend.material.color = origColor / Mathf.Max(maxColorMult, (distTarget * colorDistCoef));
+        var distTarget = (transform.position -  settings.target.transform.position).magnitude;
+
+        for (int i = 0; i < myRends.Length; i++)
+            myRends[i].material.color = origColors[i] / Mathf.Max(settings.maxColorMult, (distTarget * settings.colorDistCoef));
+    }
+
+    private void OnDestroy()
+    {
+        settings.UpdateColors -= UpdateColors;
     }
 }

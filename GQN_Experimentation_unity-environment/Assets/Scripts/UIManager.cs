@@ -7,14 +7,16 @@ using TMPro;
 public class UIManager : MonoBehaviour
 {
     public static UIManager instance;
+    public GameObject canvas;
     public GameObject deathScreen;
     public GameObject winScreen;
     public GameObject gameStartScreen;
     public GameObject ammoDisplay;
 
-    void Start()
+    void Awake()
     {
         instance = this;
+        canvas.SetActive(true);
     }
 
     public void SetAmmo(int count)

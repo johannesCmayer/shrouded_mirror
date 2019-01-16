@@ -60,6 +60,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\ChangeColorWithDistanceGlobalSettings.cs" />
+    <Compile Include="Assets\GenerateObserveAreas.cs" />
     <Compile Include="Assets\Scripts\ApplyCutAwayMaterial.cs" />
     <Compile Include="Assets\Scripts\AudioManager.cs" />
     <Compile Include="Assets\Scripts\AudioUtil.cs" />
@@ -104,6 +106,7 @@
     <Compile Include="Assets\Scripts\UIManager.cs" />
     <Compile Include="Assets\Scripts\Util.cs" />
     <Compile Include="Assets\Scripts\WorldGrid.cs" />
+    <Compile Include="Assets\Simple3DGizmo.cs" />
     <Compile Include="Assets\SubProjects\WalkingSim\StickForestGenerator.cs" />
     <Compile Include="Assets\Synthesiser\Synthesiser.cs" />
     <None Include="Assets\Shaders\Pixelate.shader" />

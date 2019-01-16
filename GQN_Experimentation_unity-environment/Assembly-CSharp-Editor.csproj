@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\Editor\ColorManagerEditor.cs" />
     <Compile Include="Assets\Scripts\Editor\EnvironmentGeneratorEditor.cs" />
+    <Compile Include="Assets\Scripts\Editor\GenerateObserveAreasEditor.cs" />
     <Compile Include="Assets\Scripts\Editor\WorldGridEditor.cs" />
     <Compile Include="Assets\SubProjects\WalkingSim\Editor\StickForestGeneratorEditor.cs" />
     <Reference Include="Unity.TextMeshPro.Editor">

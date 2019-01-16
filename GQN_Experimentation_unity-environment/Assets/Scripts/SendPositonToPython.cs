@@ -22,7 +22,9 @@ public class SendPositonToPython : MonoBehaviour {
     IPEndPoint endpoint;
 
 	void Start ()
-    {        
+    {
+        if (ModeManager.instance.engineMode != EngineMode.RenderingNetwork)
+            return;
         sendSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         sendSock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
@@ -33,6 +35,8 @@ public class SendPositonToPython : MonoBehaviour {
 
     void Update()
     {
+        if (ModeManager.instance.engineMode != EngineMode.RenderingNetwork)
+            return;
         if (prevReadPosRotFromThis != readPosRotFromThis && readPosRotFromThis != "")
         {
             var posRot = readPosRotFromThis.Split('_');

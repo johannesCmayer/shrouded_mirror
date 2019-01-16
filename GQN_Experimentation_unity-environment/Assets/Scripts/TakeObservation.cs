@@ -10,6 +10,8 @@ using System.Globalization;
 
 public class TakeObservation : MonoBehaviour {
 
+    public static TakeObservation instance;
+
     public event System.Action TookObservation = delegate { };
 
     public Camera cam;
@@ -42,6 +44,11 @@ public class TakeObservation : MonoBehaviour {
             basePath = overwriteBasePath;
         return CreateDirectoryIfNotExists($@"{basePath}\trainingData\{sceneName}\" +
                                           $@"{cs.renderWidth}x{cs.renderHeight}\{environmentGenerator.EnvironmentID}");
+    }
+
+    void Awake()
+    {
+        instance = this;
     }
 
     void Start()
@@ -129,10 +136,17 @@ public class TakeObservation : MonoBehaviour {
                         var sceneName = SceneManager.GetActiveScene().name;
                         var savePath = DefaultSavePath(sceneName, cs);
 
-                        var capture = TakeObservationFromVolume(GetRandomObserveArea(currentEnvGroup), cam);
+                        //yield return null;
+
+                        MoveCamToCapturePosition(GetRandomObserveArea(currentEnvGroup), cam);
+
+                        ChangeColorWithDistanceGlobalSettings.instance.UpdateColorsNow();
+                        //yield return null;
+
+                        var capture = TakeObservationFromVolume(cam);
                         SaveImage(capture, savePath, GetFileName(capture));
                         TookObservation();
-                        totalImages++;
+                        totalImages++;                        
                     }
                     print($"{(int)(((float)totalImages / totalImagesToMake) * 100)}% - " +
                         $"{(int)(totalImages / (Time.time - startTime))} images per second - " +
@@ -162,9 +176,13 @@ public class TakeObservation : MonoBehaviour {
         return path;
     }
 
-    public CaptureData TakeObservationFromVolume(Transform transformVolume, Camera camera)
+    public void MoveCamToCapturePosition(Transform transformVolume, Camera camera)
     {
         camera.transform.position = new Util().GetRandomPointInAxisAlignedCube(transformVolume, offsetAfterPlacement);
+    }
+
+    public CaptureData TakeObservationFromVolume(Camera camera)
+    {        
         var rs = rotationSettings;
         var randRot = new Vector3(
             rs.rotateX ? RandRot(rs.xRotRange0Offset) : camera.transform.rotation.eulerAngles.x,

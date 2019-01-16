@@ -108,6 +108,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 4196394252205997716}
     m_Modifications:
+    - target: {fileID: 1213990375562744, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
+      propertyPath: m_Name
+      value: ObserverTaker
+      objectReference: {fileID: 0}
+    - target: {fileID: 1213990375562744, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4992419080448776, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -164,12 +172,9 @@ PrefabInstance:
       propertyPath: m_LocalScale.z
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 1213990375562744, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
-      propertyPath: m_Name
-      value: ObserverTaker
-      objectReference: {fileID: 0}
-    - target: {fileID: 1213990375562744, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}
-      propertyPath: m_IsActive
+    - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 3}
+      propertyPath: environmentGroups.Array.size
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
@@ -179,6 +184,11 @@ PrefabInstance:
       objectReference: {fileID: 4196394251332987838}
     - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
         type: 3}
+      propertyPath: rotationSettings.rotateX
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 3}
       propertyPath: rotationSettings.xRotRange0Offset.x
       value: -20
       objectReference: {fileID: 0}
@@ -186,6 +196,26 @@ PrefabInstance:
         type: 3}
       propertyPath: rotationSettings.xRotRange0Offset.y
       value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 114899689589406162, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 3}
+      propertyPath: captureSettings.Array.data[2].numImagesToMake
+      value: 200000
+      objectReference: {fileID: 0}
+    - target: {fileID: 20159692649184960, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 3}
+      propertyPath: near clip plane
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 20159692649184960, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 3}
+      propertyPath: m_CullingMask.m_Bits
+      value: 147255
+      objectReference: {fileID: 0}
+    - target: {fileID: 114067067181193240, guid: e8d04b8a90c964f4d9458c0aeafa8c17,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e8d04b8a90c964f4d9458c0aeafa8c17, type: 3}

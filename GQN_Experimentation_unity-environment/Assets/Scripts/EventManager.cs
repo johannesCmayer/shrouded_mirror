@@ -11,7 +11,7 @@ public class EventManager : MonoBehaviour
     public Action playerRespawned = delegate { };
     public Action collectedCheckpoint = delegate { };
 
-    void Start()
+    void Awake()
     {
         instance = this;
     }
