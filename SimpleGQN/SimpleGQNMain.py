@@ -458,7 +458,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         pos, rot = env_data_normalizer.normalize_envirenment_data_sigle(pos, rot)
         return pos, rot
 
-    with AsyncKeyChecker("'") as ac:
+    with AsyncKeyChecker("$") as ac:
         if (run_pygame):
             img_drawer = ImgDrawer(window_size)
             #character_controller = CharacterController(center_pos=(0, 1.5, 0) / max_pos_val)

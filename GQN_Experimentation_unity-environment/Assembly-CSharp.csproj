@@ -62,6 +62,8 @@
   <ItemGroup>
     <Compile Include="Assets\ChangeColorWithDistanceGlobalSettings.cs" />
     <Compile Include="Assets\GenerateObserveAreas.cs" />
+    <Compile Include="Assets\LaunchProbe.cs" />
+    <Compile Include="Assets\Probe.cs" />
     <Compile Include="Assets\Scripts\ApplyCutAwayMaterial.cs" />
     <Compile Include="Assets\Scripts\AudioManager.cs" />
     <Compile Include="Assets\Scripts\AudioUtil.cs" />
