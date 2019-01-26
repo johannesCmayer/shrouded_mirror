@@ -23,15 +23,24 @@ public class Util {
         return GetRandomPointInAxisAlignedCube(cubeTransform) + offset;
     }
 
-    public static Socket GetLocalUDPReceiverSocket(int port)
+    public static Socket GetUDPReceiverSocket(int port, string ipAdressString="")
     {
         var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         receiver.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-        IPHostEntry ipHostEntry = Dns.GetHostByName("localhost");
-        IPAddress iPAddress = ipHostEntry.AddressList[1];
-        IPEndPoint endpoint = new IPEndPoint(iPAddress, port);
+        IPAddress ipAddress = null;
+        if (ipAdressString == "")
+        {
+            IPHostEntry hostEntry = Dns.GetHostEntry(Dns.GetHostName());
+            ipAddress = hostEntry.AddressList[1];
 
+        }
+        else
+        {
+            ipAddress = IPAddress.Parse(ipAdressString);
+        }
+
+        IPEndPoint endpoint = new IPEndPoint(ipAddress, port);
         receiver.Bind(endpoint);
         return receiver;
     }

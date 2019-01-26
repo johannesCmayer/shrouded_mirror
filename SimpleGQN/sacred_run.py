@@ -5,7 +5,8 @@ default = Experiment()
 @default.config
 def default_config():
     window_resolution = (1800, 900)
-    image_resolution = '32x32'
+    image_resolution_key = 32
+    image_resolution = {32: '32x32', 64: '64x64'}[image_resolution_key]
     data_dir = 'Maze_3_gridCapturePointCapture'
 
     model_path = 'date=2019-01-16_time=21-42-23-452204_env=Maze-3-gridCapturePointCapture_name=Sidney-Arbogast_version=1_id=3801'

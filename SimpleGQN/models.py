@@ -65,6 +65,7 @@ def get_multi_input_gqn_model(pictures_input_shape, coordinates_input_shape, num
     picture_input = [keras.Input(pictures_input_shape, name=f'picture_input{i}') for i in range(num_input_observations)]
     coordinates_picture_input = [keras.Input(coordinates_input_shape, name=f'coordinates_picture_input{i}') for i in range(num_input_observations)]
     querry_coordinates = keras.Input(coordinates_input_shape, name='querry_coordinates')
+    r_multiply_matrix = keras.Input((num_state_neurons,), name='r_multiply_matrix')
 
     encoder = get_dc_gqn_encoder(pictures_input_shape, coordinates_input_shape, num_layers_encoder,
                                  num_neurons_per_layer, num_state_neurons)
@@ -74,14 +75,13 @@ def get_multi_input_gqn_model(pictures_input_shape, coordinates_input_shape, num
         encoded = keras.layers.Add()(encoded)
     else:
         encoded = encoded[0]
-    #max = K.max(encoded)
-    #encoded /= max
+    encoded = keras.layers.Multiply()([encoded, r_multiply_matrix])
 
     decoder = get_gqn_decoder(encoded.shape[1:], coordinates_input_shape, output_dim=pictures_input_shape,
                               num_layers=num_layers_decoder, num_neurons_layer=num_neurons_per_layer)
     decoded = decoder([encoded, querry_coordinates])
 
-    joint_model = keras.Model(inputs=[*picture_input, *coordinates_picture_input, querry_coordinates], outputs=decoded)
+    joint_model = keras.Model(inputs=[*picture_input, *coordinates_picture_input, querry_coordinates, r_multiply_matrix], outputs=decoded)
     joint_model.compile('adam', 'mse')
     return joint_model
 

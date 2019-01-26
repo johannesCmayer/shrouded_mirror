@@ -17,6 +17,7 @@ import functools
 import gc
 import yaml
 import socket
+import time
 from PIL import Image
 from scipy import misc
 from typing import Dict
@@ -34,6 +35,7 @@ from SimpleGQN.models import (
     simple_conv_model,
     get_latent_variable_gqn_model,
 )
+from SimpleGQN.sacred_run import default
 
 
 print(f'started execution at {datetime.datetime.now()}')
@@ -322,7 +324,7 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
         return frozen_graph
 
 
-def train_model_pregen(network_inputs, num_input_observations, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
+def train_model_pregen(network_inputs, num_state_neurons, num_input_observations, model_name, model_to_train, epochs=100, batch_size=None, save_model=True,
                        data_composition_multiplier=10, data_recomposition_frequency=1, log_frequency=10,
                        save_frequency = 30):
     model_dir = os.path.dirname(__file__) + '\\models'
@@ -341,7 +343,7 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
                 images_1, image_coordinates_1, images_2, image_coordinates_2 = \
                     generate_data(network_inputs, num_input_observations, data_composition_multiplier)
             print('starting training')
-            model_to_train.fit([*images_1, *image_coordinates_1, image_coordinates_2], images_2, batch_size=batch_size, verbose=1,
+            model_to_train.fit([*images_1, *image_coordinates_1, image_coordinates_2, np.asarray([np.zeros(num_state_neurons)] * len(image_coordinates_1[0]))], images_2, batch_size=batch_size, verbose=1,
                                epochs=epochs, callbacks=[
                                     keras.callbacks.ModelCheckpoint(checkpoint_save_path, period=save_frequency, verbose=1),
                                     #keras.callbacks.TensorBoard(log_dir=f'./models/tb_logs/{model_name}', write_graph=False,
@@ -357,11 +359,11 @@ def train_model_pregen(network_inputs, num_input_observations, model_name, model
     if save_model:
         print(f'saving model as {final_save_path}')
         model_to_train.save(final_save_path)
-        with open(meta_data_save_path, 'w') as f:
-            json.dump(model_to_train.to_json(), f)
+        #with open(meta_data_save_path, 'w') as f:
+        #    json.dump(model_to_train.to_json(), f)
 
-        f_graph = freeze_session(keras.backend.get_session(), output_names=[out.op.name for out in model_to_train.outputs])
-        tf.train.write_graph(f_graph, pb_save_path_base_dir, pb_model_name, as_text=False)
+        #f_graph = freeze_session(keras.backend.get_session(), output_names=[out.op.name for out in model_to_train.outputs])
+        #tf.train.write_graph(f_graph, pb_save_path_base_dir, pb_model_name, as_text=False)
     winsound.Beep(280, 300)
     return model_to_train
 
@@ -417,10 +419,10 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         else:
             model = model_generators[model_to_generate](
                 np.shape(network_inputs[0][0][0]), np.shape(network_inputs[0][1][0]), num_input_observations,
-                num_layers_encoder=6, num_layers_decoder=6, num_neurons_per_layer=2048, num_state_neurons=1024)
+                num_layers_encoder=num_layers_encoder, num_layers_decoder=num_layers_decoder, num_neurons_per_layer=num_neurons_per_layer, num_state_neurons=num_state_neurons)
     model.summary()
     if train:
-        model = train_model_pregen(network_inputs, num_input_observations, model_save_file_path, model, epochs=epochs,
+        model = train_model_pregen(network_inputs, num_state_neurons, num_input_observations, model_save_file_path, model, epochs=epochs,
                                    batch_size=batch_size, save_model=save_model,
                                    data_composition_multiplier=data_multiplier, log_frequency=log_frequency,
                                    save_frequency = save_frequency)
@@ -438,8 +440,14 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
     observation_inputs = get_random_observation_input_list()
     masked_observation_inputs = mask_observation_inputs(observation_inputs, num_unmask_inputs)
 
+    def wait_for_puncher():
+        pass
+
+    def get_unity_data():
+        pass
+
     def get_unity_position(env_data_normalizer):
-        UDP_IP = '127.0.0.1'
+        UDP_IP = socket.gethostbyname(socket.getfqdn())
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(10)
         sock.bind((UDP_IP, 9797))
@@ -458,7 +466,10 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         pos, rot = env_data_normalizer.normalize_envirenment_data_sigle(pos, rot)
         return pos, rot
 
-    with AsyncKeyChecker("$") as ac:
+    def get_unity_r_multiply_matrix(num_state_neurons):
+        return [np.zeros((num_state_neurons,)) + math.sin(time.time())]
+
+    with AsyncKeyChecker("q") as ac:
         if (run_pygame):
             img_drawer = ImgDrawer(window_size)
             #character_controller = CharacterController(center_pos=(0, 1.5, 0) / max_pos_val)
@@ -474,7 +485,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
                 pos, rot = get_unity_position(normalizer)
 
             coordinate_input = np.asarray([network_inputs_from_coordinates_single(pos, rot)])
-            output_img = model.predict([*masked_observation_inputs[0], *masked_observation_inputs[1], coordinate_input])
+            output_img = model.predict([*masked_observation_inputs[0], *masked_observation_inputs[1], coordinate_input, get_unity_r_multiply_matrix(num_state_neurons)])
             output_img = np.reshape(output_img[0], img_data_shape)
 
             if black_n_white:

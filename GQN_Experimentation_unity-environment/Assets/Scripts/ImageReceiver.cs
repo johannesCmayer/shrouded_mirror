@@ -15,7 +15,6 @@ public class ImageReceiver : MonoBehaviour {
 
     public int streamReceivePort = 8686;
     public bool updateNNScreenSizeToMatchStream = true;
-    public bool clearScreen = true;
     public int nnScreenSizeX = 32;
     public int nnScreenSizeY = 32;
     
@@ -37,7 +36,7 @@ public class ImageReceiver : MonoBehaviour {
         blackFill = new Texture2D(1, 1);
         blackFill.SetPixels(new[] { new Color(0, 0, 0, 1) });
 
-        receiver = Util.GetLocalUDPReceiverSocket(streamReceivePort);
+        receiver = Util.GetUDPReceiverSocket(streamReceivePort);
 	}
     
 	void Update ()
@@ -77,7 +76,7 @@ public class ImageReceiver : MonoBehaviour {
         if (timeToLastReceive < 2000)
         {
             var temp = RenderTexture.GetTemporary(src.width, src.height);
-            Graphics.Blit(blackFill, dest);
+            //Graphics.Blit(blackFill, src);
             Graphics.Blit(streamTexture, temp);
             Graphics.Blit(src, temp, cutRed);
             Graphics.Blit(temp, dest, pixelate);
