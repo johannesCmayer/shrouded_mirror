@@ -23,7 +23,7 @@ public class Util {
         return GetRandomPointInAxisAlignedCube(cubeTransform) + offset;
     }
 
-    public static Socket GetUDPReceiverSocket(int port, string ipAdressString="")
+    public static Socket GetUDPReceiverSocket(int port, string ipAdressString = "")
     {
         var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         receiver.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
@@ -32,8 +32,14 @@ public class Util {
         if (ipAdressString == "")
         {
             IPHostEntry hostEntry = Dns.GetHostEntry(Dns.GetHostName());
-            ipAddress = hostEntry.AddressList[1];
-
+            foreach (var item in hostEntry.AddressList)
+            {
+                if (item.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    ipAddress = item;
+                    break;
+                }
+            }
         }
         else
         {
@@ -41,6 +47,7 @@ public class Util {
         }
 
         IPEndPoint endpoint = new IPEndPoint(ipAddress, port);
+        Debug.Log(endpoint);
         receiver.Bind(endpoint);
         return receiver;
     }

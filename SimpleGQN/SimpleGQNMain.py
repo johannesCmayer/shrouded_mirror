@@ -447,10 +447,11 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
         pass
 
     def get_unity_position(env_data_normalizer):
-        UDP_IP = socket.gethostbyname(socket.getfqdn())
+        UDP_IP = socket.gethostbyname(socket.gethostname())
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(10)
-        sock.bind((UDP_IP, 9797))
+        port = 9797
+        sock.bind((UDP_IP, port))
         pos = (0,0,0)
         rot = (1,0,0,0)
         while True:
@@ -462,7 +463,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
                 rot = [float(x) for x in rot.split(', ')]
                 break
             except socket.timeout:
-                print('socket timed out, no coordinates received, restarting receive')
+                print(f'{time.time()} socket timed out, no coordinates received from {UDP_IP}:{port}, restarting receive')
         pos, rot = env_data_normalizer.normalize_envirenment_data_sigle(pos, rot)
         return pos, rot
 
@@ -502,7 +503,7 @@ def run(unnormalized_environment_data, num_input_observations, model_save_file_p
                 return buffer.getvalue()
 
             def send_udp_local(msg, port):
-                UDP_IP = '127.0.0.1'
+                UDP_IP = socket.gethostbyname(socket.gethostname())
                 MESSAGE = msg
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.sendto(MESSAGE, (UDP_IP, port))

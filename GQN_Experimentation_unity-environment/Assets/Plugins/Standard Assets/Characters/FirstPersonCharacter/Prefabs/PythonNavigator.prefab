@@ -340,6 +340,7 @@ GameObject:
   - component: {fileID: 270899117}
   - component: {fileID: 798504549290996686}
   - component: {fileID: 1007469233}
+  - component: {fileID: 1759392845}
   m_Layer: 16
   m_Name: MainCamera
   m_TagString: MainCamera
@@ -506,6 +507,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60898d25d6918464e943edcf1c158141, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ipadressString: 
   port: 9797
   readPosRotFromThis: 
   sendDataPos: 
@@ -576,3 +578,17 @@ MonoBehaviour:
   prefab: {fileID: 4239632547566076988, guid: a438fa57d1b1c714f9c7e8bbfba726e4, type: 3}
   throwForce: 1000
   throwUpCoef: 0.2
+--- !u!114 &1759392845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1744030300471286}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f01785098983174488dddb14b68dd50d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  probePrefab: {fileID: 3893814497751685342, guid: 5e636de008cb4254a9cfb5a91de84865,
+    type: 3}

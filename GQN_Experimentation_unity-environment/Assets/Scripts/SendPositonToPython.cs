@@ -10,7 +10,7 @@ using System.Globalization;
 
 public class SendPositonToPython : MonoBehaviour {
 
-    public string ipadressString = "141.45.81.193";
+    public string ipadressString;
     public int port = 9797;
 
     public string readPosRotFromThis;
@@ -34,14 +34,21 @@ public class SendPositonToPython : MonoBehaviour {
         if (ipadressString == "")
         {
             IPHostEntry hostEntry = Dns.GetHostEntry(Dns.GetHostName());
-            IPAddress ipAddress = hostEntry.AddressList[1];
-            print($"setting python socket to {ipAddress}");
+            foreach (var item in hostEntry.AddressList)
+            {
+                if (item.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    ipadress = item;
+                    break;
+                }
+            }
         }
         else
         {
             ipadress = IPAddress.Parse(ipadressString);
-        }
+        }        
         endpoint = new IPEndPoint(ipadress, port);
+        print($"{name} Server at {endpoint}");
     }
 
     void Update()

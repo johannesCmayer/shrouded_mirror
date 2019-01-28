@@ -63,6 +63,7 @@
     <Compile Include="Assets\ChangeColorWithDistanceGlobalSettings.cs" />
     <Compile Include="Assets\GenerateObserveAreas.cs" />
     <Compile Include="Assets\LaunchProbe.cs" />
+    <Compile Include="Assets\PlayAudioOnVelocityChange.cs" />
     <Compile Include="Assets\Probe.cs" />
     <Compile Include="Assets\Scripts\ApplyCutAwayMaterial.cs" />
     <Compile Include="Assets\Scripts\AudioManager.cs" />
@@ -103,7 +104,6 @@
     <Compile Include="Assets\Scripts\SplatterCube.cs" />
     <Compile Include="Assets\Scripts\TakeObservation.cs" />
     <Compile Include="Assets\Scripts\TargetAudio.cs" />
-    <Compile Include="Assets\Scripts\TFBytesRunner.cs" />
     <Compile Include="Assets\Scripts\ThrowSmoke.cs" />
     <Compile Include="Assets\Scripts\UIManager.cs" />
     <Compile Include="Assets\Scripts\Util.cs" />
@@ -113,14 +113,86 @@
     <Compile Include="Assets\Synthesiser\Synthesiser.cs" />
     <None Include="Assets\Shaders\Pixelate.shader" />
     <None Include="Assets\Shaders\KeyOut.shader" />
+    <Reference Include="Unity.ProBuilder.AddOns.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.ProBuilder.AddOns.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Entities.Properties">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Entities.Properties.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Properties.Codegen">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Properties.Codegen.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Jobs">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Jobs.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Jobs.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Jobs.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Entities.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Entities.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Properties">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Properties.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Collections">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Collections.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.TextMeshPro.Editor">
-      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Burst">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Burst.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.EditorCoroutines.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.EditorCoroutines.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.PackageManagerUI.Editor">
-      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.MemoryProfiler">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.MemoryProfiler.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Rendering.Hybrid">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Rendering.Hybrid.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.CollabProxy.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.CollabProxy.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Properties.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Properties.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Entities.Hybrid">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Entities.Hybrid.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Mathematics">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Mathematics.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Entities">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Entities.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Transforms">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Transforms.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Transforms.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Transforms.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Burst.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Burst.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Mathematics.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Mathematics.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Analytics.DataPrivacy">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Analytics.DataPrivacy.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Transforms.Hybrid">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.Transforms.Hybrid.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.MemoryProfiler.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/ScriptAssemblies/Unity.MemoryProfiler.Editor.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AIModule">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2018.3.0f2/Editor/Data/Managed/UnityEngine/UnityEngine.AIModule.dll</HintPath>
@@ -323,23 +395,38 @@
     <Reference Include="UnityEngine.SpatialTracking">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2018.3.0f2/Editor/Data/UnityExtensions/Unity/UnitySpatialTracking/RuntimeEditor/UnityEngine.SpatialTracking.dll</HintPath>
     </Reference>
-    <Reference Include="System.Numerics">
-      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/Plugins/ML-Agents/Plugins/System.Numerics.dll</HintPath>
+    <Reference Include="UnityEngine.Advertisements">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/PackageCache/com.unity.ads@2.3.1/Runtime/UnityEngine.Advertisements.dll</HintPath>
     </Reference>
-    <Reference Include="System.ValueTuple">
-      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/Plugins/ML-Agents/Plugins/System.ValueTuple.dll</HintPath>
+    <Reference Include="UnityEngine.Advertisements.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/PackageCache/com.unity.ads@2.3.1/Runtime/UnityEngine.Advertisements.Editor.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Protobuf">
-      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/Plugins/ML-Agents/Plugins/ProtoBuffer/Google.Protobuf.dll</HintPath>
+    <Reference Include="Unity.Analytics.Editor">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.Editor.dll</HintPath>
     </Reference>
-    <Reference Include="Grpc.Core">
-      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/Plugins/ML-Agents/Plugins/ProtoBuffer/Grpc.Core.dll</HintPath>
+    <Reference Include="Unity.Analytics.StandardEvents">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.StandardEvents.dll</HintPath>
     </Reference>
-    <Reference Include="System.Interactive.Async">
-      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/Plugins/ML-Agents/Plugins/ProtoBuffer/System.Interactive.Async.dll</HintPath>
+    <Reference Include="Unity.Analytics.Tracker">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.Tracker.dll</HintPath>
     </Reference>
-    <Reference Include="TensorFlowSharp">
-      <HintPath>D:/JohannesCMayer/GQN_Experimentation/GQN_Experimentation_unity-environment/Assets/Plugins/ML-Agents/Plugins/Computer/TensorFlowSharp.dll</HintPath>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/PackageCache/com.unity.collections@0.0.9-preview.10/System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="ProBuilderCore">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/PackageCache/com.unity.probuilder@3.0.9/ProBuilder/Classes/ProBuilderCore.dll</HintPath>
+    </Reference>
+    <Reference Include="ProBuilderMeshOps">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/PackageCache/com.unity.probuilder@3.0.9/ProBuilder/Classes/ProBuilderMeshOps.dll</HintPath>
+    </Reference>
+    <Reference Include="KdTreeLib">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/PackageCache/com.unity.probuilder@3.0.9/ProBuilder/Classes/ClassesLib/KdTreeLib.dll</HintPath>
+    </Reference>
+    <Reference Include="pb_Stl">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/PackageCache/com.unity.probuilder@3.0.9/ProBuilder/Classes/ClassesLib/pb_Stl.dll</HintPath>
+    </Reference>
+    <Reference Include="Poly2Tri">
+      <HintPath>D:/Projects/Unity_Projects/GQN_Experimentation/GQN_Experimentation_unity-environment/Library/PackageCache/com.unity.probuilder@3.0.9/ProBuilder/Classes/ClassesLib/Poly2Tri.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2018.3.0f2/Editor/Data/MonoBleedingEdge/lib/mono/4.7.1-api/mscorlib.dll</HintPath>
