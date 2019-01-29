@@ -9,6 +9,6 @@ public class PlayAudioOnVelocityChange : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        audiosource.PlayOneShot(audiosource.clip, collision.relativeVelocity.sqrMagnitude * volumeScale);
+        audiosource.PlayOneShot(audiosource.clip, Mathf.Min(1, collision.relativeVelocity.sqrMagnitude * volumeScale));
     }
 }
