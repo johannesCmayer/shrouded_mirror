@@ -1,3 +1,5 @@
+import sys
+print(sys.path)
 import os, io
 import tensorflow as tf
 from tensorflow import keras
@@ -35,7 +37,6 @@ from SimpleGQN.models import (
     simple_conv_model,
     get_latent_variable_gqn_model,
 )
-from SimpleGQN.sacred_run import default
 
 
 print(f'started execution at {datetime.datetime.now()}')
