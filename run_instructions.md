@@ -8,7 +8,7 @@ Install the following software:
 - Anaconda (python 3.7.0 was used -- any 3.6 should also work)
  - https://www.anaconda.com/distribution/
 
-## Install Python Libaries
+## Install Python Libaries (one time setup)
 Open the Anaconda prompt (installed with anaconda).
 Navigate in the prompt to the project root (the directory that contains this file) using the cd command.
 Then create an environment with conda using the environment.yml file.
