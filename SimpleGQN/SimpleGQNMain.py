@@ -106,7 +106,6 @@ def get_data_for_environments(data_dirs, num_envs_to_load=None, num_data_from_en
               f'{int(len(env_data) / num_envs_to_load * 100)}% - '
               f'{num_loaded} images loaded', end='')
     print()
-    delete_corrupt_files(corrupt_files)
     return env_data
 
 
