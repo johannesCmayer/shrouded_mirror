@@ -1,5 +1,5 @@
 # Shrouded Mirror
-## Neural Network Based Rendering in Interactive Environments
+## Neural Network-Based Rendering in Interactive Environments
 
 This project uses a feedforward NN, and overfits it to visual observations of some environment to create a visual effect. After training the network takes position and rotation of the environment and produces an output image.
 
